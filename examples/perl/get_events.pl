@@ -24,7 +24,7 @@ $sock->send_as(json => {
     count => 0,
  });
 
-my $reply = $sock->recv_as('json', ZMQ_NOBLOCK);
+my $reply = $sock->recv_as('json');
 print "Got reply: ".Dumper($reply); 
 
 __END__
