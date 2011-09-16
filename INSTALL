@@ -1,0 +1,13 @@
+INSTALLING
+Run:
+
+$ ./configure
+$ make
+$ make install
+
+UNINSTALLING
+Run:
+
+$ make uninstall
+
+From the top folder of this package.

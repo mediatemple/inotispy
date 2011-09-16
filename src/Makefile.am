@@ -1,0 +1,37 @@
+#
+# Copyright (c) 2011-*, James Conerly <james@jamesconerly.com>
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+AUTOMAKE_OPTIONS = foreign
+
+CFLAGS= -g -std=c99 --pedantic -Wall -O2 -D_GNU_SOURCE -D_REENTRANT \
+    -I/usr/lib/glib-2.0/include \
+    -I/usr/include/glib-2.0 
+LDFLAGS= -lglib-2.0 -ljson -lzmq -lpthread
+DEFAULT_INCLUDES=
+
+bin_PROGRAMS = inotispy
+inotispy_SOURCES = \
+    main.c \
+    zmq.c \
+    inotify.c \
+    log.c \
+    reply.c \
+    reply.h \
+    request.c \
+    request.h \
+    zmq.h \
+    inotify.h \
+    log.h
+
