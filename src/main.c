@@ -35,6 +35,7 @@ main (int argc, char **argv)
 
     zmq_pollitem_t items[2];
 
+    /* A few command line args to handle. */
     if ( argc == 2 &&
         (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) )
     {
@@ -50,6 +51,7 @@ main (int argc, char **argv)
     if (!CONFIG->silent)
         fprintf(stderr, "Running Inotispy...\n");
 
+    /* Run all initialization functionality. */
     init_logger();
     LOG_NOTICE("Initializing daemon");
 
