@@ -62,14 +62,18 @@ typedef struct thread_data {
 Root * inotify_path_to_root (char *path);
 Root * make_root (char *path, int mask, int max_events);
 Watch * make_watch (int wd, char *path);
-int do_watch_tree (char *path, Root *root);
-int do_unwatch_tree (char *path);
 int inotify_root_exists (char *path);
 char * inotify_is_parent (char *path);
 int inotify_enqueue (Root *root, IN_Event *event, char *path);
 void free_node_mem(Event *node, gpointer user_data);
+
+int do_watch_tree (char *path, Root *root);
 void * _do_watch_tree (void *data);
 void _do_watch_tree_rec (char *path, Root *root);
+
+int do_unwatch_tree(char *path, Root *root);
+void * _do_unwatch_tree(void *data);
+void _do_unwatch_tree_rec (char *path);
 
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
@@ -554,6 +558,13 @@ inotify_unwatch_tree (char *path)
     DIR  *d;
     Root *root;
 
+    /* Clean up path by removing the trailing slash, it exists. */
+    {
+        int last = strlen(path) - 1;
+        if (path[last] == '/')
+            path[last] = '\0';
+    }
+
     /* First check to see if the path is a valid,
      * watched root.
      */
@@ -561,50 +572,39 @@ inotify_unwatch_tree (char *path)
     if (root == NULL) {
         LOG_WARN("Cannot unwatch path '%s' since it is not a watched root'",
             path);
-        return 1; /* XXX Add useful return value */
+        return 1;
     }
 
+    /* Next make sure we're not currently performing a recursive 
+     * watch on this tree.
+     */
     if (root->busy == 1) {
         LOG_WARN("Root '%s' is currently being initialized. Unwatch aborted",
             path);
-        return 1; /* XXX Add useful return value */
+        return 1;
     }
 
-    /* Next check to make sure the path is a valid, 
-     * and open-able, directory.
+    /* Finally check to make sure the path is a valid, open-able,
+     * directory.
      */
     d = opendir(path);
     if( d == NULL ) {
         LOG_WARN("Failed to open root at dir '%s': %s",
             path, strerror(errno));
         closedir(d);
-        return 1; /* XXX Add useful return value */
+        return 1;
     }
     closedir(d);
 
     LOG_NOTICE("Un-watching tree at root '%s'", path);
 
-    /* Clean up dynamically allocated memory. */
-    __MLOCK();
-    { 
-        free(root->path);
-        g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
-        g_queue_free(root->queue);
-        g_hash_table_remove(inotify_roots, path);
-
-        /* Valgrind is reporting this free() as invalid:
-         *   free(root);
-         */
-    }
-    __MUNLOCK();
-
     /* Recursively remove the inotify watches of each
      * sub directory of this root.
      */
-    rv = do_unwatch_tree(path);
+    rv = do_unwatch_tree(path, root);
     if (rv != 0) {
         LOG_ERROR("Failed to unwatch root at dir '%s'", path);
-        return 1; /* XXX Add useful return value */
+        return 1;
     }
 
     return 0;
@@ -620,6 +620,13 @@ inotify_watch_tree (char *path, int mask, int max_events)
     LOG_TRACE("Entering inotify_watch_tree() on path '%s' with mask %lu",
         path, mask);
 
+    /* Clean up path by removing the trailing slash, it exists. */
+    {
+        int last = strlen(path) - 1;
+        if (path[last] == '/')
+            path[last] = '\0';
+    }
+
     /* A quick check of the current state of watched roots. */
     {
         /* First we make sure we're not already watching a tree
@@ -629,7 +636,7 @@ inotify_watch_tree (char *path, int mask, int max_events)
          */
         Root *r = inotify_path_to_root(path);
 
-        if ( r != NULL ) {
+        if (r != NULL) {
             LOG_WARN("Already watching tree '%s' at root '%s'",
                 path, r->path);
             return 1;
@@ -683,13 +690,74 @@ inotify_watch_tree (char *path, int mask, int max_events)
     return 0;
 }
 
-/* Recursive portion of inotify_unwatch_tree(). */
+/* Threaded portion of inotify_unwatch_tree(). */
 int
-do_unwatch_tree (char *path)
+do_unwatch_tree (char *path, Root *root)
+{
+    int rc;
+    pthread_t t;
+    T_Data *data = (T_Data *) malloc(sizeof(T_Data));
+
+    asprintf(&data->path, "%s", path);
+    data->root = root;
+
+    rc = pthread_create(&t, NULL, _do_unwatch_tree, (void *) data);
+    if (rc) {
+         LOG_ERROR("Failed to create new thread for UN-watch on '%s': %d",
+             path, rc);
+         free(data->path);
+         free(data);
+         return 1;
+    }
+
+    return 0;
+}
+
+void *
+_do_unwatch_tree (void *thread_data)
+{
+    Root   *root;
+    T_Data *data;
+    data = thread_data;
+    
+    root = data->root;
+
+    /* Blow away this root's meta-data. */
+    __MLOCK();
+    { 
+        free(root->path);
+        g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
+        g_queue_free(root->queue);
+    }
+    __MUNLOCK();
+
+    /* Do our recursive UN-watching. */
+    root->busy = 1;
+    _do_unwatch_tree_rec(data->path); 
+
+    /* Blow away this root */
+    __MLOCK();
+    { 
+        g_hash_table_remove(inotify_roots, data->path);
+    }
+    __MUNLOCK();
+
+    /* Clean up dynamically allocated memory. */
+    free(data->path);
+    free(data);
+
+    return (void *) 0;
+}
+
+/* Recursive portion of inotify_unwatch_tree(). */
+void
+_do_unwatch_tree_rec (char *path)
 {
     DIR   *d;
     Watch *delete;
     struct dirent *dir;
+
+//sleep(2);
 
     __MLOCK();
     {
@@ -701,7 +769,7 @@ do_unwatch_tree (char *path)
 
     if (delete == NULL) {
         LOG_WARN("Failed to look up watcher for path '%s'", path);
-        return 1;
+        return;
     }    
 
     LOG_TRACE("Un-watching wd:%d path:%s", delete->wd, path);
@@ -727,7 +795,7 @@ do_unwatch_tree (char *path)
     if( d == NULL ) {
         LOG_ERROR("Failed to open dir: %s", strerror(errno));
         closedir(d);
-        return 1;
+        return;
     }
 
     /* XXX WARNING! dirent::d_type flags DO NOT work on XFS...
@@ -746,14 +814,13 @@ do_unwatch_tree (char *path)
             asprintf(&tmp, "%s/%s", path, dir->d_name);
 
             /* Recurse! */
-            do_unwatch_tree(tmp);
+            _do_unwatch_tree_rec(tmp);
 
             free(tmp);
         }
     }
 
     closedir(d);
-    return 0;
 }
 
 /* Recursive, threaded portion of inotify_watch_tree(). */
