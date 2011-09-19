@@ -21,6 +21,8 @@
 #include "log.h"
 #include "inotify.h"
 
+#include <glib.h>
+
 #define INOTISPY_CONFIG_FILE "/etc/inotispy.conf"
 
 struct inotispy_config {
@@ -34,15 +36,22 @@ struct inotispy_config {
 
     /* inotify.h */
     int max_inotify_events;
+
+    /* Toggle printing information to stderr */
+    gboolean silent;
 };
 
 struct inotispy_config *CONFIG;
 
 /* Read in config values from /etc/inotispy.conf.
  *
- * On success returns 0.
- * On failure returns 1.
+ * Takes:
+ *  - boolean value toggeling silent mode.
+ *
+ * Returns:
+ *  - 0 (zero) on success.
+ *  - 1 on failure.
  */
-int init_config (void);
+int init_config (gboolean silent);
 
 #endif /*_INOTISPY_CONFIG_H_*/

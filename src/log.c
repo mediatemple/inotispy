@@ -43,7 +43,7 @@ init_logger ()
 }
 
 char *
-levelstr (int level)
+level_str (int level)
 {
     switch (level) {
         case LOG_LEVEL_ERROR  : return "ERROR";
@@ -57,7 +57,7 @@ levelstr (int level)
 }
 
 char *
-timestr ()
+time_str ()
 {
     time_t t = time(NULL);
     char *t_str = ctime(&t);
@@ -79,7 +79,7 @@ log_msg (int level, char *fmt, va_list ap)
     char *msg;
     vasprintf(&msg, fmt, ap);
 
-    fprintf(logger, "[%s] [%s] %s\n", timestr(), levelstr(level), msg);
+    fprintf(logger, "[%s] [%s] %s\n", time_str(), level_str(level), msg);
 
     fflush(logger);
     free(msg);

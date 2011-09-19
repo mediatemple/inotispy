@@ -16,7 +16,6 @@
 
 #include "config.h"
 
-#include <glib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,10 +33,11 @@
  *     me.
  */
 int
-init_config (void)
+init_config (gboolean silent)
 {
     int       int_rv;
     char     *str_rv;
+    gboolean  bool_rv;
     GError   *error;
     GKeyFile *kf;
 
@@ -49,6 +49,7 @@ init_config (void)
     CONFIG->log_file           = LOG_FILE;
     CONFIG->log_level          = LOG_LEVEL_NOTICE;
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
+    CONFIG->silent             = FALSE;
 
     /* Attempt to read in config file. */
     kf = g_key_file_new();
@@ -104,6 +105,9 @@ init_config (void)
         else if ( strcmp(str_rv, "error") == 0 ) {
             CONFIG->log_level = LOG_LEVEL_ERROR;
         }
+        else {
+            fprintf(stderr, "Found invalid valud for 'log_level': %s\n", str_rv);
+        }
 
         g_free(str_rv);
     }
@@ -119,11 +123,37 @@ init_config (void)
         CONFIG->max_inotify_events = int_rv;
     }
 
-    fprintf(stderr, "Using configuration values:\n");
-    fprintf(stderr, " - port               : %d\n", CONFIG->port);
-    fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
-    fprintf(stderr, " - log_level          : %d\n", CONFIG->log_level);
-    fprintf(stderr, " - max_inotify_events : %d\n", CONFIG->max_inotify_events);
+    /* Silent mode.
+     *
+     * The command line argument '-s' takes precidence over what's in the
+     * config file. So if that flag was set then it doesn't matter what
+     * value was set in the config file.
+     */
+    if (silent) {
+        CONFIG->silent = TRUE;
+    }
+    else {
+        bool_rv = g_key_file_get_boolean (kf, "inotispy", "silent", &error);
+        if (error != NULL) {
+            fprintf(stderr, "Failed to read config value for 'silent': %s\n",
+                error->message);
+            error = NULL;
+        }
+        else {
+            CONFIG->silent = bool_rv;
+        }
+    }
+
+    if (!CONFIG->silent) {
+        fprintf(stderr, "Using configuration values:\n");
+        fprintf(stderr, " - port               : %d\n", CONFIG->port);
+        fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
+        fprintf(stderr, " - log_level          : %s (%d)\n",
+            level_str(CONFIG->log_level), CONFIG->log_level);
+        fprintf(stderr, " - max_inotify_events : %d\n", CONFIG->max_inotify_events);
+        fprintf(stderr, " - silent             : %s\n",
+            (CONFIG->silent ? "true" : "false"));
+    }
 
     return 0;
 }

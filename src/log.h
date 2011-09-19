@@ -30,7 +30,6 @@
  *     out there please advise.
  */
 
-/* XXX config.h */
 #define LOG_FILE "/var/log/inotispy.log"
 
 #define LOG_LEVEL_ERROR   1
@@ -39,10 +38,25 @@
 #define LOG_LEVEL_DEBUG   4
 #define LOG_LEVEL_TRACE   5
 
-int init_logger ();
-int get_log_level ();
+/* Initialize and setup our logger */
+int init_logger (void);
+
+/* Get and set the current log level.
+ *
+ * Eventually Inotispy will periodically re-read it's configuration
+ * file in real time so that behavior (like log levels) can change
+ * without needing to restart the daemon.
+ */
+int get_log_level (void);
 void set_log_level (int level);
 
+/* Turn a integer log level into it's corresponding string value. */
+char * level_str (int level);
+
+/* XXX I had thought about trying to make these functions macros,
+ *     but the pre-processor doesn't know how to handle the ...
+ *     functionality, which is needed here.
+ */
 void LOG_ERROR  (char *fmt, ...);
 void LOG_WARN   (char *fmt, ...);
 void LOG_NOTICE (char *fmt, ...);

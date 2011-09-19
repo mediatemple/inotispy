@@ -23,17 +23,32 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h> /* exit() */
+
+void print_help (void);
 
 int
-main(void)
+main (int argc, char **argv)
 {
     int   rc, inotify_fd;
     void *zmq_receiver;
 
     zmq_pollitem_t items[2];
 
-    init_config();
-    fprintf(stderr, "Running Inotispy...\n");
+    if ( argc == 2 &&
+        (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) )
+    {
+        print_help();
+    }
+
+    if ( argc == 2 &&
+        (strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--silent") == 0) )
+        init_config(TRUE);   /* Silent mode ON */
+    else 
+        init_config(FALSE);  /* Silent mode OFF */
+
+    if (!CONFIG->silent)
+        fprintf(stderr, "Running Inotispy...\n");
 
     init_logger();
     LOG_NOTICE("Initializing daemon");
@@ -73,5 +88,23 @@ main(void)
     }
 
     return 0;
+}
+
+void
+print_help (void)
+{
+    printf("Usage: inotispy [--silent]\n");
+    printf("\n");
+    printf("  -s, --slient  Turn off printing to stderr.\n");
+    printf("\n");
+    printf("Inotispy is an efficient file system change notification daemon based\n");
+    printf("on inotify. It recursively watches directory trees, queues file system\n");
+    printf("events that occur within those trees, and delivers those events to\n");
+    printf("client applications via ZeroMQ sockets.\n");
+    printf("\n");
+    printf("For more information on running, configuring, managing and using Inotispy\n");
+    printf("please refer to the documentation found at http://www.inotispy.org\n\n");
+
+    exit(1);
 }
 
