@@ -33,5 +33,7 @@ inotispy_SOURCES = \
     request.h \
     zmq.h \
     inotify.h \
-    log.h
+    log.h \
+    config.c \
+    config.h
 

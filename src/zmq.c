@@ -17,6 +17,7 @@
 #include "log.h"
 #include "zmq.h"
 #include "reply.h"
+#include "config.h"
 #include "inotify.h"
 
 #include <zmq.h>
@@ -43,10 +44,15 @@ zmq_setup (void)
 {
     int   bind_rv;
     void *zmq_context;
+    char *zmq_uri;
+
+    asprintf(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
 
     zmq_context  = zmq_init (ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
-    bind_rv      = zmq_bind(zmq_listener, ZMQ_ADDR);
+    bind_rv      = zmq_bind(zmq_listener, zmq_uri);
+
+    free(zmq_uri);
 
     if ( bind_rv != 0 ) {
         LOG_ERROR("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
@@ -64,11 +70,11 @@ zmq_setup (void)
  *
  * XXX CODE REVIEW
  *
- * My check for junk messages feels sloppy, though it seems to
- * work just fine. I was looking for a quick way to avoid sending
- * non-JSON data to the parser. Is there a better way to do this?
- * Should I be doing this at all or should I just pass data along
- * and let the parser handle junk?
+ *     My check for junk messages feels sloppy, though it seems to
+ *     work just fine. I was looking for a quick way to avoid sending
+ *     non-JSON data to the parser. Is there a better way to do this?
+ *     Should I be doing this at all or should I just pass data along
+ *     and let the parser handle junk?
  */
 void
 zmq_handle_event (void *receiver)
@@ -198,7 +204,7 @@ EVENT_watch (Request *req)
 
     max_events = request_get_max_events(req);
     if ( max_events == 0 ) {
-        max_events = INOTIFY_MAX_EVENTS;
+        max_events = CONFIG->max_inotify_events;
         LOG_TRACE("Using default max events %d", max_events);
     }
     else {
@@ -235,9 +241,9 @@ EVENT_unwatch (Request *req)
 
 /* XXX CODE REVIEW
  *
- * I don't know a better, more dynamic way to turn a C struct
- * into a JSON object. This seems super messy, but this is C
- * and I'm not sure there is a more elegant solution.
+ *     I don't know a better, more dynamic way to turn a C struct
+ *     into a JSON object. This seems super messy, but this is C
+ *     and I'm not sure there is a more elegant solution.
  */
 JOBJ
 inotify_event_to_jobj (Event *event)
@@ -403,35 +409,35 @@ EVENT_get_roots (void)
 
 /* XXX CODE REVIEW
  * 
- * Another way to do this would be to set up constant (or enum)
- * integer values for each of the possible calls with some hooks
- * for validity checking:
- * 
- *   #define CALL_RANGE_MIN 1
- *   #define CALL_RANGE_MAX N
- * 
- *   #define CALL_WATCH   1
- *   #define CALL_UNWATCH 2
- *     ...
- *   #define CALL_FOO     N
- * 
- *   #define CALL_VALID(X) \
- *     (return ((X >= CALL_RANGE_MIN) && (X <= CALL_RANGE_MAX)) ? 1 : 0)
- * 
- * This would make the code a little more clear since I would
- * use a proper switch clause, and it would probably make the
- * code more efficient since a switch clause would be compairing
- * integer values instead of doing a character by character
- * string comparison. However, this approach would require client
- * code using Inotispy to do one of the following:
- * 
- *   * Use meaningless integer constants in their code.
- *   * Define their own set of named constants to use.
- *   * Find an existing Inotispy binding in their language
- *     that already has these constants defined.
- * 
- * If anyone thinks this is a better approach please say so and
- * I'll do the logic swap.
+ *     Another way to do this would be to set up constant (or enum)
+ *     integer values for each of the possible calls with some hooks
+ *     for validity checking:
+ *     
+ *       #define CALL_RANGE_MIN 1
+ *       #define CALL_RANGE_MAX N
+ *     
+ *       #define CALL_WATCH   1
+ *       #define CALL_UNWATCH 2
+ *         ...
+ *       #define CALL_FOO     N
+ *     
+ *       #define CALL_VALID(X) \
+ *         (return ((X >= CALL_RANGE_MIN) && (X <= CALL_RANGE_MAX)) ? 1 : 0)
+ *     
+ *     This would make the code a little more clear since I would
+ *     use a proper switch clause, and it would probably make the
+ *     code more efficient since a switch clause would be compairing
+ *     integer values instead of doing a character by character
+ *     string comparison. However, this approach would require client
+ *     code using Inotispy to do one of the following:
+ *     
+ *       * Use meaningless integer constants in their code.
+ *       * Define their own set of named constants to use.
+ *       * Find an existing Inotispy binding in their language
+ *         that already has these constants defined.
+ *     
+ *     If anyone thinks this is a better approach please say so and
+ *     I'll do the logic swap.
  */
 void
 zmq_dispatch_event (Request *req)

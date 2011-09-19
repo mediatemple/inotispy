@@ -60,7 +60,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_inotispy_OBJECTS = main.$(OBJEXT) zmq.$(OBJEXT) inotify.$(OBJEXT) \
-	log.$(OBJEXT) reply.$(OBJEXT) request.$(OBJEXT)
+	log.$(OBJEXT) reply.$(OBJEXT) request.$(OBJEXT) \
+	config.$(OBJEXT)
 inotispy_OBJECTS = $(am_inotispy_OBJECTS)
 inotispy_LDADD = $(LDADD)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -177,7 +178,9 @@ inotispy_SOURCES = \
     request.h \
     zmq.h \
     inotify.h \
-    log.h
+    log.h \
+    config.c \
+    config.h
 
 all: all-am
 
@@ -260,6 +263,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/inotify.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@

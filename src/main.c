@@ -16,8 +16,10 @@
 
 #include "log.h"
 #include "zmq.h"
+#include "config.h"
 #include "inotify.h"
 
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
@@ -29,6 +31,9 @@ main(void)
     void *zmq_receiver;
 
     zmq_pollitem_t items[2];
+
+    init_config();
+    fprintf(stderr, "Running Inotispy...\n");
 
     init_logger();
     LOG_NOTICE("Initializing daemon");

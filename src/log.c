@@ -15,6 +15,7 @@
  */
 
 #include "log.h"
+#include "config.h"
 
 #include <time.h>
 #include <errno.h>
@@ -29,15 +30,12 @@ FILE *logger;
 int
 init_logger ()
 {
-    /* Default log level */
-    log_level = LOG_LEVEL_TRACE ;
-//    log_level = LOG_LEVEL_NOTICE;
-
-    logger = fopen(LOG_FILE, "a");
+    log_level = CONFIG->log_level;
+    logger    = fopen(CONFIG->log_file, "a");
 
     if (logger == NULL) {
         fprintf(stderr,
-            "Failed to open file '%s': %s\n", LOG_FILE, strerror(errno));
+            "Failed to open file '%s': %s\n", CONFIG->log_file, strerror(errno));
         return 1;
     }
 
@@ -133,7 +131,7 @@ LOG_TRACE (char *fmt, ...)
 }
 
 int
-get_log_level ()
+get_log_level (void)
 {
     return log_level;
 }

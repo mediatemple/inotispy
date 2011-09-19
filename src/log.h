@@ -19,19 +19,19 @@
 
 /* XXX CODE REVIEW
  *
- * Originally I had planned on using log4c for logging, but after spending
- * a couple hours with it I couldn't get it to work properly and it just
- * felt super bloated. Both the config file approach and the API approach
- * in log4c would have ended up needing as much, if not more, than the home
- * rolled solution I have here.
+ *     Originally I had planned on using log4c for logging, but after spending
+ *     a couple hours with it I couldn't get it to work properly and it just
+ *     felt super bloated. Both the config file approach and the API approach
+ *     in log4c would have ended up needing as much, if not more, code than
+ *     the home rolled solution I have here.
  *
- * What I wrote is extremely simple, but that's all I'm looking for. If
- * I missed the point with log4c, or there is another simpler C logger out
- * there please advise.
+ *     What I wrote is extremely simple, but that's all I'm looking for. If
+ *     I missed the point with log4c, or there is another simpler C logger
+ *     out there please advise.
  */
 
 /* XXX config.h */
-#define LOG_FILE "/var/log/inotispy.log.0"
+#define LOG_FILE "/var/log/inotispy.log"
 
 #define LOG_LEVEL_ERROR   1
 #define LOG_LEVEL_WARN    2

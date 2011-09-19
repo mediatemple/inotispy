@@ -132,9 +132,9 @@ int inotify_fd;
  *
  * XXX CODE REVIEW
  *
- * Should these be in this header file, or in inotify.c? Currently
- * they are only used and referenced in inotify.c, so I'm not sure
- * they need to be global.
+ *     Should these be in this header file, or in inotify.c? Currently
+ *     they are only used and referenced in inotify.c, so I'm not sure
+ *     they need to be global.
  */
 GHashTable *inotify_roots;
 GHashTable *inotify_wd_to_watch;

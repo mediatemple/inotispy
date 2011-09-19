@@ -19,10 +19,10 @@
 
 /* XXX CODE REVIEW
  *
- * What is a better way to do error handling? Should a more detailed
- * message bubble up and be passed to the client? Or is documenting
- * errors and error codes good enough for coders to write clients
- * that can handle errors elegantly?
+ *     What is a better way to do error handling? Should a more detailed
+ *     message bubble up and be passed to the client? Or is documenting
+ *     errors and error codes good enough for coders to write clients
+ *     that can handle errors elegantly?
  */
 
 /* Supported error masks. */
