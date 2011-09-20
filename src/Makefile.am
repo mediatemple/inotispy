@@ -16,6 +16,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 CFLAGS= -g -std=c99 --pedantic -Wall -O2 -D_GNU_SOURCE -D_REENTRANT \
+    -I/usr/lib64/glib-2.0/include/ \
     -I/usr/lib/glib-2.0/include \
     -I/usr/include/glib-2.0 
 LDFLAGS= -lglib-2.0 -ljson -lzmq -lpthread
