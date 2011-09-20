@@ -1,0 +1,25 @@
+Welcome
+-------
+
+Inotispy is an efficient file system change notification daemon based
+on inotify. It recursively watches directory trees, queues file system
+events that occur within those trees, and delivers those events to
+client applications via ZeroMQ sockets.
+
+Building and Installation
+-------------------------
+
+See the INSTALL file included with the distribution.
+
+Resources
+---------
+
+For more information on running, configuring, managing and using Inotispy
+please refer to the documentation found at http://www.inotispy.org
+
+Copying
+-------
+
+Free use of this software is granted under the terms of the GNU General
+Public License (GPL). For details see the file `COPYING` included with
+the Inotispy distribution.
