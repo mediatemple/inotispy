@@ -25,7 +25,7 @@ AC_PROG_CC
 # Checks for libraries.
 
 # CPPFLAGS for Glib
-CPPFLAGS="-I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
+CPPFLAGS="-I/usr/lib64/glib-2.0/include/ -I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
 
 # Checks for header files.
 AC_HEADER_STDC
