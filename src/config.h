@@ -23,6 +23,7 @@
 
 #include <glib.h>
 
+#define CONF_GROUP "global"
 #define INOTISPY_CONFIG_FILE "/etc/inotispy.conf"
 
 struct inotispy_config {

@@ -60,7 +60,7 @@ init_config (gboolean silent)
     }
 
     /* port */
-    int_rv = g_key_file_get_integer (kf, "inotispy", "port", &error);
+    int_rv = g_key_file_get_integer (kf, CONF_GROUP, "port", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'port': %s\n",
             error->message);
@@ -71,7 +71,7 @@ init_config (gboolean silent)
     }
 
     /* log_file */
-    str_rv = g_key_file_get_string (kf, "inotispy", "log_file", &error);
+    str_rv = g_key_file_get_string (kf, CONF_GROUP, "log_file", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
             error->message);
@@ -83,7 +83,7 @@ init_config (gboolean silent)
     }
 
     /* log_level */
-    str_rv = g_key_file_get_string (kf, "inotispy", "log_level", &error);
+    str_rv = g_key_file_get_string (kf, CONF_GROUP, "log_level", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'log_level': %s\n",
             error->message);
@@ -114,7 +114,7 @@ init_config (gboolean silent)
 
     /* max_inotify_events */
     int_rv = g_key_file_get_integer (
-        kf, "inotispy", "max_inotify_events", &error);
+        kf, CONF_GROUP, "max_inotify_events", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'max_inotify_events': %s\n",
             error->message);
@@ -133,7 +133,7 @@ init_config (gboolean silent)
         CONFIG->silent = TRUE;
     }
     else {
-        bool_rv = g_key_file_get_boolean (kf, "inotispy", "silent", &error);
+        bool_rv = g_key_file_get_boolean (kf, CONF_GROUP, "silent", &error);
         if (error != NULL) {
             fprintf(stderr, "Failed to read config value for 'silent': %s\n",
                 error->message);
