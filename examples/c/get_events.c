@@ -17,8 +17,6 @@ _parse_json (char *json)
     if(jtok->err != json_tokener_success) {
         jobj = NULL;
     }
-    else {
-    }
 
     json_tokener_free(jtok);
 
