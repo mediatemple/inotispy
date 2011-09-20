@@ -3704,6 +3704,9 @@ fi
 
 # Checks for libraries.
 
+# CPPFLAGS for Glib
+CPPFLAGS="-I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
+
 # Checks for header files.
 
 ac_ext=c
@@ -4107,7 +4110,7 @@ ac_fn_c_check_header_mongrel "$LINENO" "sys/inotify.h" "ac_cv_header_sys_inotify
 if test "x$ac_cv_header_sys_inotify_h" = x""yes; then :
 
 else
-  as_fn_error $? "cannot find header sys/inotify.h" "$LINENO" 5
+  as_fn_error $? "Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software." "$LINENO" 5
 fi
 
 
@@ -4115,7 +4118,7 @@ ac_fn_c_check_header_mongrel "$LINENO" "zmq.h" "ac_cv_header_zmq_h" "$ac_include
 if test "x$ac_cv_header_zmq_h" = x""yes; then :
 
 else
-  as_fn_error $? "cannot find header zmq.h" "$LINENO" 5
+  as_fn_error $? "Cannot find header zmq.h. Please download and install ZeroMQ from http://www.zeromq.org/area:download " "$LINENO" 5
 fi
 
 
@@ -4123,7 +4126,7 @@ ac_fn_c_check_header_mongrel "$LINENO" "json/json.h" "ac_cv_header_json_json_h" 
 if test "x$ac_cv_header_json_json_h" = x""yes; then :
 
 else
-  as_fn_error $? "cannot find header json/json.h" "$LINENO" 5
+  as_fn_error $? "Cannot find header json/json.h. Please download and install json-c from http://www.zeromq.org/area:download" "$LINENO" 5
 fi
 
 
@@ -4131,12 +4134,36 @@ ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac
 if test "x$ac_cv_header_pthread_h" = x""yes; then :
 
 else
-  as_fn_error $? "cannot find header pthread.h" "$LINENO" 5
+  as_fn_error $? "Cannot find header pthread.h. Please make sure pthreads are installed and that your system is capable of running threaded software." "$LINENO" 5
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "glib.h" "ac_cv_header_glib_h" "$ac_includes_default"
+if test "x$ac_cv_header_glib_h" = x""yes; then :
+
+else
+  as_fn_error $? "Cannot find header glib.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html" "$LINENO" 5
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "glib/ghash.h" "ac_cv_header_glib_ghash_h" "$ac_includes_default"
+if test "x$ac_cv_header_glib_ghash_h" = x""yes; then :
+
+else
+  as_fn_error $? "Cannot find header glib/ghash.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html" "$LINENO" 5
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "glib/gqueue.h" "ac_cv_header_glib_gqueue_h" "$ac_includes_default"
+if test "x$ac_cv_header_glib_gqueue_h" = x""yes; then :
+
+else
+  as_fn_error $? "Cannot find header glib/gqueue.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html" "$LINENO" 5
 fi
 
 
 
-for ac_header in glib.h glib/ghash.h glib/gqueue.h stdint.h stdlib.h string.h unistd.h time.h errno.h dirent.h unistd.h sys/stat.h sys/types.h stdarg.h linux/limits.h
+for ac_header in stdint.h stdlib.h string.h unistd.h time.h errno.h dirent.h unistd.h sys/stat.h sys/types.h stdarg.h linux/limits.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

@@ -24,14 +24,20 @@ AC_PROG_CC
 
 # Checks for libraries.
 
+# CPPFLAGS for Glib
+CPPFLAGS="-I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
+
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([cannot find header sys/inotify.h]))
-AC_CHECK_HEADER([zmq.h],,AC_MSG_ERROR([cannot find header zmq.h]))
-AC_CHECK_HEADER([json/json.h],,AC_MSG_ERROR([cannot find header json/json.h]))
-AC_CHECK_HEADER([pthread.h],,AC_MSG_ERROR([cannot find header pthread.h]))
+AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software.]))
+AC_CHECK_HEADER([zmq.h],,AC_MSG_ERROR([Cannot find header zmq.h. Please download and install ZeroMQ from http://www.zeromq.org/area:download ]))
+AC_CHECK_HEADER([json/json.h],,AC_MSG_ERROR([Cannot find header json/json.h. Please download and install json-c from http://www.zeromq.org/area:download]))
+AC_CHECK_HEADER([pthread.h],,AC_MSG_ERROR([Cannot find header pthread.h. Please make sure pthreads are installed and that your system is capable of running threaded software.]))
+AC_CHECK_HEADER([glib.h],,AC_MSG_ERROR([Cannot find header glib.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html]))
+AC_CHECK_HEADER([glib/ghash.h],,AC_MSG_ERROR([Cannot find header glib/ghash.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html]))
+AC_CHECK_HEADER([glib/gqueue.h],,AC_MSG_ERROR([Cannot find header glib/gqueue.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html]))
 
-AC_CHECK_HEADERS(glib.h [glib/ghash.h] [glib/gqueue.h] stdint.h stdlib.h string.h unistd.h time.h errno.h dirent.h unistd.h [sys/stat.h] [sys/types.h] stdarg.h [linux/limits.h])
+AC_CHECK_HEADERS(stdint.h stdlib.h string.h unistd.h time.h errno.h dirent.h unistd.h [sys/stat.h] [sys/types.h] stdarg.h [linux/limits.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
