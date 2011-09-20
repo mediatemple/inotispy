@@ -39,6 +39,20 @@ $sock->send_as(json => {
  });
 
 my $reply = $sock->recv_as('json');
-print "Got reply: ".Dumper($reply); 
+
+unless (defined $reply->{'data'}) {
+    die "Failed to find data for events in reply\n";
+}
+
+if (scalar @{$reply->{'data'}}) {
+    my $i = 1;
+    print "Got events:\n";
+    foreach my $event (@{$reply->{'data'}}) {
+        printf("%s/%s (%d)\n", $event->{'path'}, $event->{'name'},
+            $event->{'mask'});
+    }
+} else {
+    printf "There are no events at this time\n";
+}
 
 __END__
