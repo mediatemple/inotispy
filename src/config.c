@@ -151,7 +151,7 @@ init_config (gboolean silent)
         fprintf(stderr, " - log_level          : %s (%d)\n",
             level_str(CONFIG->log_level), CONFIG->log_level);
         fprintf(stderr, " - max_inotify_events : %d\n", CONFIG->max_inotify_events);
-        fprintf(stderr, " - silent             : %s\n",
+        fprintf(stderr, " - silent mode        : %s\n",
             (CONFIG->silent ? "true" : "false"));
     }
 
