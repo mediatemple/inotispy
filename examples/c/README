@@ -1,0 +1,29 @@
+Building
+--------
+
+Just type the follwing to build each program:
+
+  $ make
+
+And to clean up when you're done:
+
+  $ make clean
+
+Parsing JSON
+------------
+
+Parsing JSON in C isn't terribly fun, but there are a number of JSON parsing
+libraries out there for you to try out. Inotispy uses a library called json-c
+which has a slick, minimal, interfce and if used properly contains no memory
+leaks. If you're writing your client applicatinos in C then you might want to
+take a look at json-c as your parsing library.
+
+Obviously you can dig through the Inotispy source code to see how it's being
+used, but also take a look at the following file for a more focused example
+of how to use it:
+
+  examples/c/get_events.c
+
+You can download json-c from here:
+
+  http://oss.metaparadigm.com/json-c/

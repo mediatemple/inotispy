@@ -27,7 +27,7 @@ my $path = shift ||
 
 my $cxt  = ZeroMQ::Context->new;
 my $sock = $cxt->socket(ZMQ_REQ);
-$sock->connect('tcp://127.0.0.1:5555');
+$sock->connect('tcp://127.0.0.1:5559');
 
 $sock->send_as(json => { 
     call => 'get_events',

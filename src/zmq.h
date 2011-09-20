@@ -25,7 +25,7 @@
 #define __INOTISPY_ZMQ_H_META__
 
 #define ZMQ_ADDR        "tcp://*"
-#define ZMQ_PORT        5975
+#define ZMQ_PORT        5559
 #define ZMQ_THREADS     16
 #define ZMQ_MAX_MSG_LEN 1024
 

@@ -17,17 +17,6 @@
 #include "log.h"
 #include "request.h"
 
-//#ifndef __REQUEST_MUTEX__
-//#define __REQUEST_MUTEX__
-//#include <pthread.h>
-//
-//pthread_mutex_t request_mutex = PTHREAD_MUTEX_INITIALIZER;
-//
-//#define __MLOCK() pthread_mutex_lock(&request_mutex);
-//#define __MUNLOCK() pthread_mutex_unlock(&request_mutex);
-//
-//#endif /*__REQUEST_MUTEX__*/
-
 JOBJ
 _parse_json(char *json)
 {
@@ -137,7 +126,19 @@ request_get_call (Request *req)
 char *
 request_get_path (Request *req)
 {
-    return request_get_key_str(req, "path");
+    int last;
+    char *path;
+
+    path = request_get_key_str(req, "path");
+
+    /* Clean up path by removing the trailing slash, if it exists. */
+    if (strlen(path) > 0) {
+        last = strlen(path) - 1;
+        if (path[last] == '/')
+            path[last] = '\0';
+    }
+
+    return path;
 }
 
 int

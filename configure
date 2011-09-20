@@ -4126,7 +4126,7 @@ ac_fn_c_check_header_mongrel "$LINENO" "json/json.h" "ac_cv_header_json_json_h" 
 if test "x$ac_cv_header_json_json_h" = x""yes; then :
 
 else
-  as_fn_error $? "Cannot find header json/json.h. Please download and install json-c from http://www.zeromq.org/area:download" "$LINENO" 5
+  as_fn_error $? "Cannot find header json/json.h. Please download and install json-c http://oss.metaparadigm.com/json-c/" "$LINENO" 5
 fi
 
 

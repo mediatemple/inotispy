@@ -558,7 +558,7 @@ inotify_unwatch_tree (char *path)
     DIR  *d;
     Root *root;
 
-    /* Clean up path by removing the trailing slash, it exists. */
+    /* Clean up path by removing the trailing slash, if it exists. */
     {
         int last = strlen(path) - 1;
         if (path[last] == '/')

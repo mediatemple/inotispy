@@ -35,7 +35,7 @@ reply_send_message (char *message)
     }
 
     strncpy(zmq_msg_data(&msg), message, strlen(message));
-    rv = zmq_send(zmq_listener, &msg, ZMQ_NOBLOCK);
+    rv = zmq_send(zmq_listener, &msg, 0);
 
     if (rv != 0) {
         LOG_ERROR("Failed to send message: '%s'", message);

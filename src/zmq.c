@@ -48,13 +48,13 @@ zmq_setup (void)
 
     asprintf(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
 
-    zmq_context  = zmq_init (ZMQ_THREADS);
+    zmq_context  = zmq_init(ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
     bind_rv      = zmq_bind(zmq_listener, zmq_uri);
 
     free(zmq_uri);
 
-    if ( bind_rv != 0 ) {
+    if (bind_rv != 0) {
         LOG_ERROR("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
         return NULL;
     }
@@ -86,8 +86,8 @@ zmq_handle_event (void *receiver)
     __MLOCK();
     {
         zmq_msg_t request;
-        zmq_msg_init (&request);
-        rv = zmq_recv (zmq_listener, &request, 0);
+        zmq_msg_init(&request);
+        rv = zmq_recv(zmq_listener, &request, 0);
     
         /* If the call to recv() failed then we need to tell the
          * client to reconnect. This should only happen under
@@ -102,18 +102,18 @@ zmq_handle_event (void *receiver)
             return;
         }
     
-        msg_size = zmq_msg_size (&request);
+        msg_size = zmq_msg_size(&request);
         if ( ! msg_size > 0 ) {
             LOG_TRACE("Got 0 byte message. Skipping...");
 
-            zmq_msg_close (&request);
+            zmq_msg_close(&request);
             __MUNLOCK();
             return;
         }
 
         json = malloc(msg_size + 1);   
-        memcpy(json, zmq_msg_data (&request), msg_size);
-        zmq_msg_close (&request);
+        memcpy(json, zmq_msg_data(&request), msg_size);
+        zmq_msg_close(&request);
         json[msg_size] = '\0';
 
         if (strlen(json) == 0) {

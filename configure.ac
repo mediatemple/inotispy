@@ -31,7 +31,7 @@ CPPFLAGS="-I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
 AC_HEADER_STDC
 AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software.]))
 AC_CHECK_HEADER([zmq.h],,AC_MSG_ERROR([Cannot find header zmq.h. Please download and install ZeroMQ from http://www.zeromq.org/area:download ]))
-AC_CHECK_HEADER([json/json.h],,AC_MSG_ERROR([Cannot find header json/json.h. Please download and install json-c from http://www.zeromq.org/area:download]))
+AC_CHECK_HEADER([json/json.h],,AC_MSG_ERROR([Cannot find header json/json.h. Please download and install json-c http://oss.metaparadigm.com/json-c/]))
 AC_CHECK_HEADER([pthread.h],,AC_MSG_ERROR([Cannot find header pthread.h. Please make sure pthreads are installed and that your system is capable of running threaded software.]))
 AC_CHECK_HEADER([glib.h],,AC_MSG_ERROR([Cannot find header glib.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html]))
 AC_CHECK_HEADER([glib/ghash.h],,AC_MSG_ERROR([Cannot find header glib/ghash.h. Please download and install GLib-2.0 from here http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html]))
