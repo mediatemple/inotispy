@@ -47,4 +47,4 @@ AC_TYPE_UINT32_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([strerror strstr vasprintf strcpy asprintf read])
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT(Makefile src/Makefile bin/Makefile)
