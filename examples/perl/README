@@ -1,0 +1,19 @@
+Prerequisites
+-------------
+
+In order for you to run these scripts you'll need to install a few libraries
+from the CPAN (or yum or apt if they exist in those repositories.) For a
+CPAN install do the following:
+
+  $ cpan ZeroMQ JSON
+
+To find packages pre-built for your OS try doing:
+
+  # Debian
+  $ aptitude search libzeromq-perl
+  $ aptitude search libjson-perl
+
+  # RedHat, CentOS, CloudLinux
+  $ yum search zeromq | grep perl
+  $ yum search json | grep perl
+
