@@ -22,7 +22,7 @@ CFLAGS= -g -std=c99 --pedantic -Wall -O2 -D_GNU_SOURCE -D_REENTRANT \
 LDFLAGS= -lglib-2.0 -ljson -lzmq -lpthread
 DEFAULT_INCLUDES=
 
-bin_PROGRAMS = inotispy
+sbin_PROGRAMS = inotispy
 inotispy_SOURCES = \
     main.c \
     zmq.c \
