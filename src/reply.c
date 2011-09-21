@@ -81,7 +81,7 @@ error_to_string (uint32_t err_code)
     else if (err_code & ERROR_INOTIFY_UNWATCH_FAILED)
         return "Failed to unwatch inotify watch";
     else if (err_code & ERROR_INVALID_EVENT_COUNT)
-        return "Invald event cound value";
+        return "Invald event count value";
     else if (err_code & ERROR_ZERO_BYTE_MESSAGE)
         return "Zero byte message received";
     else if (err_code & ERROR_INOTIFY_ROOT_NOT_WATCHED)

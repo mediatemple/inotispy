@@ -203,6 +203,11 @@ list_events(char *path, int count)
     char *reply;
     json_object *jobj, *events;
 
+    if (count < 0) {
+        printf("Inavlid value for count argument\n");
+        exit(1);
+    }
+
     reply = get_events_raw(path, count);
     jobj = parse_json(reply);
     free(reply);
