@@ -15,3 +15,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src bin
+
+etcdir = /etc
+etc_DATA = etc/inotispy.conf
