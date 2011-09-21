@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *error_to_string (uint32_t err_code);
+
 int
 reply_send_message (char *message)
 {
@@ -46,10 +48,12 @@ reply_send_message (char *message)
 }
 
 int
-reply_send_error (int err_code)
+reply_send_error (uint32_t err_code)
 {
     char *err;
-    asprintf(&err, "{\"error\":%d}", err_code);
+    asprintf(&err,
+        "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
+            err_code, error_to_string(err_code));
 
     int rv = reply_send_message(err);
 
@@ -61,4 +65,29 @@ int
 reply_send_success (void)
 {
     return reply_send_message("{\"success\":1}");
+}
+
+char *
+error_to_string (uint32_t err_code)
+{
+    if (err_code & ERROR_JSON_INVALID)
+        return "Invalid JSON";
+    else if (err_code & ERROR_JSON_PARSE)
+        return "Failed to parse JSON";
+    else if (err_code & ERROR_JSON_KEY_NOT_FOUND)
+        return "Key not found in JSON";
+    else if (err_code & ERROR_INOTIFY_WATCH_FAILED)
+        return "Failed to set up inotify watch";
+    else if (err_code & ERROR_INOTIFY_UNWATCH_FAILED)
+        return "Failed to unwatch inotify watch";
+    else if (err_code & ERROR_INVALID_EVENT_COUNT)
+        return "Invald event cound value";
+    else if (err_code & ERROR_ZERO_BYTE_MESSAGE)
+        return "Zero byte message received";
+    else if (err_code & ERROR_INOTIFY_ROOT_NOT_WATCHED)
+        return "This root is currently not watched under inotify";
+    else if (err_code & ERROR_ZEROMQ_RECONNECT)
+        return "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
+    else
+        return "Unknown error";
 }

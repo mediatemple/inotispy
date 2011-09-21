@@ -46,7 +46,7 @@
 int reply_send_message(char *message);
 
 /* Wrapper functions for error and success. */
-int reply_send_error (int err_code);
+int reply_send_error (uint32_t err_code);
 int reply_send_success (void);
 
 #endif /*_INOTISPY_REPLY_H_*/
