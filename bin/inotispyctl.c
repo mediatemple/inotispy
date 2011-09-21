@@ -299,7 +299,12 @@ main (int argc, char **argv)
     int connect_rv, dir_idx, cmd_idx, port;
     char *command, *zmq_uri;
 
-    if (argc < 2)
+    if (argc < 2) {
+        printf("No command speficied. Run `inotispyctl --help` for more info.\n");
+        exit(1);
+    }
+
+    if ( strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0 )
         print_help();
 
     /* Check to see if the user passed in a different port. */
@@ -388,9 +393,10 @@ void
 print_help (void)
 {
     printf("\n");
-    printf("Usage: inotispyctl [-p] <command> [command args]\n");
+    printf("Usage: inotispyctl [option] <command> [command args]\n");
     printf("\n");
     printf("Options:\n");
+    printf(" -h, --help                  Print this help menu\n");
     printf(" -p, --port <num>            Use a port other than the default 5559\n");
     printf("\n");
     printf("Commands:\n");
