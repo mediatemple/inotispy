@@ -403,10 +403,12 @@ print_help (void)
     printf(" - flush_queue <dir>         Flush the queue for a specific root.\n");
     printf(" - get_events <dir> <count>  Get events for a specific root.\n");
     printf("                             A count of 0 (zero) will retrieve *all*\n");
-    printf("                             the events currently in that root's queue\n");
+    printf("                             the events currently in that root's queue.\n");
     printf("\n");
+/*
     printf("For more information please visit http://www.inotispy.org\n");
     printf("\n");
+*/
 
     exit(1);
 }
