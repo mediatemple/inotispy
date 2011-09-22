@@ -23,7 +23,7 @@ INSTALLING
 This is a typical autoconf install/uninstall process. From the 
 top folder of this package:
 
-$ ./configure
+$ ./configure --prefix=/usr
 $ make
 $ make install
 
