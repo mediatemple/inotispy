@@ -15,7 +15,7 @@
 .SH NAME
 inotispy \- efficient inotify daemon
 .SH SYNOPSIS
-.B inotispy [--silent]
+.B inotispy [\fIoptions\fR]
 .SH DESCRIPTION
 Inotispy is an efficient file system change notification daemon based on the
 .BR inotify
@@ -24,6 +24,26 @@ events that occur within those trees, and delivers those events to client
 applications via
 .BR ZeroMQ
 sockets.
+.PP
+Inotispy is written in the C programmaing language and was tested against
+.BR valgrind (1)
+for memory leaks.
+.SH OPTIONS
+Inotispy \fIdoes not\fR have very many command line options. If you are interested
+in further changing the behavior of Inotispy please see the \fBCONFIGURATION FILE\fR
+section below.
+.PP
+\fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Print the help menu.
+.RE
+\fB\-s\fR, \fB\-\-silent\fR
+.RS 4
+Run silently, and only messages will be appended to the log file. Inotispy
+prints \fIvery little\fR to stderr and only does so at start up. So this feature
+isn't very useful unless it's important that it runs with nothing printed
+to the terminal.
+.RE
 .SH LANGUAGE BINDINGS
 Inotispy provides an interface sutable for calling from programs in any language.
 Included with the Inotispy distribution are code samples with examples
@@ -32,11 +52,15 @@ in several different languages. However, because this daemon is built on top of
 the best alternative resource would be the
 .BR zmq (7)
 documentation itself.
+.PP
+At the time of this writing Inotispy does not have any official bindings, but because
+there are ZeroMQ bindings is many popular languages it shouldn't be difficult to
+roll a binding of your own.
 .SH RESOURCES
 Main web site:
 .BR http://www.inotispy.org
-
-Report bugs directly to anyone in the AUTHORS section below.
+.PP
+Report bugs directly to anyone in the \fBAUTHORS\fR section below.
 .SH SEE ALSO
 .BR inotispyctl (8),
 .BR zmq (7),
