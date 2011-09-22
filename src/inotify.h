@@ -57,7 +57,7 @@ typedef struct inotify_watch {
 } Watch;
 
 /* Event queue node. This is identical to the inotify_event
- * struct (SEE: man intoify) plus one more field for the
+ * struct (SEE: man inotify) plus one more field for the
  * path of the event. The inotify_event struct is:
  *
  *   struct inotify_event {

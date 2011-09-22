@@ -184,7 +184,6 @@ print_events (json_object *events)
     len = json_object_array_length(events);
 
     if (len > 0) {
-        printf("EVENT  MASK\n");
         for (i=0; i < len; i++) {
             event = json_object_array_get_idx(events, i);
             fmt = fmt_event(event);
