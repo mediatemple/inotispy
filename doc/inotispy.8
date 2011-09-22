@@ -298,6 +298,38 @@ in several languages, including \fBC\fR and \fBPerl\fR.
 .P
 If you're writing your client code in \fBC\fR a full blown example is
 \fBbin/inotispyctl.c\fR. 
+.SH CONFIGURATION FILE
+Inotispy ships with a small configuration file that you can use to modify a few
+of it's characteristics. The config file that comes with the distribution
+(\fBetc/inotispy.conf\fR) is thoroughly documented and it's full contents will
+not be repeated here. However, here is the high level rundown of the parameters
+you can tweak:
+.P
+.RS 4
+\fBsilent\fR             - toggle printing to stderr
+.br
+\fBport\fR               - set your own port
+.br
+\fBlog_file\fR           - path to log file
+.br
+\fBlog_level\fR          - set the verbosity of logging
+.br
+\fBmax_inotify_events\fR - cap the number of per/root inotify events to be queued
+.RE
+.SH LOGGING
+Inotispy outputs runtime information to a log file. The default location is
+\fB/var/log/inotispy.log\fR. Using the configuration file (described above) you
+can set the level of verbosity using the \fIlog_level\fR config parameter. By 
+default the level is set to \fBnotice\fR, which should make the output fairly
+limited.
+.P
+If you want, or need, to see more of what's going on under the hood then change
+that level to \fBdebug\fR or \fBtrace\fR. Just be warned that these two levels
+can produce quite a bit of output, and in a production environment where Inotispy
+is being used heavily it \fBis not\fR recommended that you have your log level
+set to this amount of verbosity.
+.P
+See \fBetc/inotispy.conf\fR for more details.
 .SH LANGUAGE BINDINGS
 Inotispy provides an interface sutable for calling from programs in any language.
 Included with the Inotispy distribution are code samples with examples
