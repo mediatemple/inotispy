@@ -404,8 +404,8 @@ print_help (void)
     printf(" -p, --port <num>            Use a port other than the default 5559\n");
     printf("\n");
     printf("Commands:\n");
-    printf(" - list_roots                List each currntly watched root.\n");
-    printf(" - list_queues               List each currntly watched root\n");
+    printf(" - list_roots                List each currently watched root.\n");
+    printf(" - list_queues               List each currently watched root\n");
     printf("                             and it's current queue size.\n");
     printf(" - watch <dir>               Watch a new root at directory <dir>.\n");
     printf(" - unwatch <dir>             Unwatch a root with directory <dir>.\n");

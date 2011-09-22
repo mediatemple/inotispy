@@ -1,0 +1,60 @@
+.\" Copyright (c) 2011-*, James Conerly <james@jamesconerly.com>
+.\"
+.\" Permission to use, copy, modify, and/or distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.TH "INOTISPYCTL" "8" "21 September 2011" "Inotispy 1\&.0\&.1" "Inotispyctl"
+.SH NAME
+inotispyctl \- command line tool for poking the inotispy daemon
+.SH SYNOPSIS
+.B inotispyctl [option] <command> [command args]
+.SH DESCRIPTION
+This is a simple command line tool for using the \fBinotispy(8)\fR daemon.
+It can be used as an administrative tool, or just for getting started with
+Inotispy.
+.SH OPTIONS
+\fB\-h\fR, \fB\-\-help\fR
+.RS 4
+Print the help menu
+.RE
+\fB\-p\fR, \fB\-\-port\fR
+.RS 4
+Use a port other than the default 5559
+.RE
+.SH COMMANDS
+.SS list_roots
+List each currntly watched root.
+.SS list_queues
+List each currntly watched root and it's current queue size.
+.SS watch\fR \fIdir\fR
+Watch a new root at directory \fIdir\fR.
+.SS unwatch\fR \fIdir\fR
+Unwatch a root with directory \fIdir\fR.
+.SS queue_size\fR \fIdir\fR
+Get the queue size for a specific root.
+.SS flush_queue\fR \fIdir\fR
+Flush the queue for a specific root.
+.SS get_events\fR \fIdir\fR \fIcount\fR
+Get events for a specific root. A count of \fB0\fR (zero) will retrieve
+\fBall\fR the events currently in that root's queue. 
+.SH BUGS
+See the man page \fBinotispy(8)\fR for a list of known Inotispy bugs.
+.SH RESOURCES
+Main web site:
+.BR http://www.inotispy.org
+.PP
+Report bugs directly to anyone in the \fBAUTHORS\fR section below.
+.SH SEE ALSO
+.BR inotispy (8),
+.BR zmq (7),
+.BR inotify (7)
+.SH AUTHORS
+James Conerly <james@jamesconerly.com>
