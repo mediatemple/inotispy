@@ -15,7 +15,7 @@
 .SH NAME
 inotispy \- efficient inotify daemon
 .SH SYNOPSIS
-.B inotispy [\fIoptions\fR]
+.B inotispy [options]
 .SH DESCRIPTION
 Inotispy is an efficient file system change notification daemon based on the
 .BR inotify
@@ -44,6 +44,259 @@ prints \fIvery little\fR to stderr and only does so at start up. So this feature
 isn't very useful unless it's important that it runs with nothing printed
 to the terminal.
 .RE
+.SH INOTISPY OVERVIEW
+Communication with Inotispy is done through \fBZeroMQ\fR sockets and the protocol
+is \fBJSON\fR. Each JSON request must contain a \fIcall\fR field and then a set
+of required and optional arguments depending on the call.
+.SS Calls
+Calls to Inotispy are incredibly simple. An example call in JSON would look like:
+.P
+.in +4n
+.nf
+{
+    "call" : "watch",
+    "path" : "/foo/bar"
+}
+.fi
+.in
+.P
+See the \fBINOTISPY API\fR section below for the full list of calls and their arguments.
+.SS Responses
+Responses from Inotispy are also JSON and they come in 3 flavors: \fBsuccess\fR,
+\fBerror\fR, and \fBdata\fR.
+.P
+\fIsuccess\fR
+.P
+The \fBsuccess\fR response is actually pretty useless. This is the response you get
+when you tell Inotispy to \fIwatch\fR or \fIunwatch\fR a directory tree and it
+successfully kicks off the routine that recursively watches (or unwatches) your
+tree. As a client, what you're more interested in is an \fBerror\fR response.
+It looks like:
+.P
+.RS 4
+{ "success" : 1 }
+.RE
+.P
+\fIerror\fR
+.P
+The \fBerror\fR response tells you that something went wrong with your request,
+naturally, by returning you an \fBerror code\fR and an \fBerror message\fR. Since
+any of the calls can generate an error a client should \fIalways\fR first check
+the response to see if it contains an \fBerror\fR field, and then react accordingly.
+It looks like:
+.P
+.in +4n
+.nf
+{
+    "error" : {
+        "code" : 124,
+        "message" : "Foo failed because of bar"
+    }
+}
+.fi
+.in
+.P
+\fIdata\fR
+.P
+The \fBdata\fR response is what you get when you request information from Inotispy,
+such as a call to \fBget_roots\fR or \fBget_events\fR. This will be a hash with one
+key, \fIdata\fR, whose value is an array containing the data you requested\fB**\fR.
+In the case of \fBget_roots\fR it will be an array of pathnames (strings). In the
+case of \fBget_events\fR it will be an array of hashes where each hash contains the
+data of an inotify event. (See \fBINOTISPY_API\fR below for more information). It
+looks like:
+.P
+.in +4n
+.nf
+{
+    "data" : [
+        "/foo/bar",
+        "/baz/bing/bong"
+    ]
+}
+.fi
+.in
+.P
+\fB**\fR The one exception to this is a call to \fBget_queue_size\fR where the
+value of the data field is an integer, not an array, which will look like:
+.P
+.in +4n
+.nf
+{ "data" : 42 }
+.fi
+.in
+.P
+.SH INOTISPY API
+.P
+Here be thy list of supported calls.
+.P
+.SS watch
+Watch a new directory tree.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR       - Absolute path of the new directory tree you want to watch.
+.P
+\fIOptional Arguments\fR
+.br
+\fBmask\fR       - Inotify mask defining the events\fB*\fR you're interested in.\fB**\fR
+.br
+\fBmax_events\fR - Max number of inotify events to queue for this root. (default=65536)
+.P
+\fIReturn Value\fR
+.br
+\fBsuccess\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.RS 4
+{ "call" : "watch", "path" : "/foo/bar", "mask": 1024, "max_events" : 1000 }
+.RE
+.P
+\fB*\fR If you don't supply your own mask Inotify provides a default mask for you.
+The events in the default mask are:
+.P
+.in +4n
+\fB
+.nf
+IN_ATTRIB
+IN_MOVED_FROM
+IN_MOVED_TO
+IN_CREATE
+IN_CLOSE_WRITE
+IN_DELETE
+IN_UNMOUNT
+IN_DONT_FOLLOW
+.fi
+\fR
+.in
+.P
+\fB**\fR See \fBinotify(7)\fR for more information on inotify events. A simple
+(non-working) example in \fBC\fR for using a custom mask would look something like:
+.P
+.in +4n
+.nf
+#include <zmq.h>
+#include <stdio.h>
+#include <sys/inotify.h>
+
+int
+main (void) {
+    uint32_t mask;
+    char *json;
+    char *path = "/foo/bar";
+
+    /* Let's just watch for create and delete events */
+    mask = IN_CREATE | IN_DELETE;
+
+    asprintf(&json,
+        "{\\"call\\":\\"watch\\",\\"path\\":%s,\\"mask\\":%d}",
+        path, mask);
+
+    /* Make 0MQ message from the 'json' variable here */
+
+    zmq_send(socket, &msg, 0);
+}
+.fi
+.in
+.SS unwatch
+Unwatch a currently watched directory tree.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR - Absolute path of the root you want to unwatch.
+.P
+\fIReturn Value\fR
+.br
+\fBsuccess\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.RS 4
+{ "call" : "unwatch", "path" : "/foo/bar" }
+.RE
+.P
+.SS get_roots
+Get the list of currently watched roots (directory trees).
+.P
+\fIThis function takes NO arguments\fR
+.P
+\fIReturn Value\fR
+.br
+\fBdata\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.RS 4
+{ "call" : "get_roots" }
+.RE
+.P
+.SS get_queue_size
+Get the number of events in a given root's queue.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR - Absolute path of the root you wish to query.
+.P
+\fIReturn Value\fR
+.br
+\fBdata\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.RS 4
+{ "call" : "get_queue_size", "path" : "/foo/bar" }
+.RE
+.P
+.SS get_events
+Retrieve inotify events from a given root's queue.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR  - Absolute path of the root you wish to retrieve events from.
+.P
+\fIOptional Arguments\fR
+.br
+\fBcount\fR - Number of events you want to retrieve.\fB*\fR
+.P
+\fIReturn Value\fR
+.br
+\fBdata\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.RS 4
+{ "call" : "get_events", "path" : "/foo/bar", "count" : 10 }
+.RE
+.P
+\fB*\fR Using a value of 0 (zero) will retrieve \fIall\fR events from
+that root's queue.
+.P
+.SH ERRORS
+When Inotispy returns an error it provides a human understandable error message
+along with the error code. However, for reference (and people writing bindings)
+here are the defined error codes (from \fBsrc/reply.h\fR):
+.P
+.in +4n
+.nf
+#define \fBERROR_JSON_INVALID\fR             0x0001 
+#define \fBERROR_JSON_PARSE\fR               0x0002
+#define \fBERROR_JSON_KEY_NOT_FOUND\fR       0x0004
+#define \fBERROR_INOTIFY_WATCH_FAILED\fR     0x0008
+#define \fBERROR_INOTIFY_UNWATCH_FAILED\fR   0x0010
+#define \fBERROR_INVALID_EVENT_COUNT\fR      0x0020
+#define \fBERROR_ZERO_BYTE_MESSAGE\fR        0x0040
+#define \fBERROR_INOTIFY_ROOT_NOT_WATCHED\fR 0x0080
+#define \fBERROR_ZEROMQ_RECONNECT\fR         0x0100
+.fi
+.in
+.SH EXAMPLES
+For examples on writing a client to talk to Inotispy please take a look at the
+\fBexamples/\fR directory that ships with the distribution. There are examples
+in several languages, including \fBC\fR and \fBPerl\fR.
+.P
+If you're writing your client code in \fBC\fR a full blown example is
+\fBbin/inotispyctl.c\fR. 
 .SH LANGUAGE BINDINGS
 Inotispy provides an interface sutable for calling from programs in any language.
 Included with the Inotispy distribution are code samples with examples
@@ -53,9 +306,28 @@ the best alternative resource would be the
 .BR zmq (7)
 documentation itself.
 .PP
-At the time of this writing Inotispy does not have any official bindings, but because
-there are ZeroMQ bindings is many popular languages it shouldn't be difficult to
-roll a binding of your own.
+At the time of this writing Inotispy does not have any official bindings, however
+because there are \fBZeroMQ\fR bindings in many popular languages it shouldn't be
+difficult to roll a binding of your own.
+.SH BUGS
+Inotispy \fBdoes not\fR work on \fBXFS\fR. This is because XFS does not support
+\fBdirent::d_type\fR. See link:
+.P
+.RS 4
+.I http://nerdfortress.com/2008/09/19/linux-xfs-does-not-support-direntd_type/
+.RE
+.P
+Eventually Inotispy should (and will) include a hook to determine the file
+system it's it's being requested to watch and use
+.BR stat (2)
+instead of \fBdirent::d_type\fR to differentiate directories from regular files.
+This does, however, have serious performance implications when watching large
+directory trees as it adds a call to \fBstat()\fR for every single file found
+while performing a recursive watch.
+.P
+So while we can (and will) make Inotispy work on XFS the reality is that it wont
+perform well on large trees and the recommendation will be to not run Inotispy
+on XFS.
 .SH RESOURCES
 Main web site:
 .BR http://www.inotispy.org
