@@ -389,6 +389,9 @@ EVENT_get_roots (void)
     char **roots;
     JOBJ jobj, jarr;
 
+    if (inotify_num_watched_roots < 1)
+        reply_send_message("{\"data\":[]}");
+
     roots = inotify_get_roots();
 
     jobj = json_object_new_object();

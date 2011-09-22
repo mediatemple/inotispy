@@ -82,6 +82,9 @@ typedef struct inotify_queue_node {
  */
 int inotify_fd;
 
+/* Running tally of watched roots. */
+int inotify_num_watched_roots;
+
 /* Global hashs for mapping the inotify related meta data.
  * 
  * - inotify_roots

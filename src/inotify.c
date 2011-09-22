@@ -83,6 +83,8 @@ void _do_unwatch_tree_rec (char *path);
 int
 inotify_setup (void)
 {
+    inotify_num_watched_roots = 0;
+
     inotify_fd = inotify_init();
 
     if (inotify_fd < 0) {
@@ -678,6 +680,7 @@ inotify_watch_tree (char *path, int mask, int max_events)
     {
         new_root = make_root(path, mask, max_events);
         g_hash_table_replace(inotify_roots, g_strdup(path), new_root);
+        ++inotify_num_watched_roots;
     }
     __MUNLOCK();
 
@@ -739,6 +742,7 @@ _do_unwatch_tree (void *thread_data)
     __MLOCK();
     { 
         g_hash_table_remove(inotify_roots, data->path);
+        --inotify_num_watched_roots;
     }
     __MUNLOCK();
 
