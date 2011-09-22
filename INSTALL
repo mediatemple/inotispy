@@ -12,7 +12,7 @@ before compiling and running it.
 
  * json-c   - http://oss.metaparadigm.com/json-c/
 
- * Glib02.0 - http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+ * Glib-2.0 - http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
 
 Some of these may already be packaged up in your distro's package
 repository. So search yum or apt to see what's already there.
