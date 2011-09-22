@@ -1,13 +1,34 @@
+PREREQUISITES
+-------------
+
+Inotispy has a few dependencies that you must check for/install
+before compiling and running it.
+
+ * inotify  - Your system must be equipped with inotify.
+
+ * pthreads - Your system must support pthreads.
+
+ * ZeroMQ   - http://www.zeromq.org/area:download
+
+ * json-c   - http://oss.metaparadigm.com/json-c/
+
+ * Glib02.0 - http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+
+Some of these may already be packaged up in your distro's package
+repository. So search yum or apt to see what's already there.
+
 INSTALLING
-Run:
+----------
+
+This is a typical autoconf install/uninstall process. From the 
+top folder of this package:
 
 $ ./configure
 $ make
 $ make install
 
 UNINSTALLING
-Run:
+------------
 
 $ make uninstall
 
-From the top folder of this package.
