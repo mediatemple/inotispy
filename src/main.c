@@ -101,7 +101,7 @@ print_help (void)
 {
     printf("Usage: inotispy [--silent]\n");
     printf("\n");
-    printf("  -s, --slient  Turn off printing to stderr.\n");
+    printf("  -s, --silent  Turn off printing to stderr.\n");
     printf("\n");
     printf("Inotispy is an efficient file system change notification daemon based\n");
     printf("on inotify. It recursively watches directory trees, queues file system\n");
