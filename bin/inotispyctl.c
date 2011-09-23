@@ -203,7 +203,10 @@ list_events(char *path, int count)
     json_object *jobj, *events;
 
     if (count < 0) {
-        printf("ERROR: Invalid value for 'count' while calling get_events\n");
+        printf("ERROR: Invalid value for 'count' while calling get_events.\n");
+        printf("       This should be a number >= 0, where 0 means you want\n");
+        printf("       to retrieve *all* the events in the queue.\n");
+        printf("       Run `inotispyctl --help` or `man inotispyctl` for more info.\n");
         exit(1);
     }
 
