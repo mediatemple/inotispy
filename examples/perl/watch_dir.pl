@@ -20,8 +20,7 @@ use warnings;
 
 use JSON;
 use Data::Dumper;
-use ZeroMQ;
-use ZeroMQ::Constants qw/:socket/;
+use ZeroMQ qw(ZMQ_REQ);
 
 my $path = shift ||
     die "Usage: $! <PATH>\n";
