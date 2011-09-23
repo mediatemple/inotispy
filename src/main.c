@@ -59,7 +59,11 @@ main (int argc, char **argv)
     assert(inotify_fd > 0);
 
     zmq_receiver = zmq_setup();
-    assert(zmq_receiver != NULL);
+    if (zmq_receiver == NULL) {
+        fprintf(stderr,
+            "Failed to start Inotispy. Please see the log file for details\n");
+        return 1;
+    }
 
     items[0].socket = NULL;
     items[0].fd     = inotify_fd;

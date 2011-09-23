@@ -1,7 +1,7 @@
 Building
 --------
 
-Just type the follwing to build each program:
+Just type the following to build each program:
 
   $ make
 
@@ -14,8 +14,8 @@ Parsing JSON
 
 Parsing JSON in C isn't terribly fun, but there are a number of JSON parsing
 libraries out there for you to try out. Inotispy uses a library called json-c
-which has a slick, minimal, interfce and if used properly contains no memory
-leaks. If you're writing your client applicatinos in C then you might want to
+which has a slick, minimal, interface and if used properly contains no memory
+leaks. If you're writing your client applications in C then you might want to
 take a look at json-c as your parsing library.
 
 Obviously you can dig through the Inotispy source code to see how it's being
