@@ -203,7 +203,7 @@ list_events(char *path, int count)
     json_object *jobj, *events;
 
     if (count < 0) {
-        printf("Inavlid value for count argument\n");
+        printf("ERROR: Invalid value for 'count' while calling get_events\n");
         exit(1);
     }
 
