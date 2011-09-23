@@ -44,7 +44,7 @@ unless (defined $reply->{'data'}) {
     die "Failed to find data for events in reply\n";
 }
 
-if (scalar @{$reply->{'data'}}) {
+if (@{$reply->{'data'}}) {
     my $i = 1;
     print "Got events:\n";
     foreach my $event (@{$reply->{'data'}}) {
@@ -52,7 +52,7 @@ if (scalar @{$reply->{'data'}}) {
             $event->{'mask'});
     }
 } else {
-    printf "There are no events at this time\n";
+    print "There are no events at this time\n";
 }
 
 __END__
