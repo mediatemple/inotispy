@@ -30,9 +30,9 @@ Inotispy is written in the C programmaing language and was tested against
 .BR valgrind (1)
 for memory leaks.
 .SH OPTIONS
-Inotispy \fIdoes not\fR have very many command line options. If you are interested
-in further changing the behavior of Inotispy please see the \fBCONFIGURATION FILE\fR
-section below.
+Inotispy doesm't have very many command line options. If you are interested
+in further changing the behavior of Inotispy please see the \fBCONFIGURATION
+FILE\fR section below.
 .PP
 \fB\-h\fR, \fB\-\-help\fR
 .RS 4
@@ -41,11 +41,35 @@ Print the help menu.
 \fB\-s\fR, \fB\-\-silent\fR
 .RS 4
 Run silently, and only messages will be appended to the log file. Inotispy
-prints \fIvery little\fR to stderr and only does so at start up. So this feature
-isn't very useful unless it's important that it runs with nothing printed
-to the terminal.
+prints \fIvery little\fR to stderr and only does so at start up. So this
+feature isn't very useful unless it's important that it runs with nothing
+printed to the terminal.
 .RE
 .SH INOTISPY OVERVIEW
+The \fBInotispy\fR daemon provides a service oriented interface for watching
+directory trees on your file system for events. These are events like file
+creation, deletion, move, permission changes, etc. Its interface and control
+flow are designed to be as simple as possible. Essentially all a client does
+is:
+.P
+.in +4n
+.nf
+\fBwatch\fR--->\fBconsume\fR-.->\fBunwatch\fR
+      ^          |
+      |__________|
+.fi
+.in
+.P
+Inotispy's main goal is to make it so that you, the coder, the one with
+the file system monitoring project, can hook into inotify without having
+to write your own code to recursively watch directories, manage mappings
+between paths and watch descriptors, and handle event queuing. 
+.P
+Also, since Inotispy is a service it means that it is completely decoupled
+from your application. This means that you can bring your application down
+for maintenance or a code release and you won't lose the events from the
+directory trees your application was watching.
+.P
 Communication with Inotispy is done through \fBZeroMQ\fR sockets and the protocol
 is \fBJSON\fR. Each JSON request must contain a \fIcall\fR field and then a set
 of required and optional arguments depending on the call.
