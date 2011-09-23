@@ -56,8 +56,11 @@ init_config (gboolean silent)
     if (!g_key_file_load_from_file (
         kf, INOTISPY_CONFIG_FILE, G_KEY_FILE_NONE, &error))
     {
-        fprintf(stderr, "WARNING: Failed to load config file '%s': %s'\n",
-            INOTISPY_CONFIG_FILE, error->message);
+        fprintf(stderr,
+            "Failed to load config file %s: %s.\n%s",
+            INOTISPY_CONFIG_FILE, error->message,
+            " -> Using default config values.\n"
+        );
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
