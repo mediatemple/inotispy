@@ -862,7 +862,7 @@ _do_watch_tree (void *thread_data)
     data = thread_data;
 
     data->root->busy = 1;
-        _do_watch_tree_rec(data->path, data->root); 
+    _do_watch_tree_rec(data->path, data->root); 
     data->root->busy = 0;
 
     free(data->path);
