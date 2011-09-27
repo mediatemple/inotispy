@@ -35,6 +35,7 @@
 #define ERROR_ZERO_BYTE_MESSAGE        0x0040
 #define ERROR_INOTIFY_ROOT_NOT_WATCHED 0x0080
 #define ERROR_ZEROMQ_RECONNECT         0x0100
+#define ERROR_NOT_ABSOLUTE_PATH        0x0200
 
 /* Actually send a 0MQ reply to the client.
  *

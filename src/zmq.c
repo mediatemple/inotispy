@@ -190,6 +190,12 @@ EVENT_watch (Request *req)
         return;
     }
 
+    if ( path[0] != '/' ) {
+        LOG_WARN("Path '%s' is invalid. It must be an absolute path");
+        reply_send_error(ERROR_NOT_ABSOLUTE_PATH);
+        return;
+    }
+
     LOG_DEBUG("Watching new root at path '%s'", path);
 
     /* Check for user defined configuration overrides. */
@@ -389,8 +395,10 @@ EVENT_get_roots (void)
     char **roots;
     JOBJ jobj, jarr;
 
-    if (inotify_num_watched_roots < 1)
+    if (inotify_num_watched_roots < 1) {
         reply_send_message("{\"data\":[]}");
+        return;
+    }
 
     roots = inotify_get_roots();
 

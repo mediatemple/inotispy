@@ -32,7 +32,8 @@ reply_send_message (char *message)
 
     rv = zmq_msg_init_size(&msg, strlen(message));
     if (rv != 0) {
-        LOG_ERROR("Failed to initialize message: '%s'", message);
+        LOG_ERROR("Failed to initialize message '%s': %s (%d)",
+            message, zmq_strerror(errno), errno);
         return 1;
     }
 
@@ -40,7 +41,8 @@ reply_send_message (char *message)
     rv = zmq_send(zmq_listener, &msg, 0);
 
     if (rv != 0) {
-        LOG_ERROR("Failed to send message: '%s'", message);
+        LOG_ERROR("Failed to send message '%s': %s (%d)",
+            message, zmq_strerror(errno), errno);
         return 1;
     }
 
@@ -88,6 +90,8 @@ error_to_string (uint32_t err_code)
         return "This root is currently not watched under inotify";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)
         return "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
+    else if (err_code & ERROR_NOT_ABSOLUTE_PATH)
+        return "Path must be absolute";
     else
         return "Unknown error";
 }
