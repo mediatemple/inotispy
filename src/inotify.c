@@ -173,7 +173,9 @@ inotify_handle_event (int fd)
              *      for directories it doesn't know it's watching.
              */
             if (watch == NULL) {
-                LOG_ERROR("Failed to look up watcher for wd %d", event->wd);
+                LOG_ERROR(
+                    "Failed to look up watcher for wd %d in inotify_handle_event",
+                    event->wd);
                 i += INOTIFY_EVENT_SIZE + event->len;
                 continue;
             }
@@ -764,8 +766,6 @@ _do_unwatch_tree_rec (char *path)
     Watch *delete;
     struct dirent *dir;
 
-//sleep(2);
-
     __MLOCK();
     {
         delete = g_hash_table_lookup(
@@ -775,7 +775,9 @@ _do_unwatch_tree_rec (char *path)
     __MUNLOCK();
 
     if (delete == NULL) {
-        LOG_WARN("Failed to look up watcher for path '%s'", path);
+        LOG_WARN(
+            "Failed to look up watcher for path '%s' during recursive unwatch",
+            path);
         return;
     }    
 
@@ -800,7 +802,7 @@ _do_unwatch_tree_rec (char *path)
 
     d = opendir(path);
     if( d == NULL ) {
-        LOG_ERROR("Failed to open dir: %s", strerror(errno));
+        LOG_ERROR("Failed to open dir '%s': %s", path, strerror(errno));
         closedir(d);
         return;
     }
