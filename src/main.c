@@ -30,7 +30,7 @@ void print_help (void);
 int
 main (int argc, char **argv)
 {
-    int   rc, inotify_fd;
+    int rv, inotify_fd;
     void *zmq_receiver;
 
     zmq_pollitem_t items[2];
@@ -52,7 +52,11 @@ main (int argc, char **argv)
         fprintf(stderr, "Running Inotispy...\n");
 
     /* Run all initialization functionality. */
-    init_logger();
+
+    rv = init_logger();
+    if (rv != 0)
+        return 1;
+
     LOG_NOTICE("Initializing daemon");
 
     inotify_fd = inotify_setup();
@@ -76,8 +80,8 @@ main (int argc, char **argv)
 
     while (1) {
 
-        rc = zmq_poll(items, 2, -1);
-        if (rc == -1) {
+        rv = zmq_poll(items, 2, -1);
+        if (rv == -1) {
             LOG_ERROR("Failed to call zmq_poll(): %s", strerror(errno));
             continue;
         }
