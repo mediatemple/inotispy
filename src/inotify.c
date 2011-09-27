@@ -147,6 +147,8 @@ inotify_handle_event (int fd)
 
         IN_Event *event = (struct inotify_event *) &buffer[i];
 
+        LOG_TRACE("Got inotify event '%s' for wd %d", event->name, event->wd);
+
         if (event->len) {
 
             Root *root;
@@ -186,7 +188,7 @@ inotify_handle_event (int fd)
                 continue;
             }
 
-            /* ... aannnnd construct the absolute path for this event. */
+            /* Construct the absolute path for this event. */
             asprintf(&abs_path, "%s/%s", path, event->name);
 
             LOG_DEBUG("Got event for '%s'", abs_path);
@@ -198,8 +200,8 @@ inotify_handle_event (int fd)
                  * a recursive watch on the new tree and make sure those
                  * watches are tied to the appropriate root path.
                  */
-                if (event->mask & IN_CREATE) {
-                    LOG_DEBUG("New directory '%s' created", abs_path);
+                if ((event->mask & IN_CREATE) || (event->mask & IN_MOVED_TO)) {
+                    LOG_DEBUG("New directory '%s' found", abs_path);
 
                     do_watch_tree(abs_path, root);
                 }
@@ -209,8 +211,8 @@ inotify_handle_event (int fd)
                  * as well as remove the mapping we have stored in our
                  * watch descriptor hash map.
                  */
-                else if (event->mask & IN_DELETE) {
-                    LOG_DEBUG("Existing directory '%s' was deleted", abs_path);
+                else if ((event->mask & IN_DELETE) || (event->mask & IN_MOVED_FROM)){
+                    LOG_DEBUG("Existing directory '%s' has been removed", abs_path);
 
                     __MLOCK();
                         Watch *delete = g_hash_table_lookup(
@@ -252,7 +254,8 @@ inotify_handle_event (int fd)
             }
 
             /* Queue event */
-            inotify_enqueue(root, event, path);
+            if (event->mask & root->mask)
+                inotify_enqueue(root, event, path);
 
             free(abs_path);
         }
@@ -873,7 +876,8 @@ _do_watch_tree_rec (char *path, Root *root)
     struct dirent *dir;
     Watch *watch;
 
-    wd = inotify_add_watch(inotify_fd, path, root->mask); 
+    //wd = inotify_add_watch(inotify_fd, path, root->mask); 
+    wd = inotify_add_watch(inotify_fd, path, IN_ALL_EVENTS); 
 
     LOG_TRACE("Watching wd:%d path:%s", wd, path);
 
