@@ -21,8 +21,8 @@
 
 #include <zmq.h>
 
-#ifndef __INOTISPY_ZMQ_H_META__
-#define __INOTISPY_ZMQ_H_META__
+#ifndef _INOTISPY_ZMQ_H_META_
+#define _INOTISPY_ZMQ_H_META_
 
 #define ZMQ_ADDR        "tcp://*"
 #define ZMQ_PORT        5559
@@ -32,7 +32,7 @@
 /* 0MQ socket listener. */
 void *zmq_listener;
 
-#endif /*__INOTISPY_ZMQ_H_META__*/
+#endif /*_INOTISPY_ZMQ_H_META_*/
 
 /* Initialization. Set up our 0MQ file descriptor and our ZMQ_*
  * socket listeners.

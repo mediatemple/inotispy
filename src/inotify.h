@@ -36,8 +36,8 @@
         IN_DONT_FOLLOW           \
     )
 
-#ifndef __INOTISPY_INOTIFY_H_META__
-#define __INOTISPY_INOTIFY_H_META__
+#ifndef _INOTISPY_INOTIFY_H_META_
+#define _INOTISPY_INOTIFY_H_META_
 
 typedef struct inotify_event IN_Event;
 
@@ -143,7 +143,7 @@ GHashTable *inotify_roots;
 GHashTable *inotify_wd_to_watch;
 GHashTable *inotify_path_to_watch;
 
-#endif /*__INOTIOFY_H_META__*/
+#endif /*_INOTIOFY_H_META_*/
 
 /* Initialize */
 int inotify_setup (void);

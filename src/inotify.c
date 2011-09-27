@@ -31,15 +31,10 @@
 #include <sys/types.h>
 #include <glib/ghash.h>
 
-#ifndef __INOTIFY_MUTEX__
-#define __INOTIFY_MUTEX__
-
 pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define __MLOCK() pthread_mutex_lock(&inotify_mutex);
-#define __MUNLOCK() pthread_mutex_unlock(&inotify_mutex);
-
-#endif /*__INOTIFY_MUTEX__*/
+#define MLOCK() pthread_mutex_lock(&inotify_mutex);
+#define MUNLOCK() pthread_mutex_unlock(&inotify_mutex);
 
 /* When you create a new thread using pthreads you give it
  * a reference to a subroutine and it envokes that subroutine.
@@ -159,11 +154,11 @@ inotify_handle_event (int fd)
              * or directory under notification we need to lookup
              * it's parent path in our watch descriptor hash map.
              */
-            __MLOCK();
-                Watch *watch = g_hash_table_lookup(
-                    inotify_wd_to_watch, GINT_TO_POINTER(event->wd)
-                );
-            __MUNLOCK();
+            MLOCK();
+            Watch *watch = g_hash_table_lookup(
+                inotify_wd_to_watch, GINT_TO_POINTER(event->wd)
+            );
+            MUNLOCK();
 
             /* Move onto the next event if we can't find its watcher.
              *
@@ -216,11 +211,11 @@ inotify_handle_event (int fd)
                 else if ((event->mask & IN_DELETE) || (event->mask & IN_MOVED_FROM)){
                     LOG_DEBUG("Existing directory '%s' has been removed", abs_path);
 
-                    __MLOCK();
-                        Watch *delete = g_hash_table_lookup(
-                            inotify_path_to_watch, g_strdup(abs_path)
-                        );
-                    __MUNLOCK();
+                    MLOCK();
+                    Watch *delete = g_hash_table_lookup(
+                        inotify_path_to_watch, g_strdup(abs_path)
+                    );
+                    MUNLOCK();
 
                     if (delete == NULL) {
                         LOG_WARN("Failed to look up watcher for path %s", abs_path);
@@ -234,10 +229,10 @@ inotify_handle_event (int fd)
                      */
                     int wd = delete->wd;
 
-                    __MLOCK();
-                        g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(wd));
-                        g_hash_table_remove(inotify_path_to_watch, abs_path);
-                    __MUNLOCK();
+                    MLOCK();
+                    g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(wd));
+                    g_hash_table_remove(inotify_path_to_watch, abs_path);
+                    MUNLOCK();
 
                     int rv = inotify_rm_watch(inotify_fd, wd);
                     if (rv != 0) {
@@ -277,41 +272,40 @@ inotify_enqueue (Root *root, IN_Event *event, char *path)
     int queue_len;
     Event *node;
 
-    __MLOCK();
-    {
-        /* Check to make sure we don't overflow the queue */
-        queue_len = (int) g_queue_get_length(root->queue);
-    
-        LOG_TRACE("Root '%s' has %d/%d events queued",
-            root->path, queue_len, root->max_events);
-    
-        if ( queue_len >= root->max_events ) {
-            LOG_WARN("Queue full for root '%s' (%d). Dropping event!",
-                root->path, root->max_events);
-            __MUNLOCK();
-            return 1;
-        }
-    
-        LOG_DEBUG("Queuing event root:%s path:%s name:%s",
-            root->path, path, event->name);
-    
-        /* Create our new queue node and copy over all
-         * the data fields from the event.
-         */
-        node = (Event *) malloc(sizeof(Event));
-        node->wd     = event->wd;
-        node->mask   = event->mask;
-        node->cookie = event->cookie;
-        node->len    = event->len;
-    
-        asprintf(&node->name, "%s", event->name);
-        asprintf(&node->path, "%s", path);
-    
-        /* Add new node to the queue. */
-        g_queue_push_tail(root->queue, node);
-    }
-    __MUNLOCK();
+    MLOCK();
 
+    /* Check to make sure we don't overflow the queue */
+    queue_len = (int) g_queue_get_length(root->queue);
+
+    LOG_TRACE("Root '%s' has %d/%d events queued",
+        root->path, queue_len, root->max_events);
+
+    if ( queue_len >= root->max_events ) {
+        LOG_WARN("Queue full for root '%s' (%d). Dropping event!",
+            root->path, root->max_events);
+        MUNLOCK();
+        return 1;
+    }
+
+    LOG_DEBUG("Queuing event root:%s path:%s name:%s",
+        root->path, path, event->name);
+
+    /* Create our new queue node and copy over all
+     * the data fields from the event.
+     */
+    node = (Event *) malloc(sizeof(Event));
+    node->wd     = event->wd;
+    node->mask   = event->mask;
+    node->cookie = event->cookie;
+    node->len    = event->len;
+
+    asprintf(&node->name, "%s", event->name);
+    asprintf(&node->path, "%s", path);
+
+    /* Add new node to the queue. */
+    g_queue_push_tail(root->queue, node);
+
+    MUNLOCK();
     return 0;
 }
 
@@ -323,11 +317,9 @@ inotify_get_roots (void)
     char **roots;
     GList *keys;
 
-    __MLOCK();
-    {
-        keys = g_hash_table_get_keys(inotify_roots);
-    }
-    __MUNLOCK();
+    MLOCK();
+    keys = g_hash_table_get_keys(inotify_roots);
+    MUNLOCK();
 
     roots = malloc( (g_list_length(keys)+1) * (sizeof * roots) );
 
@@ -382,35 +374,34 @@ inotify_dequeue (Root *root, int count)
     else
         LOG_DEBUG("Dequeuing %d events from root '%s'", count, root->path);
 
-    __MLOCK();
-    {
-        queue_len = (int) g_queue_get_length(root->queue);
-    
-        if (queue_len == 0) {
-            __MUNLOCK();
-            return NULL;
-        }
-    
-        if (count == 0 || count > queue_len)
-            count = queue_len;
-    
-        LOG_TRACE("Root '%s' has %d/%d events queued. Dequeueing %d events.",
-            root->path, queue_len, root->max_events, count);
+    MLOCK();
 
-        events = malloc( (count + 1) * sizeof * events );
-    
-        for ( i = 0; i < count ; i++ ) {
-            e = g_queue_pop_head(root->queue);
-    
-            LOG_DEBUG("Dequeued event root:%s path:%s name:%s",
-                root->path, e->path, e->name);
-    
-            events[i] = e;
-        }
-        events[i] = NULL;
+    queue_len = (int) g_queue_get_length(root->queue);
+
+    if (queue_len == 0) {
+        MUNLOCK();
+        return NULL;
     }
-    __MUNLOCK();
 
+    if (count == 0 || count > queue_len)
+        count = queue_len;
+
+    LOG_TRACE("Root '%s' has %d/%d events queued. Dequeueing %d events.",
+        root->path, queue_len, root->max_events, count);
+
+    events = malloc( (count + 1) * sizeof * events );
+
+    for ( i = 0; i < count ; i++ ) {
+        e = g_queue_pop_head(root->queue);
+
+        LOG_DEBUG("Dequeued event root:%s path:%s name:%s",
+            root->path, e->path, e->name);
+
+        events[i] = e;
+    }
+    events[i] = NULL;
+
+    MUNLOCK();
     return events;
 }
 
@@ -467,11 +458,9 @@ inotify_path_to_root (char *path)
 {
     GList *keys;
 
-    __MLOCK();
-    {
-        keys = g_hash_table_get_keys(inotify_roots);
-    }
-    __MUNLOCK();
+    MLOCK();
+    keys = g_hash_table_get_keys(inotify_roots);
+    MUNLOCK();
 
     for ( ; keys != NULL ; keys = keys->next ) {
 
@@ -482,11 +471,9 @@ inotify_path_to_root (char *path)
             free(tmp);
             Root *root;
 
-            __MLOCK();
-            {
-                root = g_hash_table_lookup(inotify_roots, keys->data);
-            }
-            __MUNLOCK();
+            MLOCK();
+            root = g_hash_table_lookup(inotify_roots, keys->data);
+            MUNLOCK();
 
             if (root == NULL) {
                 LOG_WARN("Failed to look up root for '%s'", keys->data);
@@ -535,11 +522,9 @@ inotify_is_parent (char *path)
 
     asprintf(&tmp, "%s/", path);
 
-    __MLOCK();
-    {
-        keys = g_hash_table_get_keys(inotify_roots);
-    }
-    __MUNLOCK();
+    MLOCK();
+    keys = g_hash_table_get_keys(inotify_roots);
+    MUNLOCK();
 
     for ( ; keys != NULL ; keys = keys->next ) {
         if ( strstr(keys->data, tmp) ) {
@@ -681,13 +666,11 @@ inotify_watch_tree (char *path, int mask, int max_events)
      */
     Root *new_root;
 
-    __MLOCK();
-    {
-        new_root = make_root(path, mask, max_events);
-        g_hash_table_replace(inotify_roots, g_strdup(path), new_root);
-        ++inotify_num_watched_roots;
-    }
-    __MUNLOCK();
+    MLOCK();
+    new_root = make_root(path, mask, max_events);
+    g_hash_table_replace(inotify_roots, g_strdup(path), new_root);
+    ++inotify_num_watched_roots;
+    MUNLOCK();
 
     /* Finally we need to recursively setup inotify
      * watches for our new root.
@@ -731,25 +714,21 @@ _do_unwatch_tree (void *thread_data)
     root = data->root;
 
     /* Blow away this root's meta-data. */
-    __MLOCK();
-    { 
-        free(root->path);
-        g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
-        g_queue_free(root->queue);
-    }
-    __MUNLOCK();
+    MLOCK();
+    free(root->path);
+    g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
+    g_queue_free(root->queue);
+    MUNLOCK();
 
     /* Do our recursive UN-watching. */
     root->busy = 1;
     _do_unwatch_tree_rec(data->path); 
 
     /* Blow away this root */
-    __MLOCK();
-    { 
-        g_hash_table_remove(inotify_roots, data->path);
-        --inotify_num_watched_roots;
-    }
-    __MUNLOCK();
+    MLOCK();
+    g_hash_table_remove(inotify_roots, data->path);
+    --inotify_num_watched_roots;
+    MUNLOCK();
 
     /* Clean up dynamically allocated memory. */
     free(data->path);
@@ -766,13 +745,11 @@ _do_unwatch_tree_rec (char *path)
     Watch *delete;
     struct dirent *dir;
 
-    __MLOCK();
-    {
-        delete = g_hash_table_lookup(
-            inotify_path_to_watch, path
-        );
-    }
-    __MUNLOCK();
+    MLOCK();
+    delete = g_hash_table_lookup(
+        inotify_path_to_watch, path
+    );
+    MUNLOCK();
 
     if (delete == NULL) {
         LOG_WARN(
@@ -790,12 +767,10 @@ _do_unwatch_tree_rec (char *path)
             path, strerror(errno));
     }
 
-    __MLOCK();
-    {
-        g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(delete->wd));
-        g_hash_table_remove(inotify_path_to_watch, path);
-    }
-    __MUNLOCK();
+    MLOCK();
+    g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(delete->wd));
+    g_hash_table_remove(inotify_path_to_watch, path);
+    MUNLOCK();
 
     free(delete->path);
     free(delete);
@@ -890,12 +865,10 @@ _do_watch_tree_rec (char *path, Root *root)
 
     watch = make_watch(wd, path);
 
-    __MLOCK();
-    {
-        g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
-        g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
-    }
-    __MUNLOCK();
+    MLOCK();
+    g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
+    g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
+    MUNLOCK();
 
     d = opendir(path);
     if( d == NULL ) {

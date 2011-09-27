@@ -27,14 +27,14 @@
 typedef struct json_object  * JOBJ;
 typedef struct json_tokener * JTOK;
 
-#ifndef __INOTISPY_REQUEST_H_META__
-#define __INOTISPY_REQUEST_H_META__
+#ifndef _INOTISPY_REQUEST_H_META_
+#define _INOTISPY_REQUEST_H_META_
 typedef struct request {
     char *call;
     char *json;
     JOBJ  parser;
 } Request;
-#endif /*__INOTISPY_REQUEST_H_META__*/
+#endif /*_INOTISPY_REQUEST_H_META_*/
 
 /* Take a printable string and attempt to parse
  * is as JSON.

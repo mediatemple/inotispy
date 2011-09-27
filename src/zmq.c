@@ -29,15 +29,10 @@
 #include <pthread.h>
 #include <linux/limits.h>
 
-#ifndef __ZMQ_MUTEX__
-#define __ZMQ_MUTEX__
-
 pthread_mutex_t zmq_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define __MLOCK() pthread_mutex_lock(&zmq_mutex);
-#define __MUNLOCK() pthread_mutex_unlock(&zmq_mutex);
-
-#endif /*__ZMQ_MUTEX__*/
+#define MLOCK() pthread_mutex_lock(&zmq_mutex);
+#define MUNLOCK() pthread_mutex_unlock(&zmq_mutex);
 
 void *
 zmq_setup (void)
@@ -83,88 +78,86 @@ zmq_handle_event (void *receiver)
     char    *json;
     Request *req;
 
-    __MLOCK();
-    {
-        zmq_msg_t request;
-        zmq_msg_init(&request);
-        rv = zmq_recv(zmq_listener, &request, 0);
-    
-        /* If the call to recv() failed then we need to tell the
-         * client to reconnect. This should only happen under
-         * very heavy load, or from connections from many clients.
-         */
-        if (rv != 0) {
-            LOG_TRACE("Failed to call recv(): %s. Sending reconnect error to client",
-                zmq_strerror(errno));
+    MLOCK();
+    zmq_msg_t request;
+    zmq_msg_init(&request);
+    rv = zmq_recv(zmq_listener, &request, 0);
 
-            reply_send_error(ERROR_ZEROMQ_RECONNECT);
-            __MUNLOCK();
-            return;
-        }
-    
-        msg_size = zmq_msg_size(&request);
-        if ( ! msg_size > 0 ) {
-            LOG_TRACE("Got 0 byte message. Skipping...");
+    /* If the call to recv() failed then we need to tell the
+     * client to reconnect. This should only happen under
+     * very heavy load, or from connections from many clients.
+     */
+    if (rv != 0) {
+        LOG_TRACE("Failed to call recv(): %s. Sending reconnect error to client",
+            zmq_strerror(errno));
 
-            zmq_msg_close(&request);
-            __MUNLOCK();
-            return;
-        }
-
-        json = malloc(msg_size + 1);   
-        memcpy(json, zmq_msg_data(&request), msg_size);
-        zmq_msg_close(&request);
-        json[msg_size] = '\0';
-
-        if (strlen(json) == 0) {
-            LOG_TRACE("Message contained no data");
-
-            free(json);
-            __MUNLOCK();
-            return;
-        }
-
-        LOG_TRACE("Received raw message: '%s'", json);
-    
-        /* Check for junk messages. This is not by any means an
-         * exhaustive check for valid JSON. Just quick, dirty and
-         * fast way to throw out invalid messages.
-         *
-         * We start by removing all the junk characters from the end
-         * (if there are any) from the first closing curly '}' brace
-         * on. Then, if there is any text left and the first and last
-         * characters are an open curly and a close curly, respectively,
-         * we continue on.
-         */
-        for( i = 0, nil = 0; i < strlen(json); i++ ) {
-            if (nil == 1)
-                json[i] = '\0';
-            else if (json[i] == '}')
-                nil = 1;
-        }
-    
-        if ( strlen(json) < 1 || (json[0] != '{' && json[strlen(json)-1] != '}')) {
-            free(json);
-            reply_send_error(ERROR_JSON_INVALID);
-            __MUNLOCK();
-            return; 
-        }
-    
-        /* Handle JSON parsing and request here. */
-        req = request_parse(json); /* Function is in request.c */
-    
-        if (req == NULL) {
-            LOG_WARN("Invalid JSON message: %s", json);
-
-            free(json);
-            reply_send_error(ERROR_JSON_PARSE);
-            __MUNLOCK();
-            return;
-        }
-    
-        free(json);
+        reply_send_error(ERROR_ZEROMQ_RECONNECT);
+        MUNLOCK();
+        return;
     }
-    __MUNLOCK();
+
+    msg_size = zmq_msg_size(&request);
+    if ( ! msg_size > 0 ) {
+        LOG_TRACE("Got 0 byte message. Skipping...");
+
+        zmq_msg_close(&request);
+        MUNLOCK();
+        return;
+    }
+
+    json = malloc(msg_size + 1);   
+    memcpy(json, zmq_msg_data(&request), msg_size);
+    zmq_msg_close(&request);
+    json[msg_size] = '\0';
+
+    if (strlen(json) == 0) {
+        LOG_TRACE("Message contained no data");
+
+        free(json);
+        MUNLOCK();
+        return;
+    }
+
+    LOG_TRACE("Received raw message: '%s'", json);
+
+    /* Check for junk messages. This is not by any means an
+     * exhaustive check for valid JSON. Just quick, dirty and
+     * fast way to throw out invalid messages.
+     *
+     * We start by removing all the junk characters from the end
+     * (if there are any) from the first closing curly '}' brace
+     * on. Then, if there is any text left and the first and last
+     * characters are an open curly and a close curly, respectively,
+     * we continue on.
+     */
+    for( i = 0, nil = 0; i < strlen(json); i++ ) {
+        if (nil == 1)
+            json[i] = '\0';
+        else if (json[i] == '}')
+            nil = 1;
+    }
+
+    if ( strlen(json) < 1 || (json[0] != '{' && json[strlen(json)-1] != '}')) {
+        free(json);
+        reply_send_error(ERROR_JSON_INVALID);
+        MUNLOCK();
+        return; 
+    }
+
+    /* Handle JSON parsing and request here. */
+    req = request_parse(json); /* Function is in request.c */
+
+    if (req == NULL) {
+        LOG_WARN("Invalid JSON message: %s", json);
+
+        free(json);
+        reply_send_error(ERROR_JSON_PARSE);
+        MUNLOCK();
+        return;
+    }
+
+    free(json);
+    MUNLOCK();
 
     zmq_dispatch_event(req);
 }
@@ -315,11 +308,9 @@ EVENT_get_queue_size (Request *req)
         return;
     }
 
-    __MLOCK();
-    {
-        size = g_queue_get_length(root->queue);
-    }
-    __MUNLOCK();
+    MLOCK();
+    size = g_queue_get_length(root->queue);
+    MUNLOCK();
 
     asprintf(&reply, "{\"data\":%d}", size);
     reply_send_message(reply);
