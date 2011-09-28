@@ -44,7 +44,7 @@ void *zmq_listener;
  *      implement their own polling mechanism for retreiving
  *      inotify events.
  */
-void * zmq_setup (void);
+void *zmq_setup(void);
 
 /* When a 0MQ event comes in over the wire this is the function
  * that will get invoked. This function serves mainly as a
@@ -56,11 +56,11 @@ void * zmq_setup (void);
  * 4. If JSON parsed successfully and there was a "call" field
  *    create a Request struct/blob and send that off to the dispatcher.
  */
-void zmq_handle_event (void *receiver);
+void zmq_handle_event(void *receiver);
 
 /* Given a successfully parsed request, take the "call" value and
  * invoke the appropriate EVENT_* funcion to handle that request.
  */
-void zmq_dispatch_event (Request *req);
+void zmq_dispatch_event(Request * req);
 
 #endif /*_INOTISPY_ZMQ_H_*/

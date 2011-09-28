@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _INOTISPY_REPLY_H_ 
-#define _INOTISPY_REPLY_H_ 
+#ifndef _INOTISPY_REPLY_H_
+#define _INOTISPY_REPLY_H_
 
 /* XXX CODE REVIEW
  *
@@ -26,7 +26,7 @@
  */
 
 /* Supported error masks. */
-#define ERROR_JSON_INVALID             0x0001 
+#define ERROR_JSON_INVALID             0x0001
 #define ERROR_JSON_PARSE               0x0002
 #define ERROR_JSON_KEY_NOT_FOUND       0x0004
 #define ERROR_INOTIFY_WATCH_FAILED     0x0008
@@ -47,7 +47,7 @@
 int reply_send_message(char *message);
 
 /* Wrapper functions for error and success. */
-int reply_send_error (uint32_t err_code);
-int reply_send_success (void);
+int reply_send_error(uint32_t err_code);
+int reply_send_success(void);
 
 #endif /*_INOTISPY_REPLY_H_*/

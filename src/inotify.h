@@ -24,7 +24,7 @@
 
 #define INOTIFY_EVENT_SIZE     ( sizeof (struct inotify_event) )
 #define INOTIFY_EVENT_BUF_LEN  ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
-#define INOTIFY_MAX_EVENTS     65536  /* This number is arbatrary */
+#define INOTIFY_MAX_EVENTS     65536	/* This number is arbatrary */
 #define INOTIFY_DEFAULT_MASK   ( \
         IN_ATTRIB              | \
         IN_MOVED_FROM          | \
@@ -43,16 +43,16 @@ typedef struct inotify_event IN_Event;
 
 /* Meta data for the root of each watched tree. */
 typedef struct inotify_root {
-    char     *path;
-    uint32_t  mask;
-    int       max_events;
-    GQueue   *queue;
-    int       busy;
-    int       persist; /* Future feature */
+    char *path;
+    uint32_t mask;
+    int max_events;
+    GQueue *queue;
+    int busy;
+    int persist;		/* Future feature */
 } Root;
 
 typedef struct inotify_watch {
-    int   wd;
+    int wd;
     char *path;
 } Watch;
 
@@ -69,12 +69,12 @@ typedef struct inotify_watch {
  *   };
  */
 typedef struct inotify_queue_node {
-    int       wd;     
-    uint32_t  mask;   
-    uint32_t  cookie; 
-    uint32_t  len;    
-    char     *path;
-    char     *name; 
+    int wd;
+    uint32_t mask;
+    uint32_t cookie;
+    uint32_t len;
+    char *path;
+    char *name;
 } Event;
 
 /* Global inotify file descriptor. This daemon will
@@ -146,29 +146,29 @@ GHashTable *inotify_path_to_watch;
 #endif /*_INOTIOFY_H_META_*/
 
 /* Initialize */
-int inotify_setup (void);
+int inotify_setup(void);
 
 /* Verify is a path is a currently watched root */
-Root * inotify_is_root (char *path);
+Root *inotify_is_root(char *path);
 
 /* Event handler for new inotify alerts. */
-void inotify_handle_event (int fd);
+void inotify_handle_event(int fd);
 
 /* Recursively watch a directory tree */
-int inotify_watch_tree (char *path, int mask, int max_events);
+int inotify_watch_tree(char *path, int mask, int max_events);
 
 /* Recursively UN-watch a directory tree. */
-int inotify_unwatch_tree (char *path);
+int inotify_unwatch_tree(char *path);
 
 /* Get (and free) a list of all the currently watched roots. */
-char ** inotify_get_roots (void);
-void inotify_free_roots (char **roots);
+char **inotify_get_roots(void);
+void inotify_free_roots(char **roots);
 
 /* Free up an event buffer. */
-void inotify_free_events (Event **events);
+void inotify_free_events(Event ** events);
 
 /* Functions for retrieving queued events */
-Event ** inotify_get_event (char *path);
-Event ** inotify_get_events (char *path, int count);
+Event **inotify_get_event(char *path);
+Event **inotify_get_events(char *path, int count);
 
 #endif /*_INOTISPY_INOTIFY_H_*/

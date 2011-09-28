@@ -32,7 +32,7 @@ struct inotispy_config {
     int port;
 
     /* log.h */
-    int   log_level;
+    int log_level;
     char *log_file;
 
     /* inotify.h */
@@ -53,6 +53,6 @@ struct inotispy_config *CONFIG;
  *  - 0 (zero) on success.
  *  - 1 on failure.
  */
-int init_config (gboolean silent);
+int init_config(gboolean silent);
 
 #endif /*_INOTISPY_CONFIG_H_*/

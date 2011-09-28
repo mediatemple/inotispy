@@ -39,7 +39,7 @@
 #define LOG_LEVEL_TRACE   5
 
 /* Initialize and setup our logger */
-int init_logger (void);
+int init_logger(void);
 
 /* Get and set the current log level.
  *
@@ -47,20 +47,20 @@ int init_logger (void);
  * file in real time so that behavior (like log levels) can change
  * without needing to restart the daemon.
  */
-int get_log_level (void);
-void set_log_level (int level);
+int get_log_level(void);
+void set_log_level(int level);
 
 /* Turn a integer log level into it's corresponding string value. */
-char * level_str (int level);
+char *level_str(int level);
 
 /* XXX I had thought about trying to make these functions macros,
  *     but the pre-processor doesn't know how to handle the ...
  *     functionality, which is needed here.
  */
-void LOG_ERROR  (char *fmt, ...);
-void LOG_WARN   (char *fmt, ...);
-void LOG_NOTICE (char *fmt, ...);
-void LOG_DEBUG  (char *fmt, ...);
-void LOG_TRACE  (char *fmt, ...);
+void LOG_ERROR(char *fmt, ...);
+void LOG_WARN(char *fmt, ...);
+void LOG_NOTICE(char *fmt, ...);
+void LOG_DEBUG(char *fmt, ...);
+void LOG_TRACE(char *fmt, ...);
 
 #endif /*_INOTISPY_LOG_H_*/

@@ -34,24 +34,23 @@ pthread_mutex_t zmq_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define MLOCK() pthread_mutex_lock(&zmq_mutex);
 #define MUNLOCK() pthread_mutex_unlock(&zmq_mutex);
 
-void *
-zmq_setup (void)
+void *zmq_setup(void)
 {
-    int   bind_rv;
+    int bind_rv;
     void *zmq_context;
     char *zmq_uri;
 
     asprintf(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
 
-    zmq_context  = zmq_init(ZMQ_THREADS);
+    zmq_context = zmq_init(ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
-    bind_rv      = zmq_bind(zmq_listener, zmq_uri);
+    bind_rv = zmq_bind(zmq_listener, zmq_uri);
 
     free(zmq_uri);
 
     if (bind_rv != 0) {
-        LOG_ERROR("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
-        return NULL;
+	LOG_ERROR("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
+	return NULL;
     }
 
     return zmq_listener;
@@ -71,11 +70,10 @@ zmq_setup (void)
  *     Should I be doing this at all or should I just pass data along
  *     and let the parser handle junk?
  */
-void
-zmq_handle_event (void *receiver)
+void zmq_handle_event(void *receiver)
 {
-    int     i, rv, nil, msg_size;
-    char    *json;
+    int i, rv, nil, msg_size;
+    char *json;
     Request *req;
 
     MLOCK();
@@ -88,34 +86,35 @@ zmq_handle_event (void *receiver)
      * very heavy load, or from connections from many clients.
      */
     if (rv != 0) {
-        LOG_TRACE("Failed to call recv(): %s. Sending reconnect error to client",
-            zmq_strerror(errno));
+	LOG_TRACE
+	    ("Failed to call recv(): %s. Sending reconnect error to client",
+	     zmq_strerror(errno));
 
-        reply_send_error(ERROR_ZEROMQ_RECONNECT);
-        MUNLOCK();
-        return;
+	reply_send_error(ERROR_ZEROMQ_RECONNECT);
+	MUNLOCK();
+	return;
     }
 
     msg_size = zmq_msg_size(&request);
-    if ( ! msg_size > 0 ) {
-        LOG_TRACE("Got 0 byte message. Skipping...");
+    if (!msg_size > 0) {
+	LOG_TRACE("Got 0 byte message. Skipping...");
 
-        zmq_msg_close(&request);
-        MUNLOCK();
-        return;
+	zmq_msg_close(&request);
+	MUNLOCK();
+	return;
     }
 
-    json = malloc(msg_size + 1);   
+    json = malloc(msg_size + 1);
     memcpy(json, zmq_msg_data(&request), msg_size);
     zmq_msg_close(&request);
     json[msg_size] = '\0';
 
     if (strlen(json) == 0) {
-        LOG_TRACE("Message contained no data");
+	LOG_TRACE("Message contained no data");
 
-        free(json);
-        MUNLOCK();
-        return;
+	free(json);
+	MUNLOCK();
+	return;
     }
 
     LOG_TRACE("Received raw message: '%s'", json);
@@ -130,30 +129,31 @@ zmq_handle_event (void *receiver)
      * characters are an open curly and a close curly, respectively,
      * we continue on.
      */
-    for( i = 0, nil = 0; i < strlen(json); i++ ) {
-        if (nil == 1)
-            json[i] = '\0';
-        else if (json[i] == '}')
-            nil = 1;
+    for (i = 0, nil = 0; i < strlen(json); i++) {
+	if (nil == 1)
+	    json[i] = '\0';
+	else if (json[i] == '}')
+	    nil = 1;
     }
 
-    if ( strlen(json) < 1 || (json[0] != '{' && json[strlen(json)-1] != '}')) {
-        free(json);
-        reply_send_error(ERROR_JSON_INVALID);
-        MUNLOCK();
-        return; 
+    if (strlen(json) < 1
+	|| (json[0] != '{' && json[strlen(json) - 1] != '}')) {
+	free(json);
+	reply_send_error(ERROR_JSON_INVALID);
+	MUNLOCK();
+	return;
     }
 
     /* Handle JSON parsing and request here. */
-    req = request_parse(json); /* Function is in request.c */
+    req = request_parse(json);	/* Function is in request.c */
 
     if (req == NULL) {
-        LOG_WARN("Invalid JSON message: %s", json);
+	LOG_WARN("Invalid JSON message: %s", json);
 
-        free(json);
-        reply_send_error(ERROR_JSON_PARSE);
-        MUNLOCK();
-        return;
+	free(json);
+	reply_send_error(ERROR_JSON_PARSE);
+	MUNLOCK();
+	return;
     }
 
     free(json);
@@ -166,8 +166,7 @@ zmq_handle_event (void *receiver)
  * Event handlers
  */
 
-void
-EVENT_watch (Request *req)
+void EVENT_watch(Request * req)
 {
     int mask, max_events;
     char *path;
@@ -177,62 +176,59 @@ EVENT_watch (Request *req)
      */
     path = request_get_path(req);
 
-    if ( path == NULL ) {
-        LOG_WARN("JSON parsed successfully but no 'path' field found");
-        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
-        return;
+    if (path == NULL) {
+	LOG_WARN("JSON parsed successfully but no 'path' field found");
+	reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+	return;
     }
 
-    if ( path[0] != '/' ) {
-        LOG_WARN("Path '%s' is invalid. It must be an absolute path");
-        reply_send_error(ERROR_NOT_ABSOLUTE_PATH);
-        return;
+    if (path[0] != '/') {
+	LOG_WARN("Path '%s' is invalid. It must be an absolute path");
+	reply_send_error(ERROR_NOT_ABSOLUTE_PATH);
+	return;
     }
 
     LOG_DEBUG("Watching new root at path '%s'", path);
 
     /* Check for user defined configuration overrides. */
     mask = request_get_mask(req);
-    if ( mask == 0 ) {
-        mask = INOTIFY_DEFAULT_MASK;
-        LOG_TRACE("Using default inotify mask: %lu", mask);
-    }
-    else {
-        LOG_TRACE("Using user defined inotify mask: %lu", mask);
+    if (mask == 0) {
+	mask = INOTIFY_DEFAULT_MASK;
+	LOG_TRACE("Using default inotify mask: %lu", mask);
+    } else {
+	LOG_TRACE("Using user defined inotify mask: %lu", mask);
     }
 
     max_events = request_get_max_events(req);
-    if ( max_events == 0 ) {
-        max_events = CONFIG->max_inotify_events;
-        LOG_TRACE("Using default max events %d", max_events);
-    }
-    else {
-        LOG_TRACE("Using user defined max events %d", max_events);
+    if (max_events == 0) {
+	max_events = CONFIG->max_inotify_events;
+	LOG_TRACE("Using default max events %d", max_events);
+    } else {
+	LOG_TRACE("Using user defined max events %d", max_events);
     }
 
     /* Watch our new root. */
-    if ( inotify_watch_tree(path, mask, max_events) != 0 ) {
-        reply_send_error(ERROR_INOTIFY_WATCH_FAILED);
-        return;
+    if (inotify_watch_tree(path, mask, max_events) != 0) {
+	reply_send_error(ERROR_INOTIFY_WATCH_FAILED);
+	return;
     }
 
     reply_send_success();
 }
 
-void
-EVENT_unwatch (Request *req)
+void EVENT_unwatch(Request * req)
 {
     char *path = request_get_path(req);
 
     if (path == NULL) {
-        LOG_WARN("JSON parsed successfully but no 'path' field found");
-        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
-        return;
+	LOG_WARN("JSON parsed successfully but no 'path' field found");
+	reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+	return;
     }
 
-    if ( inotify_unwatch_tree(path) != 0 ) {
-        reply_send_error(ERROR_INOTIFY_UNWATCH_FAILED);
-        return;
+    if (inotify_unwatch_tree(path) != 0) {
+	reply_send_error(ERROR_INOTIFY_UNWATCH_FAILED);
+	return;
     }
 
     reply_send_success();
@@ -244,22 +240,21 @@ EVENT_unwatch (Request *req)
  *     into a JSON object. This seems super messy, but this is C
  *     and I'm not sure there is a more elegant solution.
  */
-JOBJ
-inotify_event_to_jobj (Event *event)
+JOBJ inotify_event_to_jobj(Event * event)
 {
     JOBJ jobj;
     JOBJ jint_mask, jint_cookie;
     JOBJ jstr_path, jstr_name;
-    /*JOBJ jint_wd, jint_len; UNNEEDED*/
+    /*JOBJ jint_wd, jint_len; UNNEEDED */
 
     jobj = json_object_new_object();
 
-    jint_mask   = json_object_new_int(event->mask);
+    jint_mask = json_object_new_int(event->mask);
     jint_cookie = json_object_new_int(event->cookie);
-    jstr_path   = json_object_new_string(event->path);
-    jstr_name   = json_object_new_string(event->name);
-    /*jint_len    = json_object_new_int(event->len);*/
-    /*jint_wd     = json_object_new_int(event->wd);*/
+    jstr_path = json_object_new_string(event->path);
+    jstr_name = json_object_new_string(event->name);
+    /*jint_len    = json_object_new_int(event->len); */
+    /*jint_wd     = json_object_new_int(event->wd); */
 
     /* Add our data */
     json_object_object_add(jobj, "name", jstr_name);
@@ -271,10 +266,10 @@ inotify_event_to_jobj (Event *event)
      * pass this value on to the user if it has a value other than
      * zero.
      */
-    if (event->cookie != 0) 
-        json_object_object_add(jobj, "cookie", jint_cookie);
+    if (event->cookie != 0)
+	json_object_object_add(jobj, "cookie", jint_cookie);
     else
-        json_object_put(jint_cookie);
+	json_object_put(jint_cookie);
 
     /* The following is data we don't need to pass to the client.
      *
@@ -285,27 +280,26 @@ inotify_event_to_jobj (Event *event)
     return jobj;
 }
 
-void
-EVENT_get_queue_size (Request *req)
+void EVENT_get_queue_size(Request * req)
 {
     char *path, *reply;
     Root *root;
     guint size;
 
     path = request_get_path(req);
-    
+
     if (path == NULL) {
-        LOG_WARN("JSON parsed successfully but no 'path' field found");
-        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
-        return;
+	LOG_WARN("JSON parsed successfully but no 'path' field found");
+	reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+	return;
     }
 
     root = inotify_is_root(path);
 
-    if ( root == NULL ) {
-        LOG_WARN("Path '%s' is not a currently watch root", path);
-        reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
-        return;
+    if (root == NULL) {
+	LOG_WARN("Path '%s' is not a currently watch root", path);
+	reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+	return;
     }
 
     MLOCK();
@@ -318,53 +312,52 @@ EVENT_get_queue_size (Request *req)
     free(reply);
 }
 
-void
-EVENT_get_events (Request *req)
+void EVENT_get_events(Request * req)
 {
-    int     i, count;
-    char   *path;
+    int i, count;
+    char *path;
     Event **events;
-    JOBJ    jobj, jarr;
+    JOBJ jobj, jarr;
 
     path = request_get_path(req);
-    
+
     if (path == NULL) {
-        LOG_WARN("JSON parsed successfully but no 'path' field found");
-        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
-        return;
+	LOG_WARN("JSON parsed successfully but no 'path' field found");
+	reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+	return;
     }
 
-    if ( inotify_is_root(path) == NULL ) {
-        LOG_WARN("Path '%s' is not a currently watch root", path);
-        reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
-        return;
+    if (inotify_is_root(path) == NULL) {
+	LOG_WARN("Path '%s' is not a currently watch root", path);
+	reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+	return;
     }
 
     count = request_get_count(req);
 
     if (count == -1) {
-        reply_send_error(ERROR_INVALID_EVENT_COUNT);
-        return;
+	reply_send_error(ERROR_INVALID_EVENT_COUNT);
+	return;
     }
 
     LOG_TRACE("Trying to get %d events for root '%s'", count, path);
     events = inotify_get_events(path, count);
 
     if (events == NULL) {
-        LOG_TRACE("No events found for root at path '%s'", path);
-        reply_send_message("{\"data\":[]}");
-        return;
+	LOG_TRACE("No events found for root at path '%s'", path);
+	reply_send_message("{\"data\":[]}");
+	return;
     }
 
     jobj = json_object_new_object();
     jarr = json_object_new_array();
 
-    for ( i = 0 ; events[i] ; i++) {
-        json_object_array_add(jarr, inotify_event_to_jobj(events[i]));
+    for (i = 0; events[i]; i++) {
+	json_object_array_add(jarr, inotify_event_to_jobj(events[i]));
     }
     json_object_object_add(jobj, "data", jarr);
 
-    reply_send_message( (char *) json_object_to_json_string(jobj) );
+    reply_send_message((char *) json_object_to_json_string(jobj));
 
     inotify_free_events(events);
 
@@ -379,16 +372,15 @@ EVENT_get_events (Request *req)
 /* This is just a way for client code to see all of the
  * roots Inotispy is currently watching.
  */
-void
-EVENT_get_roots (void)
+void EVENT_get_roots(void)
 {
     int i;
     char **roots;
     JOBJ jobj, jarr;
 
     if (inotify_num_watched_roots < 1) {
-        reply_send_message("{\"data\":[]}");
-        return;
+	reply_send_message("{\"data\":[]}");
+	return;
     }
 
     roots = inotify_get_roots();
@@ -396,14 +388,14 @@ EVENT_get_roots (void)
     jobj = json_object_new_object();
     jarr = json_object_new_array();
 
-    for ( i = 0 ; roots[i] ; i++ ) {
-        JOBJ path = json_object_new_string(roots[i]);
-        json_object_array_add(jarr, path);
+    for (i = 0; roots[i]; i++) {
+	JOBJ path = json_object_new_string(roots[i]);
+	json_object_array_add(jarr, path);
     }
 
     json_object_object_add(jobj, "data", jarr);
 
-    reply_send_message( (char *) json_object_to_json_string(jobj) );
+    reply_send_message((char *) json_object_to_json_string(jobj));
 
     inotify_free_roots(roots);
     json_object_put(jobj);
@@ -441,31 +433,25 @@ EVENT_get_roots (void)
  *     If anyone thinks this is a better approach please say so and
  *     I'll do the logic swap.
  */
-void
-zmq_dispatch_event (Request *req)
+void zmq_dispatch_event(Request * req)
 {
     char *call = req->call;
 
     LOG_DEBUG("Dispatching call '%s' with data '%s'",
-        call, request_to_string(req));
+	      call, request_to_string(req));
 
-    if ( strcmp(call, "watch") == 0 ) {
-        EVENT_watch(req);
-    }
-    else if ( strcmp(call, "unwatch") == 0 ) {
-        EVENT_unwatch(req);
-    }
-    else if ( strcmp(call, "get_events") == 0 ) {
-        EVENT_get_events(req);
-    }
-    else if ( strcmp(call, "get_queue_size") == 0 ) {
-        EVENT_get_queue_size(req);
-    }
-    else if ( strcmp(call, "get_roots") == 0 ) {
-        EVENT_get_roots();
-    }
-    else {
-        LOG_WARN("Unknown call: '%s'", call);
+    if (strcmp(call, "watch") == 0) {
+	EVENT_watch(req);
+    } else if (strcmp(call, "unwatch") == 0) {
+	EVENT_unwatch(req);
+    } else if (strcmp(call, "get_events") == 0) {
+	EVENT_get_events(req);
+    } else if (strcmp(call, "get_queue_size") == 0) {
+	EVENT_get_queue_size(req);
+    } else if (strcmp(call, "get_roots") == 0) {
+	EVENT_get_roots();
+    } else {
+	LOG_WARN("Unknown call: '%s'", call);
     }
 
     request_free(req);

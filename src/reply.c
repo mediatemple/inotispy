@@ -22,40 +22,38 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *error_to_string (uint32_t err_code);
+char *error_to_string(uint32_t err_code);
 
-int
-reply_send_message (char *message)
+int reply_send_message(char *message)
 {
     int rv;
     zmq_msg_t msg;
 
     rv = zmq_msg_init_size(&msg, strlen(message));
     if (rv != 0) {
-        LOG_ERROR("Failed to initialize message '%s': %s (%d)",
-            message, zmq_strerror(errno), errno);
-        return 1;
+	LOG_ERROR("Failed to initialize message '%s': %s (%d)",
+		  message, zmq_strerror(errno), errno);
+	return 1;
     }
 
     strncpy(zmq_msg_data(&msg), message, strlen(message));
     rv = zmq_send(zmq_listener, &msg, 0);
 
     if (rv != 0) {
-        LOG_ERROR("Failed to send message '%s': %s (%d)",
-            message, zmq_strerror(errno), errno);
-        return 1;
+	LOG_ERROR("Failed to send message '%s': %s (%d)",
+		  message, zmq_strerror(errno), errno);
+	return 1;
     }
 
     return 0;
 }
 
-int
-reply_send_error (uint32_t err_code)
+int reply_send_error(uint32_t err_code)
 {
     char *err;
     asprintf(&err,
-        "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
-            err_code, error_to_string(err_code));
+	     "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
+	     err_code, error_to_string(err_code));
 
     int rv = reply_send_message(err);
 
@@ -63,35 +61,34 @@ reply_send_error (uint32_t err_code)
     return rv;
 }
 
-int
-reply_send_success (void)
+int reply_send_success(void)
 {
     return reply_send_message("{\"success\":1}");
 }
 
-char *
-error_to_string (uint32_t err_code)
+char *error_to_string(uint32_t err_code)
 {
     if (err_code & ERROR_JSON_INVALID)
-        return "Invalid JSON";
+	return "Invalid JSON";
     else if (err_code & ERROR_JSON_PARSE)
-        return "Failed to parse JSON";
+	return "Failed to parse JSON";
     else if (err_code & ERROR_JSON_KEY_NOT_FOUND)
-        return "Key not found in JSON";
+	return "Key not found in JSON";
     else if (err_code & ERROR_INOTIFY_WATCH_FAILED)
-        return "Failed to set up inotify watch";
+	return "Failed to set up inotify watch";
     else if (err_code & ERROR_INOTIFY_UNWATCH_FAILED)
-        return "Failed to unwatch inotify watch";
+	return "Failed to unwatch inotify watch";
     else if (err_code & ERROR_INVALID_EVENT_COUNT)
-        return "Invald event count value";
+	return "Invald event count value";
     else if (err_code & ERROR_ZERO_BYTE_MESSAGE)
-        return "Zero byte message received";
+	return "Zero byte message received";
     else if (err_code & ERROR_INOTIFY_ROOT_NOT_WATCHED)
-        return "This root is currently not watched under inotify";
+	return "This root is currently not watched under inotify";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)
-        return "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
+	return
+	    "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
     else if (err_code & ERROR_NOT_ABSOLUTE_PATH)
-        return "Path must be absolute";
+	return "Path must be absolute";
     else
-        return "Unknown error";
+	return "Unknown error";
 }

@@ -27,54 +27,56 @@
 int log_level;
 FILE *logger;
 
-int
-init_logger ()
+int init_logger()
 {
     log_level = CONFIG->log_level;
-    logger    = fopen(CONFIG->log_file, "a");
+    logger = fopen(CONFIG->log_file, "a");
 
     if (logger == NULL) {
-        fprintf(stderr,
-            "Failed to open file '%s': %s\n", CONFIG->log_file, strerror(errno));
-        return 1;
+	fprintf(stderr,
+		"Failed to open file '%s': %s\n", CONFIG->log_file,
+		strerror(errno));
+	return 1;
     }
 
     return 0;
 }
 
-char *
-level_str (int level)
+char *level_str(int level)
 {
     switch (level) {
-        case LOG_LEVEL_ERROR  : return "ERROR";
-        case LOG_LEVEL_WARN   : return "WARN";
-        case LOG_LEVEL_NOTICE : return "NOTICE";
-        case LOG_LEVEL_DEBUG  : return "DEBUG";
-        case LOG_LEVEL_TRACE  : return "TRACE";
+    case LOG_LEVEL_ERROR:
+	return "ERROR";
+    case LOG_LEVEL_WARN:
+	return "WARN";
+    case LOG_LEVEL_NOTICE:
+	return "NOTICE";
+    case LOG_LEVEL_DEBUG:
+	return "DEBUG";
+    case LOG_LEVEL_TRACE:
+	return "TRACE";
 
-        default : return "UNKNOWN";
+    default:
+	return "UNKNOWN";
     }
 }
 
-char *
-time_str ()
+char *time_str()
 {
     time_t t = time(NULL);
     char *t_str = ctime(&t);
     char *p;
 
-    for ( p = t_str ; *p != '\n' && *p != '\0' ; p++ )
-        ;
+    for (p = t_str; *p != '\n' && *p != '\0'; p++);
     *p = '\0';
 
     return t_str;
 }
 
-void
-log_msg (int level, char *fmt, va_list ap)
+void log_msg(int level, char *fmt, va_list ap)
 {
     if (level > log_level)
-        return;
+	return;
 
     char *msg;
     vasprintf(&msg, fmt, ap);
@@ -85,8 +87,7 @@ log_msg (int level, char *fmt, va_list ap)
     free(msg);
 }
 
-void
-LOG_ERROR (char *fmt, ...)
+void LOG_ERROR(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -94,8 +95,7 @@ LOG_ERROR (char *fmt, ...)
     va_end(ap);
 }
 
-void
-LOG_WARN (char *fmt, ...)
+void LOG_WARN(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -103,8 +103,7 @@ LOG_WARN (char *fmt, ...)
     va_end(ap);
 }
 
-void
-LOG_NOTICE (char *fmt, ...)
+void LOG_NOTICE(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -112,8 +111,7 @@ LOG_NOTICE (char *fmt, ...)
     va_end(ap);
 }
 
-void
-LOG_DEBUG (char *fmt, ...)
+void LOG_DEBUG(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -121,8 +119,7 @@ LOG_DEBUG (char *fmt, ...)
     va_end(ap);
 }
 
-void
-LOG_TRACE (char *fmt, ...)
+void LOG_TRACE(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -130,22 +127,19 @@ LOG_TRACE (char *fmt, ...)
     va_end(ap);
 }
 
-int
-get_log_level (void)
+int get_log_level(void)
 {
     return log_level;
 }
 
-void
-set_log_level (int level)
+void set_log_level(int level)
 {
     if (level >= LOG_LEVEL_ERROR && level <= LOG_LEVEL_TRACE) {
-        log_level = level;
-    }
-    else {
-        char *err;
-        asprintf(&err, "Log level %d is invalid", level);
-        LOG_WARN(err);
-        free(err);
+	log_level = level;
+    } else {
+	char *err;
+	asprintf(&err, "Log level %d is invalid", level);
+	LOG_WARN(err);
+	free(err);
     }
 }
