@@ -4,21 +4,21 @@
 #include <string.h>
 #include <stdlib.h>
 
-int
-main (void)
+int main(void)
 {
     int connect_rv, rv, msg_size;
     char *message;
     void *context, *socket;
     zmq_msg_t request, reply;
 
-    context    = zmq_init(1);
-    socket     = zmq_socket(context, ZMQ_REQ);
+    context = zmq_init(1);
+    socket = zmq_socket(context, ZMQ_REQ);
     connect_rv = zmq_connect(socket, "tcp://127.0.0.1:5559");
 
     if (connect_rv != 0) {
-        printf("Failed to connect ZeroMQ socket: %s\n", zmq_strerror(errno));
-        return 1;
+	printf("Failed to connect ZeroMQ socket: %s\n",
+	       zmq_strerror(errno));
+	return 1;
     }
 
     /* Request */
@@ -30,16 +30,18 @@ main (void)
     rv = zmq_send(socket, &request, 0);
     zmq_msg_close(&request);
     if (rv != 0) {
-         printf("Failed to send message to server: %s\n", zmq_strerror(errno));
-         return 1;
+	printf("Failed to send message to server: %s\n",
+	       zmq_strerror(errno));
+	return 1;
     }
 
     /* Reply */
-    zmq_msg_init (&reply);
+    zmq_msg_init(&reply);
     rv = zmq_recv(socket, &reply, 0);
     if (rv != 0) {
-         printf("Failed to receive message from server: %s\n", zmq_strerror(errno));
-         return 1;
+	printf("Failed to receive message from server: %s\n",
+	       zmq_strerror(errno));
+	return 1;
     }
 
     msg_size = zmq_msg_size(&reply);
@@ -56,5 +58,3 @@ main (void)
 
     return 0;
 }
-
-
