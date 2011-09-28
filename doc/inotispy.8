@@ -30,7 +30,7 @@ Inotispy is written in the C programmaing language and was tested against
 .BR valgrind (1)
 for memory leaks.
 .SH OPTIONS
-Inotispy doesm't have very many command line options. If you are interested
+Inotispy doesn't have many command line options. If you are interested
 in further changing the behavior of Inotispy please see the \fBCONFIGURATION
 FILE\fR section below.
 .PP
@@ -41,22 +41,28 @@ Print the help menu.
 \fB\-s\fR, \fB\-\-silent\fR
 .RS 4
 Run silently, and only messages will be appended to the log file. Inotispy
-prints \fIvery little\fR to stderr and only does so at start up. So this
-feature isn't very useful unless it's important that it runs with nothing
-printed to the terminal.
+prints very little information to \fBstderr\fR and only does so at start up.
+So this feature isn't very useful unless it's important that it runs with
+nothing printed to the terminal.
 .RE
 .SH INOTISPY OVERVIEW
 The \fBInotispy\fR daemon provides a service oriented interface for watching
-directory trees on your file system for events. These are events like file
-creation, deletion, move, permission changes, etc. Its interface and control
+directory trees on your file system for events. These events may include file
+creation, deletion, move, permissions change, etc. Its interface and control
 flow are designed to be as simple as possible. Essentially all a client does
 is:
 .P
 .in +4n
+1. \fBwatch\fR a directory tree for events.
+.br
+2. periodically \fBconsume\fR events from that directory tree.
+.br
+3. \fBunwatch\fR that tree when it's events are no longer of interest.
+.P
 .nf
-\fBwatch\fR--->\fBconsume\fR-.->\fBunwatch\fR
-      ^          |
-      |__________|
+    \fBwatch\fR--->\fBconsume\fR-.->\fBunwatch\fR
+          ^          |
+          |__________|
 .fi
 .in
 .P
@@ -65,14 +71,14 @@ the file system monitoring project, can hook into inotify without having
 to write your own code to recursively watch directories, manage mappings
 between paths and watch descriptors, and handle event queuing. 
 .P
-Also, since Inotispy is a service it means that it is completely decoupled
-from your application. This means that you can bring your application down
-for maintenance or a code release and you won't lose the events from the
+Also, since Inotispy is a service it is completely decoupled from your
+application. This means that you can bring your application down for
+maintenance (or a code release) and you won't lose the events from the
 directory trees your application was watching.
 .P
 Communication with Inotispy is done through \fBZeroMQ\fR sockets and the protocol
 is \fBJSON\fR. Each JSON request must contain a \fIcall\fR field and then a set
-of required and optional arguments depending on the call.
+of required and optional arguments, depending on the call.
 .SS Calls
 Calls to Inotispy are incredibly simple. An example call in JSON would look like:
 .P
@@ -95,8 +101,8 @@ Responses from Inotispy are also JSON and they come in 3 flavors: \fBsuccess\fR,
 The \fBsuccess\fR response is actually pretty useless. This is the response you get
 when you tell Inotispy to \fIwatch\fR or \fIunwatch\fR a directory tree and it
 successfully kicks off the routine that recursively watches (or unwatches) your
-tree. As a client, what you're more interested in is an \fBerror\fR response.
-It looks like:
+tree. (As a client, what you're more interested in is an \fBerror\fR response.)
+The \fBsuccess\fR response looks like:
 .P
 .RS 4
 { "success" : 1 }
@@ -125,7 +131,7 @@ It looks like:
 .P
 The \fBdata\fR response is what you get when you request information from Inotispy,
 such as a call to \fBget_roots\fR or \fBget_events\fR. This will be a hash with one
-key, \fIdata\fR, whose value is an array containing the data you requested\fB**\fR.
+key, \fIdata\fR, whose value is an array containing the data you requested\fB*\fR.
 In the case of \fBget_roots\fR it will be an array of pathnames (strings). In the
 case of \fBget_events\fR it will be an array of hashes where each hash contains the
 data of an inotify event. (See \fBINOTISPY_API\fR below for more information). It
@@ -142,7 +148,7 @@ looks like:
 .fi
 .in
 .P
-\fB**\fR The one exception to this is a call to \fBget_queue_size\fR where the
+\fB*\fR The one exception to this is a call to \fBget_queue_size\fR where the
 value of the data field is an integer, not an array, which will look like:
 .P
 .in +4n
@@ -153,7 +159,7 @@ value of the data field is an integer, not an array, which will look like:
 .P
 .SH INOTISPY API
 .P
-Here be thy list of supported calls.
+Here is the list of supported calls, and their arguments and return values.
 .P
 .SS watch
 Watch a new directory tree.
@@ -164,9 +170,11 @@ Watch a new directory tree.
 .P
 \fIOptional Arguments\fR
 .br
-\fBmask\fR       - Inotify mask defining the events\fB*\fR you're interested in.\fB**\fR
+\fBmask\fR       - Inotify mask defining the file system events\fB*\fR
+             you want to receive notifications for.\fB**\fR
 .br
-\fBmax_events\fR - Max number of inotify events to queue for this root. (default=65536)
+\fBmax_events\fR - Max number of inotify events to queue for
+             this root. The default is 65536.
 .P
 \fIReturn Value\fR
 .br
@@ -174,9 +182,16 @@ Watch a new directory tree.
 .P
 \fIExample\fR
 .P
-.RS 4
-{ "call" : "watch", "path" : "/foo/bar", "mask": 1024, "max_events" : 1000 }
-.RE
+.in +4n
+.nf
+{
+    "call" : "watch",
+    "path" : "/foo/bar",
+    "mask": 1024,
+    "max_events" : 1000
+}
+.fi
+.in
 .P
 \fB*\fR If you don't supply your own mask Inotify provides a default mask for you.
 The events in the default mask are:
@@ -237,9 +252,14 @@ Unwatch a currently watched directory tree.
 .P
 \fIExample\fR
 .P
-.RS 4
-{ "call" : "unwatch", "path" : "/foo/bar" }
-.RE
+.in +4n
+.nf
+{
+    "call" : "unwatch",
+    "path" : "/foo/bar"
+}
+.fi
+.in
 .P
 .SS get_roots
 Get the list of currently watched roots (directory trees).
@@ -269,9 +289,14 @@ Get the number of events in a given root's queue.
 .P
 \fIExample\fR
 .P
-.RS 4
-{ "call" : "get_queue_size", "path" : "/foo/bar" }
-.RE
+.in +4n
+.nf
+{
+    "call" : "get_queue_size",
+    "path" : "/foo/bar"
+}
+.fi
+.in
 .P
 .SS get_events
 Retrieve inotify events from a given root's queue.
@@ -290,9 +315,15 @@ Retrieve inotify events from a given root's queue.
 .P
 \fIExample\fR
 .P
-.RS 4
-{ "call" : "get_events", "path" : "/foo/bar", "count" : 10 }
-.RE
+.in +4n
+.nf
+{
+    "call"  : "get_events",
+    "path"  : "/foo/bar",
+    "count" : 10
+}
+.fi
+.in
 .P
 \fB*\fR Using a value of 0 (zero) will retrieve \fIall\fR events from
 that root's queue.
@@ -339,7 +370,8 @@ you can tweak:
 .br
 \fBlog_level\fR          - set the verbosity of logging
 .br
-\fBmax_inotify_events\fR - cap the number of per/root inotify events to be queued
+\fBmax_inotify_events\fR - cap the number of per/root inotify
+                     events to be queued
 .RE
 .SH LOGGING
 Inotispy outputs runtime information to a log file. The default location is
