@@ -57,8 +57,9 @@ int init_config(gboolean silent)
     /* Create config struct and assign default values. */
     CONFIG = g_slice_new(struct inotispy_config);
     CONFIG->port = ZMQ_PORT;
-    CONFIG->log_file = LOG_FILE;
-    CONFIG->log_level = LOG_LEVEL_NOTICE;
+    CONFIG->log_file = _LOG_FILE;
+    CONFIG->log_level = _LOG_LEVEL_NOTICE;
+    CONFIG->log_syslog = FALSE;
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
     CONFIG->silent = FALSE;
 
@@ -108,21 +109,32 @@ int init_config(gboolean silent)
 	error = NULL;
     } else {
 	if (strcmp(str_rv, "trace") == 0) {
-	    CONFIG->log_level = LOG_LEVEL_TRACE;
+	    CONFIG->log_level = _LOG_LEVEL_TRACE;
 	} else if (strcmp(str_rv, "debug") == 0) {
-	    CONFIG->log_level = LOG_LEVEL_DEBUG;
+	    CONFIG->log_level = _LOG_LEVEL_DEBUG;
 	} else if (strcmp(str_rv, "notice") == 0) {
-	    CONFIG->log_level = LOG_LEVEL_NOTICE;
+	    CONFIG->log_level = _LOG_LEVEL_NOTICE;
 	} else if (strcmp(str_rv, "warn") == 0) {
-	    CONFIG->log_level = LOG_LEVEL_WARN;
+	    CONFIG->log_level = _LOG_LEVEL_WARN;
 	} else if (strcmp(str_rv, "error") == 0) {
-	    CONFIG->log_level = LOG_LEVEL_ERROR;
+	    CONFIG->log_level = _LOG_LEVEL_ERROR;
 	} else {
 	    fprintf(stderr, "Found invalid valud for 'log_level': %s\n",
 		    str_rv);
 	}
 
 	g_free(str_rv);
+    }
+
+    /* log_syslog */
+    bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "log_syslog", &error);
+    if (error != NULL) {
+	fprintf(stderr,
+		"Failed to read config value for 'log_syslog': %s\n",
+		error->message);
+	error = NULL;
+    } else {
+	CONFIG->log_syslog = bool_rv;
     }
 
     /* max_inotify_events */
@@ -164,6 +176,8 @@ int init_config(gboolean silent)
 	fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
 	fprintf(stderr, " - log_level          : %s (%d)\n",
 		level_str(CONFIG->log_level), CONFIG->log_level);
+	fprintf(stderr, " - log_syslog         : %s\n",
+		(CONFIG->log_syslog ? "true" : "false"));
 	fprintf(stderr, " - max_inotify_events : %d\n",
 		CONFIG->max_inotify_events);
 	fprintf(stderr, " - silent mode        : %s\n",

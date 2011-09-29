@@ -43,7 +43,7 @@ int reply_send_message(char *message)
 
     rv = zmq_msg_init_size(&msg, strlen(message));
     if (rv != 0) {
-	LOG_ERROR("Failed to initialize message '%s': %s (%d)",
+	_LOG_ERROR("Failed to initialize message '%s': %s (%d)",
 		  message, zmq_strerror(errno), errno);
 	return 1;
     }
@@ -52,7 +52,7 @@ int reply_send_message(char *message)
     rv = zmq_send(zmq_listener, &msg, 0);
 
     if (rv != 0) {
-	LOG_ERROR("Failed to send message '%s': %s (%d)",
+	_LOG_ERROR("Failed to send message '%s': %s (%d)",
 		  message, zmq_strerror(errno), errno);
 	return 1;
     }

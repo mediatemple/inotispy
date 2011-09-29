@@ -38,7 +38,7 @@ JOBJ _parse_json(char *json)
     jobj = json_tokener_parse_ex(jtok, json, -1);
 
     if (jtok->err != json_tokener_success) {
-	LOG_TRACE("Failed to parse JSON: %s", json);
+	_LOG_TRACE("Failed to parse JSON: %s", json);
 	jobj = NULL;
     }
 
@@ -52,22 +52,22 @@ Request *request_parse(char *json)
     JOBJ jobj, val;
     Request *req;
 
-    LOG_TRACE("In requst_parse() with JSON data: %s", json);
+    _LOG_TRACE("In requst_parse() with JSON data: %s", json);
 
     jobj = _parse_json(json);
 
     if (jobj == NULL) {
-	LOG_ERROR("Failed to parse JSON: %s", json);
+	_LOG_ERROR("Failed to parse JSON: %s", json);
 	return NULL;
     }
 
     val = json_object_object_get(jobj, "call");
 
     if (val == NULL) {
-	LOG_ERROR("Failed to find 'call' field in JSON: %s", json);
+	_LOG_ERROR("Failed to find 'call' field in JSON: %s", json);
 	return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-	LOG_ERROR("Found 'call' field, but it is not a of type 'string'");
+	_LOG_ERROR("Found 'call' field, but it is not a of type 'string'");
 	return NULL;
     }
 
@@ -84,16 +84,16 @@ char *request_get_key_str(Request * req, char *key)
 {
     JOBJ val;
 
-    LOG_TRACE("Calling request_get_key_str(): json='%s' key='%s'",
+    _LOG_TRACE("Calling request_get_key_str(): json='%s' key='%s'",
 	      req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-	LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+	_LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
 	return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-	LOG_ERROR("Found key '%s', but it is not a of type 'string'", key);
+	_LOG_ERROR("Found key '%s', but it is not a of type 'string'", key);
 	return NULL;
     }
 
@@ -107,16 +107,16 @@ int request_get_key_int(Request * req, char *key)
 {
     JOBJ val;
 
-    LOG_TRACE("Calling request_get_key_int(): json='%s' key='%s'",
+    _LOG_TRACE("Calling request_get_key_int(): json='%s' key='%s'",
 	      req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-	LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+	_LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
 	return -1;
     } else if (!json_object_is_type(val, json_type_int)) {
-	LOG_ERROR("Found key '%s', but it is not a of type 'int'", key);
+	_LOG_ERROR("Found key '%s', but it is not a of type 'int'", key);
 	return -1;
     }
 
@@ -153,7 +153,7 @@ int request_get_max_events(Request * req)
     max_events = request_get_key_int(req, "max_events");
 
     if (max_events == -1) {
-	LOG_TRACE("Did not find user defined max events in JSON request");
+	_LOG_TRACE("Did not find user defined max events in JSON request");
 	return 0;
     }
 
@@ -167,7 +167,7 @@ int request_get_mask(Request * req)
     mask = request_get_key_int(req, "mask");
 
     if (mask == -1) {
-	LOG_TRACE("Did not find user defined mask in JSON request");
+	_LOG_TRACE("Did not find user defined mask in JSON request");
 	return 0;
     }
 
@@ -188,12 +188,12 @@ int request_get_count(Request * req)
     count = request_get_key_int(req, "count");
 
     if (count == -1) {
-	LOG_TRACE("Did not find a valid event count in JSON request");
+	_LOG_TRACE("Did not find a valid event count in JSON request");
 	return 1;
     }
 
     if (count < 0) {
-	LOG_WARN
+	_LOG_WARN
 	    ("Invalid event count: %d. Value must be zero or greater.'",
 	     count);
 	return -1;

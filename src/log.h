@@ -42,13 +42,13 @@
  *     out there please advise.
  */
 
-#define LOG_FILE "/var/log/inotispy.log"
+#define _LOG_FILE "/var/log/inotispy.log"
 
-#define LOG_LEVEL_ERROR   1
-#define LOG_LEVEL_WARN    2
-#define LOG_LEVEL_NOTICE  3
-#define LOG_LEVEL_DEBUG   4
-#define LOG_LEVEL_TRACE   5
+#define _LOG_LEVEL_ERROR   1
+#define _LOG_LEVEL_WARN    2
+#define _LOG_LEVEL_NOTICE  3
+#define _LOG_LEVEL_DEBUG   4
+#define _LOG_LEVEL_TRACE   5
 
 /* Initialize and setup our logger */
 int init_logger(void);
@@ -69,10 +69,10 @@ char *level_str(int level);
  *     but the pre-processor doesn't know how to handle the ...
  *     functionality, which is needed here.
  */
-void LOG_ERROR(char *fmt, ...);
-void LOG_WARN(char *fmt, ...);
-void LOG_NOTICE(char *fmt, ...);
-void LOG_DEBUG(char *fmt, ...);
-void LOG_TRACE(char *fmt, ...);
+void _LOG_ERROR(char *fmt, ...);
+void _LOG_WARN(char *fmt, ...);
+void _LOG_NOTICE(char *fmt, ...);
+void _LOG_DEBUG(char *fmt, ...);
+void _LOG_TRACE(char *fmt, ...);
 
 #endif /*_INOTISPY_LOG_H_*/

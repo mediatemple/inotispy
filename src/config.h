@@ -36,6 +36,7 @@
 #include <glib.h>
 
 #define CONF_GROUP "global"
+#define APPLICATION_NAME "inotispy"
 #define INOTISPY_CONFIG_FILE "/etc/inotispy.conf"
 
 struct inotispy_config {
@@ -46,6 +47,7 @@ struct inotispy_config {
     /* log.h */
     int log_level;
     char *log_file;
+    gboolean log_syslog;
 
     /* inotify.h */
     int max_inotify_events;

@@ -382,15 +382,18 @@ you can tweak:
 .br
 \fBlog_level\fR          - set the verbosity of logging
 .br
+\fBlog_syslog\fR         - toggle log output to syslog
+.br
 \fBmax_inotify_events\fR - cap the number of per/root inotify
                      events to be queued
 .RE
 .SH LOGGING
-Inotispy outputs runtime information to a log file. The default location is
-\fB/var/log/inotispy.log\fR. Using the configuration file (described above) you
+Inotispy outputs runtime information to a private log file, and alternatively
+to \fBsyslog\fR. The default location of the private log file is
+\fB/var/log/inotispy.log\fR. Using the configuration file (described above) you 
 can set the level of verbosity using the \fIlog_level\fR config parameter. By 
 default the level is set to \fBnotice\fR, which should make the output fairly
-limited.
+limited, and logging to \fBsyslog\fR is \fBfalse\fR.
 .P
 If you want, or need, to see more of what's going on under the hood then change
 that level to \fBdebug\fR or \fBtrace\fR. Just be warned that these two levels

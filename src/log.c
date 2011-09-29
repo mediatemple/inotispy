@@ -35,15 +35,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <syslog.h>
 
 int log_level;
 FILE *logger;
 
+int level_to_syslog_priority(int level);
+
 int init_logger()
 {
     log_level = CONFIG->log_level;
-    logger = fopen(CONFIG->log_file, "a");
 
+    /* Private logger */
+    logger = fopen(CONFIG->log_file, "a");
     if (logger == NULL) {
 	fprintf(stderr,
 		"Failed to open file '%s': %s\n", CONFIG->log_file,
@@ -51,21 +55,56 @@ int init_logger()
 	return 1;
     }
 
+    /* syslog */
+    if (CONFIG->log_syslog) {
+	setlogmask(LOG_UPTO(level_to_syslog_priority(CONFIG->log_level)));
+	openlog(APPLICATION_NAME, LOG_PID | LOG_CONS | LOG_NDELAY,
+		LOG_DAEMON);
+    }
+
     return 0;
+}
+
+/* Map an Inotispy log level to a syslog priority.
+ *
+ * The only difference is in the bottom two:
+ *
+ *       Inotispy     |  syslog
+ *   -----------------+-----------
+ *   _LOG_LEVEL_DEBUG | LOG_INFO
+ *   _LOG_LEVEL_TRACE | LOG_DEBUG
+ */
+int level_to_syslog_priority(int level)
+{
+    switch (level) {
+    case _LOG_LEVEL_ERROR:
+	return LOG_ERR;
+    case _LOG_LEVEL_WARN:
+	return LOG_WARNING;
+    case _LOG_LEVEL_NOTICE:
+	return LOG_NOTICE;
+    case _LOG_LEVEL_DEBUG:
+	return LOG_INFO;
+    case _LOG_LEVEL_TRACE:
+	return LOG_DEBUG;
+
+    default:
+	return LOG_NOTICE;
+    }
 }
 
 char *level_str(int level)
 {
     switch (level) {
-    case LOG_LEVEL_ERROR:
+    case _LOG_LEVEL_ERROR:
 	return "ERROR";
-    case LOG_LEVEL_WARN:
+    case _LOG_LEVEL_WARN:
 	return "WARN";
-    case LOG_LEVEL_NOTICE:
+    case _LOG_LEVEL_NOTICE:
 	return "NOTICE";
-    case LOG_LEVEL_DEBUG:
+    case _LOG_LEVEL_DEBUG:
 	return "DEBUG";
-    case LOG_LEVEL_TRACE:
+    case _LOG_LEVEL_TRACE:
 	return "TRACE";
 
     default:
@@ -94,48 +133,52 @@ void log_msg(int level, char *fmt, va_list ap)
     vasprintf(&msg, fmt, ap);
 
     fprintf(logger, "[%s] [%s] %s\n", time_str(), level_str(level), msg);
-
     fflush(logger);
+
+    if (CONFIG->log_syslog) {
+	syslog(level_to_syslog_priority(CONFIG->log_level), msg);
+    }
+
     free(msg);
 }
 
-void LOG_ERROR(char *fmt, ...)
+void _LOG_ERROR(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_msg(LOG_LEVEL_ERROR, fmt, ap);
+    log_msg(_LOG_LEVEL_ERROR, fmt, ap);
     va_end(ap);
 }
 
-void LOG_WARN(char *fmt, ...)
+void _LOG_WARN(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_msg(LOG_LEVEL_WARN, fmt, ap);
+    log_msg(_LOG_LEVEL_WARN, fmt, ap);
     va_end(ap);
 }
 
-void LOG_NOTICE(char *fmt, ...)
+void _LOG_NOTICE(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_msg(LOG_LEVEL_NOTICE, fmt, ap);
+    log_msg(_LOG_LEVEL_NOTICE, fmt, ap);
     va_end(ap);
 }
 
-void LOG_DEBUG(char *fmt, ...)
+void _LOG_DEBUG(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_msg(LOG_LEVEL_DEBUG, fmt, ap);
+    log_msg(_LOG_LEVEL_DEBUG, fmt, ap);
     va_end(ap);
 }
 
-void LOG_TRACE(char *fmt, ...)
+void _LOG_TRACE(char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_msg(LOG_LEVEL_TRACE, fmt, ap);
+    log_msg(_LOG_LEVEL_TRACE, fmt, ap);
     va_end(ap);
 }
 
@@ -146,12 +189,12 @@ int get_log_level(void)
 
 void set_log_level(int level)
 {
-    if (level >= LOG_LEVEL_ERROR && level <= LOG_LEVEL_TRACE) {
+    if (level >= _LOG_LEVEL_ERROR && level <= _LOG_LEVEL_TRACE) {
 	log_level = level;
     } else {
 	char *err;
 	asprintf(&err, "Log level %d is invalid", level);
-	LOG_WARN(err);
+	_LOG_WARN(err);
 	free(err);
     }
 }
