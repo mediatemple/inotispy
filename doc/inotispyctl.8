@@ -27,7 +27,7 @@
 .SH NAME
 inotispyctl \- command line tool for poking the inotispy daemon
 .SH SYNOPSIS
-.B inotispyctl [option] <command> [command args]
+.B inotispyctl\fR [\fIoption\fR] \fBcommand\fR [\fIcommand args\fR]
 .SH DESCRIPTION
 This is a simple command line tool for using the \fBinotispy(8)\fR daemon.
 It can be used as an administrative tool, or just for getting started with
@@ -39,24 +39,65 @@ Print the help menu
 .RE
 \fB\-p\fR, \fB\-\-port\fR
 .RS 4
-Use a port other than the default 5559
+Connect to a port other than the default 5559
 .RE
 .SH COMMANDS
 .SS list_roots
-List each currntly watched root.
+List each currently watched root
 .SS list_queues
-List each currntly watched root and it's current queue size.
+List each currently watched root and the number of events in each queue
 .SS watch\fR \fIdir\fR
-Watch a new root at directory \fIdir\fR.
+Watch a new root at directory \fIdir\fR
 .SS unwatch\fR \fIdir\fR
-Unwatch a root with directory \fIdir\fR.
+Unwatch the root at directory \fIdir\fR
 .SS queue_size\fR \fIdir\fR
-Get the queue size for a specific root.
+Get the queue size for a watched root
 .SS flush_queue\fR \fIdir\fR
-Flush the queue for a specific root.
+Flush the queue for a watched root
 .SS get_events\fR \fIdir\fR \fIcount\fR
-Get events for a specific root. A count of \fB0\fR (zero) will retrieve
-\fBall\fR the events currently in that root's queue. 
+Get events for a specific root. The \fIcount\fR value is an integer value
+>= to 0 (zero). A count of \fB0\fR (zero) will retrieve \fBall\fR the events
+currently in that root's queue
+.SH EXAMPLE USAGE
+The following is an example terminal session using \fBinotispyctl\fR:
+.PP
+.in +4n
+.nf
+$ inotispyctl \fBlist_roots\fR 
+There are no currently watched roots
+
+$ inotispyctl \fBwatch\fR /root/site
+Root /root/site is now being watched
+
+$ inotispyctl \fBlist_roots\fR
+/root/site
+
+$ inotispyctl \fBlist_queues\fR
+/root/site  0
+
+$ touch /root/site/TEST1
+$ mkdir /root/site/dir1
+
+$ inotispyctl \fBlist_queues\fR
+/root/site  4
+
+$ # A count of 0 gets all the events in the queue.
+$ inotispyctl \fBget_events\fR /root/site 0 
+/root/site/TEST1  256
+/root/site/TEST1  4
+/root/site/TEST1  8
+/root/site/dir1  1073742080
+
+$ inotispyctl \fBlist_queues\fR
+/root/site  0
+
+$ inotispyctl \fBunwatch\fR /root/site
+Root /root/site is no longer being watched
+
+$ inotispyctl \fBlist_queues\fR
+There are no currently watched roots
+.fi
+.in
 .SH BUGS
 See the man page \fBinotispy(8)\fR for a list of known Inotispy bugs.
 .SH RESOURCES
