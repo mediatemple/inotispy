@@ -45,9 +45,6 @@
 
 pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define MLOCK() pthread_mutex_lock(&inotify_mutex);
-#define MUNLOCK() pthread_mutex_unlock(&inotify_mutex);
-
 /* When you create a new thread using pthreads you give it
  * a reference to a subroutine and it envokes that subroutine.
  * Unlike other subroutines where you can choose how many
@@ -162,12 +159,12 @@ void inotify_handle_event(int fd)
 	     * or directory under notification we need to lookup
 	     * it's parent path in our watch descriptor hash map.
 	     */
-	    MLOCK();
+	    pthread_mutex_lock(&inotify_mutex);
 	    Watch *watch =
 		g_hash_table_lookup(inotify_wd_to_watch,
 				    GINT_TO_POINTER(event->wd)
 		);
-	    MUNLOCK();
+	    pthread_mutex_unlock(&inotify_mutex);
 
 	    /* Move onto the next event if we can't find its watcher.
 	     *
@@ -224,12 +221,12 @@ void inotify_handle_event(int fd)
 		    LOG_DEBUG("Existing directory '%s' has been removed",
 			      abs_path);
 
-		    MLOCK();
+		    pthread_mutex_lock(&inotify_mutex);
 		    Watch *delete =
 			g_hash_table_lookup(inotify_path_to_watch,
 					    g_strdup(abs_path)
 			);
-		    MUNLOCK();
+		    pthread_mutex_unlock(&inotify_mutex);
 
 		    if (delete == NULL) {
 			LOG_WARN("Failed to look up watcher for path %s",
@@ -244,11 +241,11 @@ void inotify_handle_event(int fd)
 		     */
 		    int wd = delete->wd;
 
-		    MLOCK();
+		    pthread_mutex_lock(&inotify_mutex);
 		    g_hash_table_remove(inotify_wd_to_watch,
 					GINT_TO_POINTER(wd));
 		    g_hash_table_remove(inotify_path_to_watch, abs_path);
-		    MUNLOCK();
+		    pthread_mutex_unlock(&inotify_mutex);
 
 		    int rv = inotify_rm_watch(inotify_fd, wd);
 		    if (rv != 0) {
@@ -288,7 +285,7 @@ int inotify_enqueue(Root * root, IN_Event * event, char *path)
     int queue_len;
     Event *node;
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
 
     /* Check to make sure we don't overflow the queue */
     queue_len = (int) g_queue_get_length(root->queue);
@@ -299,7 +296,7 @@ int inotify_enqueue(Root * root, IN_Event * event, char *path)
     if (queue_len >= root->max_events) {
 	LOG_WARN("Queue full for root '%s' (%d). Dropping event!",
 		 root->path, root->max_events);
-	MUNLOCK();
+	pthread_mutex_unlock(&inotify_mutex);
 	return 1;
     }
 
@@ -321,7 +318,7 @@ int inotify_enqueue(Root * root, IN_Event * event, char *path)
     /* Add new node to the queue. */
     g_queue_push_tail(root->queue, node);
 
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
     return 0;
 }
 
@@ -332,9 +329,9 @@ char **inotify_get_roots(void)
     char **roots;
     GList *keys;
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     keys = g_hash_table_get_keys(inotify_roots);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     roots = malloc((g_list_length(keys) + 1) * (sizeof *roots));
 
@@ -386,12 +383,12 @@ Event **inotify_dequeue(Root * root, int count)
     else
 	LOG_DEBUG("Dequeuing %d events from root '%s'", count, root->path);
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
 
     queue_len = (int) g_queue_get_length(root->queue);
 
     if (queue_len == 0) {
-	MUNLOCK();
+	pthread_mutex_unlock(&inotify_mutex);
 	return NULL;
     }
 
@@ -413,7 +410,7 @@ Event **inotify_dequeue(Root * root, int count)
     }
     events[i] = NULL;
 
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
     return events;
 }
 
@@ -467,9 +464,9 @@ Root *inotify_path_to_root(char *path)
 {
     GList *keys;
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     keys = g_hash_table_get_keys(inotify_roots);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     for (; keys != NULL; keys = keys->next) {
 
@@ -480,9 +477,9 @@ Root *inotify_path_to_root(char *path)
 	    free(tmp);
 	    Root *root;
 
-	    MLOCK();
+	    pthread_mutex_lock(&inotify_mutex);
 	    root = g_hash_table_lookup(inotify_roots, keys->data);
-	    MUNLOCK();
+	    pthread_mutex_unlock(&inotify_mutex);
 
 	    if (root == NULL) {
 		LOG_WARN("Failed to look up root for '%s'", keys->data);
@@ -530,9 +527,9 @@ char *inotify_is_parent(char *path)
 
     asprintf(&tmp, "%s/", path);
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     keys = g_hash_table_get_keys(inotify_roots);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     for (; keys != NULL; keys = keys->next) {
 	if (strstr(keys->data, tmp)) {
@@ -675,11 +672,11 @@ int inotify_watch_tree(char *path, int mask, int max_events)
      */
     Root *new_root;
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     new_root = make_root(path, mask, max_events);
     g_hash_table_replace(inotify_roots, g_strdup(path), new_root);
     ++inotify_num_watched_roots;
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     /* Finally we need to recursively setup inotify
      * watches for our new root.
@@ -721,21 +718,21 @@ void *_do_unwatch_tree(void *thread_data)
     root = data->root;
 
     /* Blow away this root's meta-data. */
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     free(root->path);
     g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
     g_queue_free(root->queue);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     /* Do our recursive UN-watching. */
     root->busy = 1;
     _do_unwatch_tree_rec(data->path);
 
     /* Blow away this root */
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     g_hash_table_remove(inotify_roots, data->path);
     --inotify_num_watched_roots;
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     /* Clean up dynamically allocated memory. */
     free(data->path);
@@ -751,9 +748,9 @@ void _do_unwatch_tree_rec(char *path)
     Watch *delete;
     struct dirent *dir;
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     delete = g_hash_table_lookup(inotify_path_to_watch, path);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     if (delete == NULL) {
 	LOG_WARN
@@ -771,10 +768,10 @@ void _do_unwatch_tree_rec(char *path)
 		 path, strerror(errno));
     }
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(delete->wd));
     g_hash_table_remove(inotify_path_to_watch, path);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     free(delete->path);
     free(delete);
@@ -863,10 +860,10 @@ void _do_watch_tree_rec(char *path, Root * root)
 
     watch = make_watch(wd, path);
 
-    MLOCK();
+    pthread_mutex_lock(&inotify_mutex);
     g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
     g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
-    MUNLOCK();
+    pthread_mutex_unlock(&inotify_mutex);
 
     d = opendir(path);
     if (d == NULL) {

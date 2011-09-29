@@ -43,9 +43,6 @@
 
 pthread_mutex_t zmq_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define MLOCK() pthread_mutex_lock(&zmq_mutex);
-#define MUNLOCK() pthread_mutex_unlock(&zmq_mutex);
-
 void *zmq_setup(void)
 {
     int bind_rv;
@@ -88,7 +85,7 @@ void zmq_handle_event(void *receiver)
     char *json;
     Request *req;
 
-    MLOCK();
+    pthread_mutex_lock(&zmq_mutex);
     zmq_msg_t request;
     zmq_msg_init(&request);
     rv = zmq_recv(zmq_listener, &request, 0);
@@ -103,7 +100,7 @@ void zmq_handle_event(void *receiver)
 	     zmq_strerror(errno));
 
 	reply_send_error(ERROR_ZEROMQ_RECONNECT);
-	MUNLOCK();
+	pthread_mutex_unlock(&zmq_mutex);
 	return;
     }
 
@@ -112,7 +109,7 @@ void zmq_handle_event(void *receiver)
 	LOG_TRACE("Got 0 byte message. Skipping...");
 
 	zmq_msg_close(&request);
-	MUNLOCK();
+	pthread_mutex_unlock(&zmq_mutex);
 	return;
     }
 
@@ -125,7 +122,7 @@ void zmq_handle_event(void *receiver)
 	LOG_TRACE("Message contained no data");
 
 	free(json);
-	MUNLOCK();
+	pthread_mutex_unlock(&zmq_mutex);
 	return;
     }
 
@@ -152,7 +149,7 @@ void zmq_handle_event(void *receiver)
 	|| (json[0] != '{' && json[strlen(json) - 1] != '}')) {
 	free(json);
 	reply_send_error(ERROR_JSON_INVALID);
-	MUNLOCK();
+	pthread_mutex_unlock(&zmq_mutex);
 	return;
     }
 
@@ -164,12 +161,12 @@ void zmq_handle_event(void *receiver)
 
 	free(json);
 	reply_send_error(ERROR_JSON_PARSE);
-	MUNLOCK();
+	pthread_mutex_unlock(&zmq_mutex);
 	return;
     }
 
     free(json);
-    MUNLOCK();
+    pthread_mutex_unlock(&zmq_mutex);
 
     zmq_dispatch_event(req);
 }
@@ -314,9 +311,9 @@ void EVENT_get_queue_size(Request * req)
 	return;
     }
 
-    MLOCK();
+    pthread_mutex_lock(&zmq_mutex);
     size = g_queue_get_length(root->queue);
-    MUNLOCK();
+    pthread_mutex_unlock(&zmq_mutex);
 
     asprintf(&reply, "{\"data\":%d}", size);
     reply_send_message(reply);
