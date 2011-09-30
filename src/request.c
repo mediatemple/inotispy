@@ -38,7 +38,7 @@ JOBJ _parse_json(char *json)
     jobj = json_tokener_parse_ex(jtok, json, -1);
 
     if (jtok->err != json_tokener_success) {
-        _LOG_TRACE("Failed to parse JSON: %s", json);
+        _LOG_DEBUG("Failed to parse JSON: %s", json);
         jobj = NULL;
     }
 
@@ -64,10 +64,10 @@ Request *request_parse(char *json)
     val = json_object_object_get(jobj, "call");
 
     if (val == NULL) {
-        _LOG_ERROR("Failed to find 'call' field in JSON: %s", json);
+        _LOG_DEBUG("Failed to find 'call' field in JSON: %s", json);
         return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-        _LOG_ERROR("Found 'call' field, but it is not a of type 'string'");
+        _LOG_DEBUG("Found 'call' field, but it is not a of type 'string'");
         return NULL;
     }
 
@@ -90,10 +90,10 @@ char *request_get_key_str(Request * req, char *key)
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-        _LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+        _LOG_DEBUG("Failed to find key '%s' in JSON: %s", key, req->json);
         return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-        _LOG_ERROR("Found key '%s', but it is not a of type 'string'",
+        _LOG_DEBUG("Found key '%s', but it is not a of type 'string'",
                    key);
         return NULL;
     }
