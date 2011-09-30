@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include <stdlib.h>		/* exit() */
+#include <stdlib.h>             /* exit() */
 
 void print_help(void);
 
@@ -48,24 +48,24 @@ int main(int argc, char **argv)
 
     /* A few command line args to handle. */
     if (argc == 2 &&
-	(strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-	print_help();
+        (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        print_help();
     }
 
     if (argc == 2 &&
-	(strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--silent") == 0))
-	init_config(TRUE);	/* Silent mode ON */
+        (strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--silent") == 0))
+        init_config(TRUE);      /* Silent mode ON */
     else
-	init_config(FALSE);	/* Silent mode OFF */
+        init_config(FALSE);     /* Silent mode OFF */
 
     if (!CONFIG->silent)
-	fprintf(stderr, "Running Inotispy...\n");
+        fprintf(stderr, "Running Inotispy...\n");
 
     /* Run all initialization functionality. */
 
     rv = init_logger();
     if (rv != 0)
-	return 1;
+        return 1;
 
     _LOG_NOTICE("Initializing daemon");
 
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
 
     zmq_receiver = zmq_setup();
     if (zmq_receiver == NULL) {
-	fprintf(stderr,
-		"Failed to start Inotispy. Please see the log file for details\n");
-	return 1;
+        fprintf(stderr,
+                "Failed to start Inotispy. Please see the log file for details\n");
+        return 1;
     }
 
     items[0].socket = NULL;
@@ -90,21 +90,21 @@ int main(int argc, char **argv)
 
     while (1) {
 
-	rv = zmq_poll(items, 2, -1);
-	if (rv == -1) {
-	    _LOG_ERROR("Failed to call zmq_poll(): %s", strerror(errno));
-	    continue;
-	}
+        rv = zmq_poll(items, 2, -1);
+        if (rv == -1) {
+            _LOG_ERROR("Failed to call zmq_poll(): %s", strerror(errno));
+            continue;
+        }
 
-	if (items[0].revents & ZMQ_POLLIN) {
-	    /* _LOG_TRACE("Found inotify event"); */
-	    inotify_handle_event(inotify_fd);
-	}
+        if (items[0].revents & ZMQ_POLLIN) {
+            /* _LOG_TRACE("Found inotify event"); */
+            inotify_handle_event(inotify_fd);
+        }
 
-	if (items[1].revents & ZMQ_POLLIN) {
-	    /* _LOG_TRACE("Found 0MQ event"); */
-	    zmq_handle_event(zmq_receiver);
-	}
+        if (items[1].revents & ZMQ_POLLIN) {
+            /* _LOG_TRACE("Found 0MQ event"); */
+            zmq_handle_event(zmq_receiver);
+        }
     }
 
     return 0;
@@ -117,17 +117,17 @@ void print_help(void)
     printf("  -s, --silent  Turn off printing to stderr.\n");
     printf("\n");
     printf
-	("Inotispy is an efficient file system change notification daemon based\n");
+        ("Inotispy is an efficient file system change notification daemon based\n");
     printf
-	("on inotify. It recursively watches directory trees, queues file system\n");
+        ("on inotify. It recursively watches directory trees, queues file system\n");
     printf
-	("events that occur within those trees, and delivers those events to\n");
+        ("events that occur within those trees, and delivers those events to\n");
     printf("client applications via ZeroMQ sockets.\n");
     printf("\n");
     printf
-	("For more information on running, configuring, managing and using Inotispy\n");
+        ("For more information on running, configuring, managing and using Inotispy\n");
     printf
-	("please refer to the documentation found at http://www.inotispy.org\n\n");
+        ("please refer to the documentation found at http://www.inotispy.org\n\n");
 
     exit(1);
 }

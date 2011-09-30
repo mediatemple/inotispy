@@ -49,17 +49,17 @@ int init_logger()
     /* Private logger */
     logger = fopen(CONFIG->log_file, "a");
     if (logger == NULL) {
-	fprintf(stderr,
-		"Failed to open file '%s': %s\n", CONFIG->log_file,
-		strerror(errno));
-	return 1;
+        fprintf(stderr,
+                "Failed to open file '%s': %s\n", CONFIG->log_file,
+                strerror(errno));
+        return 1;
     }
 
     /* syslog */
     if (CONFIG->log_syslog) {
-	setlogmask(LOG_UPTO(level_to_syslog_priority(CONFIG->log_level)));
-	openlog(APPLICATION_NAME, LOG_PID | LOG_CONS | LOG_NDELAY,
-		LOG_DAEMON);
+        setlogmask(LOG_UPTO(level_to_syslog_priority(CONFIG->log_level)));
+        openlog(APPLICATION_NAME, LOG_PID | LOG_CONS | LOG_NDELAY,
+                LOG_DAEMON);
     }
 
     return 0;
@@ -78,18 +78,18 @@ int level_to_syslog_priority(int level)
 {
     switch (level) {
     case _LOG_LEVEL_ERROR:
-	return LOG_ERR;
+        return LOG_ERR;
     case _LOG_LEVEL_WARN:
-	return LOG_WARNING;
+        return LOG_WARNING;
     case _LOG_LEVEL_NOTICE:
-	return LOG_NOTICE;
+        return LOG_NOTICE;
     case _LOG_LEVEL_DEBUG:
-	return LOG_INFO;
+        return LOG_INFO;
     case _LOG_LEVEL_TRACE:
-	return LOG_DEBUG;
+        return LOG_DEBUG;
 
     default:
-	return LOG_NOTICE;
+        return LOG_NOTICE;
     }
 }
 
@@ -97,18 +97,18 @@ char *level_str(int level)
 {
     switch (level) {
     case _LOG_LEVEL_ERROR:
-	return "ERROR";
+        return "ERROR";
     case _LOG_LEVEL_WARN:
-	return "WARN";
+        return "WARN";
     case _LOG_LEVEL_NOTICE:
-	return "NOTICE";
+        return "NOTICE";
     case _LOG_LEVEL_DEBUG:
-	return "DEBUG";
+        return "DEBUG";
     case _LOG_LEVEL_TRACE:
-	return "TRACE";
+        return "TRACE";
 
     default:
-	return "UNKNOWN";
+        return "UNKNOWN";
     }
 }
 
@@ -127,7 +127,7 @@ char *time_str()
 void log_msg(int level, char *fmt, va_list ap)
 {
     if (level > log_level)
-	return;
+        return;
 
     char *msg;
     vasprintf(&msg, fmt, ap);
@@ -136,7 +136,7 @@ void log_msg(int level, char *fmt, va_list ap)
     fflush(logger);
 
     if (CONFIG->log_syslog) {
-	syslog(level_to_syslog_priority(CONFIG->log_level), msg);
+        syslog(level_to_syslog_priority(CONFIG->log_level), msg);
     }
 
     free(msg);
@@ -190,11 +190,11 @@ int get_log_level(void)
 void set_log_level(int level)
 {
     if (level >= _LOG_LEVEL_ERROR && level <= _LOG_LEVEL_TRACE) {
-	log_level = level;
+        log_level = level;
     } else {
-	char *err;
-	asprintf(&err, "Log level %d is invalid", level);
-	_LOG_WARN(err);
-	free(err);
+        char *err;
+        asprintf(&err, "Log level %d is invalid", level);
+        _LOG_WARN(err);
+        free(err);
     }
 }

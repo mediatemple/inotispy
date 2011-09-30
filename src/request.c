@@ -38,8 +38,8 @@ JOBJ _parse_json(char *json)
     jobj = json_tokener_parse_ex(jtok, json, -1);
 
     if (jtok->err != json_tokener_success) {
-	_LOG_TRACE("Failed to parse JSON: %s", json);
-	jobj = NULL;
+        _LOG_TRACE("Failed to parse JSON: %s", json);
+        jobj = NULL;
     }
 
     json_tokener_free(jtok);
@@ -57,18 +57,18 @@ Request *request_parse(char *json)
     jobj = _parse_json(json);
 
     if (jobj == NULL) {
-	_LOG_ERROR("Failed to parse JSON: %s", json);
-	return NULL;
+        _LOG_ERROR("Failed to parse JSON: %s", json);
+        return NULL;
     }
 
     val = json_object_object_get(jobj, "call");
 
     if (val == NULL) {
-	_LOG_ERROR("Failed to find 'call' field in JSON: %s", json);
-	return NULL;
+        _LOG_ERROR("Failed to find 'call' field in JSON: %s", json);
+        return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-	_LOG_ERROR("Found 'call' field, but it is not a of type 'string'");
-	return NULL;
+        _LOG_ERROR("Found 'call' field, but it is not a of type 'string'");
+        return NULL;
     }
 
     req = (Request *) malloc(sizeof(Request));
@@ -85,16 +85,17 @@ char *request_get_key_str(Request * req, char *key)
     JOBJ val;
 
     _LOG_TRACE("Calling request_get_key_str(): json='%s' key='%s'",
-	      req->json, key);
+               req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-	_LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
-	return NULL;
+        _LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+        return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-	_LOG_ERROR("Found key '%s', but it is not a of type 'string'", key);
-	return NULL;
+        _LOG_ERROR("Found key '%s', but it is not a of type 'string'",
+                   key);
+        return NULL;
     }
 
     return (char *) json_object_get_string(val);
@@ -108,16 +109,16 @@ int request_get_key_int(Request * req, char *key)
     JOBJ val;
 
     _LOG_TRACE("Calling request_get_key_int(): json='%s' key='%s'",
-	      req->json, key);
+               req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-	_LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
-	return -1;
+        _LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+        return -1;
     } else if (!json_object_is_type(val, json_type_int)) {
-	_LOG_ERROR("Found key '%s', but it is not a of type 'int'", key);
-	return -1;
+        _LOG_ERROR("Found key '%s', but it is not a of type 'int'", key);
+        return -1;
     }
 
     return (int) json_object_get_int(val);
@@ -138,9 +139,9 @@ char *request_get_path(Request * req)
 
     /* Clean up path by removing the trailing slash, if it exists. */
     if (strlen(path) > 0) {
-	last = strlen(path) - 1;
-	if (path[last] == '/')
-	    path[last] = '\0';
+        last = strlen(path) - 1;
+        if (path[last] == '/')
+            path[last] = '\0';
     }
 
     return path;
@@ -153,8 +154,8 @@ int request_get_max_events(Request * req)
     max_events = request_get_key_int(req, "max_events");
 
     if (max_events == -1) {
-	_LOG_TRACE("Did not find user defined max events in JSON request");
-	return 0;
+        _LOG_TRACE("Did not find user defined max events in JSON request");
+        return 0;
     }
 
     return max_events;
@@ -167,8 +168,8 @@ int request_get_mask(Request * req)
     mask = request_get_key_int(req, "mask");
 
     if (mask == -1) {
-	_LOG_TRACE("Did not find user defined mask in JSON request");
-	return 0;
+        _LOG_TRACE("Did not find user defined mask in JSON request");
+        return 0;
     }
 
     return mask;
@@ -188,15 +189,15 @@ int request_get_count(Request * req)
     count = request_get_key_int(req, "count");
 
     if (count == -1) {
-	_LOG_TRACE("Did not find a valid event count in JSON request");
-	return 1;
+        _LOG_TRACE("Did not find a valid event count in JSON request");
+        return 1;
     }
 
     if (count < 0) {
-	_LOG_WARN
-	    ("Invalid event count: %d. Value must be zero or greater.'",
-	     count);
-	return -1;
+        _LOG_WARN
+            ("Invalid event count: %d. Value must be zero or greater.'",
+             count);
+        return -1;
     }
 
     return count;

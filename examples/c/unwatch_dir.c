@@ -40,8 +40,8 @@ int main(int argc, char **argv)
     zmq_msg_t request, reply;
 
     if (argc != 2) {
-	printf("Usage: unwatch_dir <PATH>\n");
-	return 1;
+        printf("Usage: unwatch_dir <PATH>\n");
+        return 1;
     }
 
     /* You'll probably want to make sure the path is valid here. */
@@ -52,9 +52,9 @@ int main(int argc, char **argv)
     connect_rv = zmq_connect(socket, "tcp://127.0.0.1:5559");
 
     if (connect_rv != 0) {
-	printf("Failed to connect ZeroMQ socket: %s\n",
-	       zmq_strerror(errno));
-	return 1;
+        printf("Failed to connect ZeroMQ socket: %s\n",
+               zmq_strerror(errno));
+        return 1;
     }
 
     /* Request */
@@ -66,18 +66,18 @@ int main(int argc, char **argv)
     rv = zmq_send(socket, &request, 0);
     zmq_msg_close(&request);
     if (rv != 0) {
-	printf("Failed to send message to server: %s\n",
-	       zmq_strerror(errno));
-	return 1;
+        printf("Failed to send message to server: %s\n",
+               zmq_strerror(errno));
+        return 1;
     }
 
     /* Reply */
     zmq_msg_init(&reply);
     rv = zmq_recv(socket, &reply, 0);
     if (rv != 0) {
-	printf("Failed to receive message from server: %s\n",
-	       zmq_strerror(errno));
-	return 1;
+        printf("Failed to receive message from server: %s\n",
+               zmq_strerror(errno));
+        return 1;
     }
 
     msg_size = zmq_msg_size(&reply);

@@ -36,7 +36,7 @@
 
 #define INOTIFY_EVENT_SIZE     ( sizeof (struct inotify_event) )
 #define INOTIFY_EVENT_BUF_LEN  ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
-#define INOTIFY_MAX_EVENTS     65536	/* This number is arbatrary */
+#define INOTIFY_MAX_EVENTS     65536    /* This number is arbatrary */
 #define INOTIFY_DEFAULT_MASK   ( \
         IN_ATTRIB              | \
         IN_MOVED_FROM          | \
@@ -60,7 +60,7 @@ typedef struct inotify_root {
     int max_events;
     GQueue *queue;
     int busy;
-    int persist;		/* Future feature */
+    int persist;                /* Future feature */
 } Root;
 
 typedef struct inotify_watch {

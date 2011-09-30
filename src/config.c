@@ -66,88 +66,88 @@ int init_config(gboolean silent)
     /* Attempt to read in config file. */
     kf = g_key_file_new();
     if (!g_key_file_load_from_file
-	(kf, INOTISPY_CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
-	fprintf(stderr, "Failed to load config file %s: %s.\n%s",
-		INOTISPY_CONFIG_FILE, error->message,
-		" -> Using default config values.\n");
+        (kf, INOTISPY_CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
+        fprintf(stderr, "Failed to load config file %s: %s.\n%s",
+                INOTISPY_CONFIG_FILE, error->message,
+                " -> Using default config values.\n");
 
-	/* As stated above Inotify is designed to run with or without
-	 * this config file present or correct. So we don't bail out
-	 * here, we just return a failure back to main(), and Inotispy
-	 * will run using the default config values.
-	 */
-	return 1;
+        /* As stated above Inotify is designed to run with or without
+         * this config file present or correct. So we don't bail out
+         * here, we just return a failure back to main(), and Inotispy
+         * will run using the default config values.
+         */
+        return 1;
     }
 
     /* port */
     int_rv = g_key_file_get_integer(kf, CONF_GROUP, "port", &error);
     if (error != NULL) {
-	fprintf(stderr, "Failed to read config value for 'port': %s\n",
-		error->message);
-	error = NULL;
+        fprintf(stderr, "Failed to read config value for 'port': %s\n",
+                error->message);
+        error = NULL;
     } else {
-	CONFIG->port = int_rv;
+        CONFIG->port = int_rv;
     }
 
     /* log_file */
     str_rv = g_key_file_get_string(kf, CONF_GROUP, "log_file", &error);
     if (error != NULL) {
-	fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
-		error->message);
-	error = NULL;
+        fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
+                error->message);
+        error = NULL;
     } else {
-	asprintf(&CONFIG->log_file, "%s", str_rv);
-	g_free(str_rv);
+        asprintf(&CONFIG->log_file, "%s", str_rv);
+        g_free(str_rv);
     }
 
     /* log_level */
     str_rv = g_key_file_get_string(kf, CONF_GROUP, "log_level", &error);
     if (error != NULL) {
-	fprintf(stderr,
-		"Failed to read config value for 'log_level': %s\n",
-		error->message);
-	error = NULL;
+        fprintf(stderr,
+                "Failed to read config value for 'log_level': %s\n",
+                error->message);
+        error = NULL;
     } else {
-	if (strcmp(str_rv, "trace") == 0) {
-	    CONFIG->log_level = _LOG_LEVEL_TRACE;
-	} else if (strcmp(str_rv, "debug") == 0) {
-	    CONFIG->log_level = _LOG_LEVEL_DEBUG;
-	} else if (strcmp(str_rv, "notice") == 0) {
-	    CONFIG->log_level = _LOG_LEVEL_NOTICE;
-	} else if (strcmp(str_rv, "warn") == 0) {
-	    CONFIG->log_level = _LOG_LEVEL_WARN;
-	} else if (strcmp(str_rv, "error") == 0) {
-	    CONFIG->log_level = _LOG_LEVEL_ERROR;
-	} else {
-	    fprintf(stderr, "Found invalid valud for 'log_level': %s\n",
-		    str_rv);
-	}
+        if (strcmp(str_rv, "trace") == 0) {
+            CONFIG->log_level = _LOG_LEVEL_TRACE;
+        } else if (strcmp(str_rv, "debug") == 0) {
+            CONFIG->log_level = _LOG_LEVEL_DEBUG;
+        } else if (strcmp(str_rv, "notice") == 0) {
+            CONFIG->log_level = _LOG_LEVEL_NOTICE;
+        } else if (strcmp(str_rv, "warn") == 0) {
+            CONFIG->log_level = _LOG_LEVEL_WARN;
+        } else if (strcmp(str_rv, "error") == 0) {
+            CONFIG->log_level = _LOG_LEVEL_ERROR;
+        } else {
+            fprintf(stderr, "Found invalid valud for 'log_level': %s\n",
+                    str_rv);
+        }
 
-	g_free(str_rv);
+        g_free(str_rv);
     }
 
     /* log_syslog */
     bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "log_syslog", &error);
     if (error != NULL) {
-	fprintf(stderr,
-		"Failed to read config value for 'log_syslog': %s\n",
-		error->message);
-	error = NULL;
+        fprintf(stderr,
+                "Failed to read config value for 'log_syslog': %s\n",
+                error->message);
+        error = NULL;
     } else {
-	CONFIG->log_syslog = bool_rv;
+        CONFIG->log_syslog = bool_rv;
     }
 
     /* max_inotify_events */
     int_rv =
-	g_key_file_get_integer(kf, CONF_GROUP, "max_inotify_events",
-			       &error);
+        g_key_file_get_integer(kf, CONF_GROUP, "max_inotify_events",
+                               &error);
     if (error != NULL) {
-	fprintf(stderr,
-		"Failed to read config value for 'max_inotify_events': %s\n",
-		error->message);
-	error = NULL;
+        fprintf(stderr,
+                "Failed to read config value for 'max_inotify_events': %s\n",
+                error->message);
+        error = NULL;
     } else {
-	CONFIG->max_inotify_events = int_rv;
+        CONFIG->max_inotify_events = int_rv;
     }
 
     /* Silent mode.
@@ -157,31 +157,31 @@ int init_config(gboolean silent)
      * value was set in the config file.
      */
     if (silent) {
-	CONFIG->silent = TRUE;
+        CONFIG->silent = TRUE;
     } else {
-	bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "silent", &error);
-	if (error != NULL) {
-	    fprintf(stderr,
-		    "Failed to read config value for 'silent': %s\n",
-		    error->message);
-	    error = NULL;
-	} else {
-	    CONFIG->silent = bool_rv;
-	}
+        bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "silent", &error);
+        if (error != NULL) {
+            fprintf(stderr,
+                    "Failed to read config value for 'silent': %s\n",
+                    error->message);
+            error = NULL;
+        } else {
+            CONFIG->silent = bool_rv;
+        }
     }
 
     if (!CONFIG->silent) {
-	fprintf(stderr, "Using configuration values:\n");
-	fprintf(stderr, " - port               : %d\n", CONFIG->port);
-	fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
-	fprintf(stderr, " - log_level          : %s (%d)\n",
-		level_str(CONFIG->log_level), CONFIG->log_level);
-	fprintf(stderr, " - log_syslog         : %s\n",
-		(CONFIG->log_syslog ? "true" : "false"));
-	fprintf(stderr, " - max_inotify_events : %d\n",
-		CONFIG->max_inotify_events);
-	fprintf(stderr, " - silent mode        : %s\n",
-		(CONFIG->silent ? "true" : "false"));
+        fprintf(stderr, "Using configuration values:\n");
+        fprintf(stderr, " - port               : %d\n", CONFIG->port);
+        fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
+        fprintf(stderr, " - log_level          : %s (%d)\n",
+                level_str(CONFIG->log_level), CONFIG->log_level);
+        fprintf(stderr, " - log_syslog         : %s\n",
+                (CONFIG->log_syslog ? "true" : "false"));
+        fprintf(stderr, " - max_inotify_events : %d\n",
+                CONFIG->max_inotify_events);
+        fprintf(stderr, " - silent mode        : %s\n",
+                (CONFIG->silent ? "true" : "false"));
     }
 
     return 0;
