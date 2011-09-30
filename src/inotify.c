@@ -33,6 +33,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>              /* isalnum() */
 #include <dirent.h>
 #include <unistd.h>             /* read() */
 #include <string.h>
@@ -152,17 +153,21 @@ void inotify_handle_event(int fd)
          *     these events and never want to queue them.
          */
         if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
+            _LOG_TRACE("Skipping inotify IN_CLOSE_NOWRITE event on wd %d",
+                       event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
 
-        /* No name events get skipped. */
-        if (strlen(event->name) == 0) {
+        /* No name events or bogus events  get skipped. */
+        if ((strlen(event->name) == 0) || (!isalnum(event->name[0]))) {
+            _LOG_TRACE("Skipping bogus inotify event on wd %d", event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
 
-        _LOG_TRACE("Got inotify event '%s' for wd %d",
+        _LOG_TRACE("Got inotify event on %s '%s' for wd %d",
+                   ((event->mask & IN_ISDIR) ? "directory" : "file"),
                    event->name, event->wd);
 
         if (event->len) {
