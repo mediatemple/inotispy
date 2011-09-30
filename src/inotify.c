@@ -265,8 +265,7 @@ void inotify_handle_event(int fd)
 
                     Watch *delete =
                         g_hash_table_lookup(inotify_path_to_watch,
-                                            g_strdup(abs_path)
-                        );
+                                            abs_path);
 
                     if (delete == NULL) {
                         _LOG_WARN("Failed to look up watcher for path %s",
@@ -286,6 +285,8 @@ void inotify_handle_event(int fd)
                     g_hash_table_remove(inotify_wd_to_watch,
                                         GINT_TO_POINTER(wd));
                     g_hash_table_remove(inotify_path_to_watch, abs_path);
+                    free(delete->path);
+                    free(delete);
 
                     int rv = inotify_rm_watch(inotify_fd, wd);
                     if (rv != 0) {
