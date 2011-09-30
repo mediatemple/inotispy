@@ -36,13 +36,6 @@
  * broken configuration file. All the important default values exist
  * within the source tree and the config file feature is a simple way
  * to give users a small amount of control over how Inotispy behaves.
- *
- * XXX CODE REVIEW
- *
- *     Similar to other parsing interfaces in C, GLib's GKeyFile interface
- *     is a bit on the verbose side. It works great but is not very pretty.
- *     If there's a better way to handle config file parsing please alert
- *     me.
  */
 int init_config(gboolean silent)
 {

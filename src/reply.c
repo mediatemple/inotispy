@@ -102,6 +102,8 @@ char *error_to_string(uint32_t err_code)
         return "This directory is the parent of a currently watched root";
     else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
         return "This directory does not exist";
+    else if (err_code & ERROR_FAILED_TO_CREATE_NEW_THREAD)
+        return "Failed to create a new thread";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)
         return
             "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";

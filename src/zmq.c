@@ -70,14 +70,6 @@ void *zmq_setup(void)
  * functions if it looks like valid JSON. If it parses correctly
  * and contains the manditory 'call' field then this request is
  * sent to the dispatcher.
- *
- * XXX CODE REVIEW
- *
- *     My check for junk messages feels sloppy, though it seems to
- *     work just fine. I was looking for a quick way to avoid sending
- *     non-JSON data to the parser. Is there a better way to do this?
- *     Should I be doing this at all or should I just pass data along
- *     and let the parser handle junk?
  */
 void zmq_handle_event(void *receiver)
 {
@@ -245,12 +237,6 @@ void EVENT_unwatch(Request * req)
     reply_send_success();
 }
 
-/* XXX CODE REVIEW
- *
- *     I don't know a better, more dynamic way to turn a C struct
- *     into a JSON object. This seems super messy, but this is C
- *     and I'm not sure there is a more elegant solution.
- */
 JOBJ inotify_event_to_jobj(Event * event)
 {
     JOBJ jobj;
@@ -412,38 +398,6 @@ void EVENT_get_roots(void)
     json_object_put(jobj);
 }
 
-/* XXX CODE REVIEW
- * 
- *     Another way to do this would be to set up constant (or enum)
- *     integer values for each of the possible calls with some hooks
- *     for validity checking:
- *     
- *       #define CALL_RANGE_MIN 1
- *       #define CALL_RANGE_MAX N
- *     
- *       #define CALL_WATCH   1
- *       #define CALL_UNWATCH 2
- *         ...
- *       #define CALL_FOO     N
- *     
- *       #define CALL_VALID(X) \
- *         (return ((X >= CALL_RANGE_MIN) && (X <= CALL_RANGE_MAX)) ? 1 : 0)
- *     
- *     This would make the code a little more clear since I would
- *     use a proper switch clause, and it would probably make the
- *     code more efficient since a switch clause would be compairing
- *     integer values instead of doing a character by character
- *     string comparison. However, this approach would require client
- *     code using Inotispy to do one of the following:
- *     
- *       * Use meaningless integer constants in their code.
- *       * Define their own set of named constants to use.
- *       * Find an existing Inotispy binding in their language
- *         that already has these constants defined.
- *     
- *     If anyone thinks this is a better approach please say so and
- *     I'll do the logic swap.
- */
 void zmq_dispatch_event(Request * req)
 {
     char *call = req->call;

@@ -144,12 +144,6 @@ int inotify_num_watched_roots;
  *   funtion inotify_rm_watch() requires as an argument. This
  *   hash let's us take an absolute path and look up it's watch
  *   descriptor.
- *
- * XXX CODE REVIEW
- *
- *     Should these be in this header file, or in inotify.c? Currently
- *     they are only used and referenced in inotify.c, so I'm not sure
- *     they need to be global.
  */
 GHashTable *inotify_roots;
 GHashTable *inotify_wd_to_watch;

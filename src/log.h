@@ -29,19 +29,6 @@
 #ifndef _INOTISPY_LOG_H_
 #define _INOTISPY_LOG_H_
 
-/* XXX CODE REVIEW
- *
- *     Originally I had planned on using log4c for logging, but after spending
- *     a couple hours with it I couldn't get it to work properly and it just
- *     felt super bloated. Both the config file approach and the API approach
- *     in log4c would have ended up needing as much, if not more, code than
- *     the home rolled solution I have here.
- *
- *     What I wrote is extremely simple, but that's all I'm looking for. If
- *     I missed the point with log4c, or there is another simpler C logger
- *     out there please advise.
- */
-
 #define _LOG_FILE "/var/log/inotispy.log"
 
 #define _LOG_LEVEL_ERROR   1
@@ -65,9 +52,9 @@ void set_log_level(int level);
 /* Turn a integer log level into it's corresponding string value. */
 char *level_str(int level);
 
-/* XXX I had thought about trying to make these functions macros,
- *     but the pre-processor doesn't know how to handle the ...
- *     functionality, which is needed here.
+/* XXX: I had thought about trying to make these functions macros,
+ *      but the pre-processor doesn't know how to handle the ...
+ *      functionality, which is needed here.
  */
 void _LOG_ERROR(char *fmt, ...);
 void _LOG_WARN(char *fmt, ...);

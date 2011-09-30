@@ -148,9 +148,9 @@ void inotify_handle_event(int fd)
 
         IN_Event *event = (struct inotify_event *) &buffer[i];
 
-        /* XXX IN_CLOSE_NOWRITE events occur on a directory when
-         *     inotify sets up a watch on it. We don't care about
-         *     these events and never want to queue them.
+        /* XXX: IN_CLOSE_NOWRITE events occur on a directory when
+         *      inotify sets up a watch on it. We don't care about
+         *      these events and never want to queue them.
          */
         if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
             _LOG_TRACE("Skipping inotify IN_CLOSE_NOWRITE event on wd %d",
@@ -653,6 +653,8 @@ int inotify_unwatch_tree(char *path)
  */
 int inotify_watch_tree(char *path, int mask, int max_events)
 {
+    int rv;
+
     _LOG_TRACE("Entering inotify_watch_tree() on path '%s' with mask %lu",
                path, mask);
 
@@ -728,10 +730,10 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     /* Finally we need to recursively setup inotify
      * watches for our new root.
      */
-    do_watch_tree(new_root->path, new_root);
+    rv = 0;
+    rv = do_watch_tree(new_root->path, new_root);
 
-    /* TODO What error checking/return value goes here? */
-    return 0;
+    return rv;
 }
 
 /* Threaded portion of inotify_unwatch_tree(). */
@@ -831,8 +833,8 @@ void _do_unwatch_tree_rec(char *path)
         return;
     }
 
-    /* XXX WARNING! dirent::d_type flags DO NOT work on XFS...
-     *              (and apparently several other file systems)
+    /* XXX: WARNING! dirent::d_type flags DO NOT work on XFS...
+     *               (and apparently several other file systems)
      */
     while ((dir = readdir(d))) {
         if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0 || dir->d_type == DT_LNK) { /* Skip symlinks! */
@@ -869,7 +871,7 @@ int do_watch_tree(char *path, Root * root)
                    path, rc);
         free(data->path);
         free(data);
-        return 1;
+        return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
 
     return 0;
