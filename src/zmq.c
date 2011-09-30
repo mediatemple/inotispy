@@ -86,6 +86,7 @@ void zmq_handle_event(void *receiver)
     Request *req;
 
     pthread_mutex_lock(&zmq_mutex);
+
     zmq_msg_t request;
     zmq_msg_init(&request);
     rv = zmq_recv(zmq_listener, &request, 0);
