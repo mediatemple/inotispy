@@ -60,7 +60,7 @@ int reply_send_message(char *message)
     return 0;
 }
 
-int reply_send_error(uint32_t err_code)
+int reply_send_error(unsigned int err_code)
 {
     char *err;
     asprintf(&err,
@@ -96,6 +96,12 @@ char *error_to_string(uint32_t err_code)
         return "Zero byte message received";
     else if (err_code & ERROR_INOTIFY_ROOT_NOT_WATCHED)
         return "This root is currently not watched under inotify";
+    else if (err_code & ERROR_INOTIFY_ROOT_ALREADY_WATCHED)
+        return "This root is currently being watched under inotify";
+    else if (err_code & ERROR_INOTIFY_PARENT_OF_ROOT)
+        return "This directory is the parent of a currently watched root";
+    else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
+        return "This directory does not exist";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)
         return
             "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";

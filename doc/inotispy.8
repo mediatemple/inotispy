@@ -347,16 +347,19 @@ here are the defined error codes (from \fBsrc/reply.h\fR):
 .P
 .in +4n
 .nf
-#define \fBERROR_JSON_INVALID\fR             0x0001 
-#define \fBERROR_JSON_PARSE\fR               0x0002
-#define \fBERROR_JSON_KEY_NOT_FOUND\fR       0x0004
-#define \fBERROR_INOTIFY_WATCH_FAILED\fR     0x0008
-#define \fBERROR_INOTIFY_UNWATCH_FAILED\fR   0x0010
-#define \fBERROR_INVALID_EVENT_COUNT\fR      0x0020
-#define \fBERROR_ZERO_BYTE_MESSAGE\fR        0x0040
-#define \fBERROR_INOTIFY_ROOT_NOT_WATCHED\fR 0x0080
-#define \fBERROR_ZEROMQ_RECONNECT\fR         0x0100
-#define \fBERROR_NOT_ABSOLUTE_PATH\fR        0x0200
+#define \fBERROR_JSON_INVALID\fR                 0x0001 
+#define \fBERROR_JSON_PARSE\fR                   0x0002
+#define \fBERROR_JSON_KEY_NOT_FOUND\fR           0x0004
+#define \fBERROR_INOTIFY_WATCH_FAILED\fR         0x0008
+#define \fBERROR_INOTIFY_UNWATCH_FAILED\fR       0x0010
+#define \fBERROR_INVALID_EVENT_COUNT\fR          0x0020
+#define \fBERROR_ZERO_BYTE_MESSAGE\fR            0x0040
+#define \fBERROR_INOTIFY_ROOT_NOT_WATCHED\fR     0x0080
+#define \fBERROR_INOTIFY_ROOT_ALREADY_WATCHED\fR 0x0100
+#define \fBERROR_ZEROMQ_RECONNECT\fR             0x0200
+#define \fBERROR_NOT_ABSOLUTE_PATH\fR            0x0400
+#define \fBERROR_INOTIFY_PARENT_OF_ROOT\fR       0x0800
+#define \fBERROR_INOTIFY_ROOT_DOES_NOT_EXIST\fR  0x1000
 .fi
 .in
 .SH EXAMPLES

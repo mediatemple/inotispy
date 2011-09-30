@@ -29,17 +29,25 @@
 #ifndef _INOTISPY_REPLY_H_
 #define _INOTISPY_REPLY_H_
 
+#ifndef _INOTISPY_REPLY_ERRORS_
+#define _INOTISPY_REPLY_ERRORS_
+
 /* Supported error masks. */
-#define ERROR_JSON_INVALID             0x0001
-#define ERROR_JSON_PARSE               0x0002
-#define ERROR_JSON_KEY_NOT_FOUND       0x0004
-#define ERROR_INOTIFY_WATCH_FAILED     0x0008
-#define ERROR_INOTIFY_UNWATCH_FAILED   0x0010
-#define ERROR_INVALID_EVENT_COUNT      0x0020
-#define ERROR_ZERO_BYTE_MESSAGE        0x0040
-#define ERROR_INOTIFY_ROOT_NOT_WATCHED 0x0080
-#define ERROR_ZEROMQ_RECONNECT         0x0100
-#define ERROR_NOT_ABSOLUTE_PATH        0x0200
+#define ERROR_JSON_INVALID                 0x0001
+#define ERROR_JSON_PARSE                   0x0002
+#define ERROR_JSON_KEY_NOT_FOUND           0x0004
+#define ERROR_INOTIFY_WATCH_FAILED         0x0008
+#define ERROR_INOTIFY_UNWATCH_FAILED       0x0010
+#define ERROR_INVALID_EVENT_COUNT          0x0020
+#define ERROR_ZERO_BYTE_MESSAGE            0x0040
+#define ERROR_INOTIFY_ROOT_NOT_WATCHED     0x0080
+#define ERROR_INOTIFY_ROOT_ALREADY_WATCHED 0x0100
+#define ERROR_ZEROMQ_RECONNECT             0x0200
+#define ERROR_NOT_ABSOLUTE_PATH            0x0400
+#define ERROR_INOTIFY_PARENT_OF_ROOT       0x0800
+#define ERROR_INOTIFY_ROOT_DOES_NOT_EXIST  0x1000
+
+#endif /*_INOTISPY_REPLY_ERRORS_*/
 
 /* Send a 0MQ reply to the client.
  *
@@ -51,7 +59,7 @@
 int reply_send_message(char *message);
 
 /* Wrapper functions for error and success. */
-int reply_send_error(uint32_t err_code);
+int reply_send_error(unsigned int error_code);
 int reply_send_success(void);
 
 #endif /*_INOTISPY_REPLY_H_*/

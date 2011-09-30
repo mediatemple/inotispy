@@ -178,7 +178,7 @@ void zmq_handle_event(void *receiver)
 
 void EVENT_watch(Request * req)
 {
-    int mask, max_events;
+    int rv, mask, max_events;
     char *path;
 
     /* Grab the path from our request, or bail if the user
@@ -218,8 +218,9 @@ void EVENT_watch(Request * req)
     }
 
     /* Watch our new root. */
-    if (inotify_watch_tree(path, mask, max_events) != 0) {
-        reply_send_error(ERROR_INOTIFY_WATCH_FAILED);
+    rv = inotify_watch_tree(path, mask, max_events);
+    if (rv != 0) {
+        reply_send_error(rv);
         return;
     }
 

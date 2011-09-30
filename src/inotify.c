@@ -27,13 +27,14 @@
  */
 
 #include "log.h"
+#include "reply.h"
 #include "inotify.h"
 
 #include <glib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <dirent.h>
-#include <unistd.h>
+#include <unistd.h>             /* read() */
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -146,13 +147,23 @@ void inotify_handle_event(int fd)
 
         IN_Event *event = (struct inotify_event *) &buffer[i];
 
-        if (strcmp(event->name, "") == 0) {
+        /* XXX IN_CLOSE_NOWRITE events occur on a directory when
+         *     inotify sets up a watch on it. We don't care about
+         *     these events and never want to queue them.
+         */
+        if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
 
-        _LOG_TRACE("Got inotify event '%s' for wd %d", event->name,
-                   event->wd);
+        /* No name events get skipped. */
+        if (strlen(event->name) == 0) {
+            i += INOTIFY_EVENT_SIZE + event->len;
+            continue;
+        }
+
+        _LOG_TRACE("Got inotify event '%s' for wd %d",
+                   event->name, event->wd);
 
         if (event->len) {
 
@@ -229,6 +240,27 @@ void inotify_handle_event(int fd)
                     _LOG_DEBUG("Existing directory '%s' has been removed",
                                abs_path);
 
+                    /* Check to see if the directory being deleted or
+                     * moved is the root itself. If so we completely
+                     * unwatch this tree as if a client had issued a
+                     * unwatch call.
+                     */
+                    //if (inotify_is_root(abs_path) != NULL) {
+                    //    _LOG_WARN("Root at path '%s' has been %s. %s",
+                    //              abs_path,
+                    //              ((event->
+                    //                mask & IN_DELETE) ? "deleted" :
+                    //               "moved"),
+                    //              "It will be un-watched completely");
+
+                    //    inotify_unwatch_tree(abs_path);
+
+                    //    i += INOTIFY_EVENT_SIZE + event->len;
+                    //    free(path);
+                    //    free(abs_path);
+                    //    continue;
+                    //}
+
                     pthread_mutex_lock(&inotify_mutex);
 
                     Watch *delete =
@@ -260,14 +292,6 @@ void inotify_handle_event(int fd)
                         _LOG_WARN
                             ("Failed call to inotify_rm_watch on dir '%s': %s",
                              abs_path, strerror(errno));
-                    }
-
-                    /* Check to see if the directory being deleted is
-                     * the root itself. If so we have some extra work
-                     * to do XXX *what extra work?* XXX TODO
-                     */
-                    if (inotify_is_root(path) != NULL) {
-                        _LOG_DEBUG("Deleting root at path '%s'", path);
                     }
 
                     pthread_mutex_unlock(&inotify_mutex);
@@ -648,7 +672,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
                       path, r->path);
 
             pthread_mutex_unlock(&inotify_mutex);
-            return 1;
+            return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
         }
 
         /* Second, we check to see if the path the user is trying
@@ -663,7 +687,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
                 ("Path '%s' is the parent of already watched root '%s'",
                  path, sub_path);
             pthread_mutex_unlock(&inotify_mutex);
-            return 1;
+            return ERROR_INOTIFY_PARENT_OF_ROOT;
         }
 
         pthread_mutex_unlock(&inotify_mutex);
@@ -677,7 +701,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
         if (d == NULL) {
             _LOG_ERROR("Failed to open root at dir '%s': %s",
                        path, strerror(errno));
-            return 1;
+            return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
         }
         closedir(d);
     }
