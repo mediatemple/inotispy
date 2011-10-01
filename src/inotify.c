@@ -148,6 +148,18 @@ void inotify_handle_event(int fd)
 
         IN_Event *event = (struct inotify_event *) &buffer[i];
 
+        /* IN_Q_OVERFLOW is the event that occurrs when inotify's
+         * event buffer is full.
+         */
+        if (event->mask & IN_Q_OVERFLOW) {
+            _LOG_ERROR
+                ("Inotify event buffer is full: Raise the value in %s %s",
+                 "/proc/sys/fs/inotify/max_queued_events if",
+                 "this is a chronic error");
+            i += INOTIFY_EVENT_SIZE + event->len;
+            continue;
+        }
+
         /* IN_CLOSE_NOWRITE events occur on a directory when inotify
          * sets up a watch on it. We don't care about these events
          * and never want to queue them.
