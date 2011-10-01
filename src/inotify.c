@@ -245,26 +245,10 @@ void inotify_handle_event(int fd)
                     _LOG_DEBUG("Existing directory '%s' has been removed",
                                abs_path);
 
-                    /* Check to see if the directory being deleted or
-                     * moved is the root itself. If so we completely
-                     * unwatch this tree as if a client had issued a
-                     * unwatch call.
+                    /* TODO: How can we determine if the actual root itself
+                     *       is being deleted since the root itself is not
+                     *       watched by anything?
                      */
-                    //if (inotify_is_root(abs_path) != NULL) {
-                    //    _LOG_WARN("Root at path '%s' has been %s. %s",
-                    //              abs_path,
-                    //              ((event->
-                    //                mask & IN_DELETE) ? "deleted" :
-                    //               "moved"),
-                    //              "It will be un-watched completely");
-
-                    //    inotify_unwatch_tree(abs_path);
-
-                    //    i += INOTIFY_EVENT_SIZE + event->len;
-                    //    free(path);
-                    //    free(abs_path);
-                    //    continue;
-                    //}
 
                     pthread_mutex_lock(&inotify_mutex);
 
