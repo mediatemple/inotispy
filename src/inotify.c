@@ -898,7 +898,8 @@ void _do_watch_tree_rec(char *path, Root * root)
     struct dirent *dir;
     Watch *watch;
 
-    wd = inotify_add_watch(inotify_fd, path, IN_ALL_EVENTS);
+    wd = inotify_add_watch(inotify_fd, path,
+                           IN_ALL_EVENTS | IN_DONT_FOLLOW);
 
     _LOG_DEBUG("Watching wd:%d path:%s", wd, path);
 

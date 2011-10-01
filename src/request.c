@@ -114,10 +114,10 @@ int request_get_key_int(Request * req, char *key)
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-        _LOG_ERROR("Failed to find key '%s' in JSON: %s", key, req->json);
+        _LOG_DEBUG("Failed to find key '%s' in JSON: %s", key, req->json);
         return -1;
     } else if (!json_object_is_type(val, json_type_int)) {
-        _LOG_ERROR("Found key '%s', but it is not a of type 'int'", key);
+        _LOG_DEBUG("Found key '%s', but it is not a of type 'int'", key);
         return -1;
     }
 
