@@ -148,12 +148,23 @@ void inotify_handle_event(int fd)
 
         IN_Event *event = (struct inotify_event *) &buffer[i];
 
-        /* XXX: IN_CLOSE_NOWRITE events occur on a directory when
-         *      inotify sets up a watch on it. We don't care about
-         *      these events and never want to queue them.
+        /* IN_CLOSE_NOWRITE events occur on a directory when inotify
+         * sets up a watch on it. We don't care about these events
+         * and never want to queue them.
          */
         if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
             _LOG_TRACE("Skipping inotify IN_CLOSE_NOWRITE event on wd %d",
+                       event->wd);
+            i += INOTIFY_EVENT_SIZE + event->len;
+            continue;
+        }
+
+        /* IN_IGNORED events occur when we remove an inotify watch by
+         * making a call to inotify_rm_watch(). We don't care about
+         * these events and never want to queue them.
+         */
+        if (event->mask & IN_IGNORED) {
+            _LOG_TRACE("Skipping inotify IN_IGNORED event on wd %d",
                        event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
@@ -276,13 +287,6 @@ void inotify_handle_event(int fd)
                     g_hash_table_remove(inotify_path_to_watch, abs_path);
                     free(delete->path);
                     free(delete);
-
-                    int rv = inotify_rm_watch(inotify_fd, wd);
-                    if (rv != 0) {
-                        _LOG_WARN
-                            ("Failed call to inotify_rm_watch on dir '%s': %s",
-                             abs_path, strerror(errno));
-                    }
 
                     pthread_mutex_unlock(&inotify_mutex);
                 }

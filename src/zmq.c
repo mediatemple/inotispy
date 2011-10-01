@@ -176,17 +176,19 @@ void EVENT_watch(Request * req)
     /* Grab the path from our request, or bail if the user
      * did not supply a valid one.
      */
-    path = request_get_path(req);
+    asprintf(&path, request_get_path(req));
 
     if (path == NULL) {
         _LOG_WARN("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+        free(path);
         return;
     }
 
     if (path[0] != '/') {
         _LOG_WARN("Path '%s' is invalid. It must be an absolute path");
         reply_send_error(ERROR_NOT_ABSOLUTE_PATH);
+        free(path);
         return;
     }
 
@@ -213,9 +215,11 @@ void EVENT_watch(Request * req)
     rv = inotify_watch_tree(path, mask, max_events);
     if (rv != 0) {
         reply_send_error(rv);
+        free(path);
         return;
     }
 
+    free(path);
     reply_send_success();
 }
 
