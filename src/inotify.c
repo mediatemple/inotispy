@@ -901,12 +901,14 @@ void _do_watch_tree_rec(char *path, Root * root)
     wd = inotify_add_watch(inotify_fd, path,
                            IN_ALL_EVENTS | IN_DONT_FOLLOW);
 
-    _LOG_DEBUG("Watching wd:%d path:%s", wd, path);
-
     if (wd < 0) {
-        _LOG_ERROR("Failed to set up inotify watch for path '%s'", path);
+        _LOG_ERROR("Failed to set up inotify watch for path '%s': %s",
+                   path, strerror(errno));
         return;
     }
+
+    _LOG_DEBUG("Watching wd:%d path:%s", wd, path);
+
 
     watch = make_watch(wd, path);
 
