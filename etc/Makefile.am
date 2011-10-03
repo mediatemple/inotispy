@@ -25,8 +25,5 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src bin etc doc
-
-#etcdir = /etc
-#etc_DATA = etc/inotispy.conf
+etcdir = /etc
+etc_DATA = inotispy.conf
