@@ -31,11 +31,22 @@
 
 #define _LOG_FILE "/var/log/inotispy.log"
 
+enum log_levels {
+    _LOG_LEVEL_UNKNOWN,
+    _LOG_LEVEL_ERROR,
+    _LOG_LEVEL_WARN,
+    _LOG_LEVEL_NOTICE,
+    _LOG_LEVEL_DEBUG,
+    _LOG_LEVEL_TRACE
+};
+
+/*
 #define _LOG_LEVEL_ERROR   1
 #define _LOG_LEVEL_WARN    2
 #define _LOG_LEVEL_NOTICE  3
 #define _LOG_LEVEL_DEBUG   4
 #define _LOG_LEVEL_TRACE   5
+*/
 
 /* Initialize and setup our logger */
 int init_logger(void);

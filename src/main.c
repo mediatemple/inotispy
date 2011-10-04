@@ -37,7 +37,7 @@
 #include <assert.h>
 #include <stdlib.h>             /* exit() */
 
-void print_help(void);
+void print_help_and_exit(void);
 
 int main(int argc, char **argv)
 {
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     /* A few command line args to handle. */
     if (argc == 2 &&
         (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        print_help();
+        print_help_and_exit();
     }
 
     if (argc == 2 &&
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void print_help(void)
+void print_help_and_exit(void)
 {
     printf("Usage: inotispy [--silent]\n");
     printf("\n");

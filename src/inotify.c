@@ -45,7 +45,7 @@
 #include <sys/types.h>
 #include <glib/ghash.h>
 
-pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* When you create a new thread using pthreads you give it
  * a reference to a subroutine and it envokes that subroutine.
@@ -74,12 +74,12 @@ int inotify_enqueue(Root * root, IN_Event * event, char *path);
 void free_node_mem(Event * node, gpointer user_data);
 
 int do_watch_tree(char *path, Root * root);
-void *_do_watch_tree(void *data);
-void _do_watch_tree_rec(char *path, Root * root);
+static void *_do_watch_tree(void *data);
+static void _do_watch_tree_rec(char *path, Root * root);
 
 int do_unwatch_tree(char *path, Root * root);
-void *_do_unwatch_tree(void *data);
-void _do_unwatch_tree_rec(char *path);
+static void *_do_unwatch_tree(void *data);
+static void _do_unwatch_tree_rec(char *path);
 
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
