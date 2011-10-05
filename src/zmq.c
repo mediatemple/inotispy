@@ -58,7 +58,7 @@ void *zmq_setup(void)
     free(zmq_uri);
 
     if (bind_rv != 0) {
-        _LOG_ERROR("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
+        log_error("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
         return NULL;
     }
 
@@ -88,7 +88,7 @@ void zmq_handle_event(void *receiver)
      * very heavy load, or from connections from many clients.
      */
     if (rv != 0) {
-        _LOG_TRACE
+        log_trace
             ("Failed to call recv(): %s. Sending reconnect error to client",
              zmq_strerror(errno));
 
@@ -99,7 +99,7 @@ void zmq_handle_event(void *receiver)
 
     msg_size = zmq_msg_size(&request);
     if (!msg_size > 0) {
-        _LOG_TRACE("Got 0 byte message. Skipping...");
+        log_trace("Got 0 byte message. Skipping...");
 
         zmq_msg_close(&request);
         pthread_mutex_unlock(&zmq_mutex);
@@ -112,14 +112,14 @@ void zmq_handle_event(void *receiver)
     json[msg_size] = '\0';
 
     if (strlen(json) == 0) {
-        _LOG_TRACE("Message contained no data");
+        log_trace("Message contained no data");
 
         free(json);
         pthread_mutex_unlock(&zmq_mutex);
         return;
     }
 
-    _LOG_TRACE("Received raw message: '%s'", json);
+    log_trace("Received raw message: '%s'", json);
 
     /* Check for junk messages. This is not by any means an
      * exhaustive check for valid JSON. Just quick, dirty and
@@ -150,7 +150,7 @@ void zmq_handle_event(void *receiver)
     req = request_parse(json);  /* Function is in request.c */
 
     if (req == NULL) {
-        _LOG_WARN("Invalid JSON message: %s", json);
+        log_warn("Invalid JSON message: %s", json);
 
         free(json);
         reply_send_error(ERROR_JSON_PARSE);
@@ -179,36 +179,36 @@ void EVENT_watch(Request * req)
     asprintf(&path, request_get_path(req));
 
     if (path == NULL) {
-        _LOG_WARN("JSON parsed successfully but no 'path' field found");
+        log_warn("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
         free(path);
         return;
     }
 
     if (path[0] != '/') {
-        _LOG_WARN("Path '%s' is invalid. It must be an absolute path");
+        log_warn("Path '%s' is invalid. It must be an absolute path");
         reply_send_error(ERROR_NOT_ABSOLUTE_PATH);
         free(path);
         return;
     }
 
-    _LOG_DEBUG("Watching new root at path '%s'", path);
+    log_debug("Watching new root at path '%s'", path);
 
     /* Check for user defined configuration overrides. */
     mask = request_get_mask(req);
     if (mask == 0) {
         mask = INOTIFY_DEFAULT_MASK;
-        _LOG_TRACE("Using default inotify mask: %lu", mask);
+        log_trace("Using default inotify mask: %lu", mask);
     } else {
-        _LOG_TRACE("Using user defined inotify mask: %lu", mask);
+        log_trace("Using user defined inotify mask: %lu", mask);
     }
 
     max_events = request_get_max_events(req);
     if (max_events == 0) {
         max_events = CONFIG->max_inotify_events;
-        _LOG_TRACE("Using default max events %d", max_events);
+        log_trace("Using default max events %d", max_events);
     } else {
-        _LOG_TRACE("Using user defined max events %d", max_events);
+        log_trace("Using user defined max events %d", max_events);
     }
 
     /* Watch our new root. */
@@ -228,7 +228,7 @@ void EVENT_unwatch(Request * req)
     char *path = request_get_path(req);
 
     if (path == NULL) {
-        _LOG_WARN("JSON parsed successfully but no 'path' field found");
+        log_warn("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
         return;
     }
@@ -290,7 +290,7 @@ void EVENT_get_queue_size(Request * req)
     path = request_get_path(req);
 
     if (path == NULL) {
-        _LOG_WARN("JSON parsed successfully but no 'path' field found");
+        log_warn("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
         return;
     }
@@ -298,7 +298,7 @@ void EVENT_get_queue_size(Request * req)
     root = inotify_is_root(path);
 
     if (root == NULL) {
-        _LOG_WARN("Path '%s' is not a currently watch root", path);
+        log_warn("Path '%s' is not a currently watch root", path);
         reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
         return;
     }
@@ -323,13 +323,13 @@ void EVENT_get_events(Request * req)
     path = request_get_path(req);
 
     if (path == NULL) {
-        _LOG_WARN("JSON parsed successfully but no 'path' field found");
+        log_warn("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
         return;
     }
 
     if (inotify_is_root(path) == NULL) {
-        _LOG_WARN("Path '%s' is not a currently watch root", path);
+        log_warn("Path '%s' is not a currently watch root", path);
         reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
         return;
     }
@@ -341,11 +341,11 @@ void EVENT_get_events(Request * req)
         return;
     }
 
-    _LOG_TRACE("Trying to get %d events for root '%s'", count, path);
+    log_trace("Trying to get %d events for root '%s'", count, path);
     events = inotify_get_events(path, count);
 
     if (events == NULL) {
-        _LOG_TRACE("No events found for root at path '%s'", path);
+        log_trace("No events found for root at path '%s'", path);
         reply_send_message("{\"data\":[]}");
         return;
     }
@@ -406,7 +406,7 @@ void zmq_dispatch_event(Request * req)
 {
     char *call = req->call;
 
-    _LOG_DEBUG("Dispatching call '%s' with data '%s'",
+    log_debug("Dispatching call '%s' with data '%s'",
                call, request_to_string(req));
 
     if (strcmp(call, "watch") == 0) {
@@ -420,7 +420,7 @@ void zmq_dispatch_event(Request * req)
     } else if (strcmp(call, "get_roots") == 0) {
         EVENT_get_roots();
     } else {
-        _LOG_WARN("Unknown call: '%s'", call);
+        log_warn("Unknown call: '%s'", call);
     }
 
     request_free(req);

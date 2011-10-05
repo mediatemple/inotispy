@@ -29,24 +29,16 @@
 #ifndef _INOTISPY_LOG_H_
 #define _INOTISPY_LOG_H_
 
-#define _LOG_FILE "/var/log/inotispy.log"
+#define LOG_FILE "/var/log/inotispy.log"
 
 enum log_levels {
-    _LOG_LEVEL_UNKNOWN,
-    _LOG_LEVEL_ERROR,
-    _LOG_LEVEL_WARN,
-    _LOG_LEVEL_NOTICE,
-    _LOG_LEVEL_DEBUG,
-    _LOG_LEVEL_TRACE
+    LOG_LEVEL_UNKNOWN,
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_WARN,
+    LOG_LEVEL_NOTICE,
+    LOG_LEVEL_DEBUG,
+    LOG_LEVEL_TRACE
 };
-
-/*
-#define _LOG_LEVEL_ERROR   1
-#define _LOG_LEVEL_WARN    2
-#define _LOG_LEVEL_NOTICE  3
-#define _LOG_LEVEL_DEBUG   4
-#define _LOG_LEVEL_TRACE   5
-*/
 
 /* Initialize and setup our logger */
 int init_logger(void);
@@ -63,14 +55,10 @@ void set_log_level(int level);
 /* Turn a integer log level into it's corresponding string value. */
 char *level_str(int level);
 
-/* XXX: I had thought about trying to make these functions macros,
- *      but the pre-processor doesn't know how to handle the ...
- *      functionality, which is needed here.
- */
-void _LOG_ERROR(char *fmt, ...);
-void _LOG_WARN(char *fmt, ...);
-void _LOG_NOTICE(char *fmt, ...);
-void _LOG_DEBUG(char *fmt, ...);
-void _LOG_TRACE(char *fmt, ...);
+void log_error  (char *fmt, ...);
+void log_warn   (char *fmt, ...);
+void log_notice (char *fmt, ...);
+void log_debug  (char *fmt, ...);
+void log_trace  (char *fmt, ...);
 
 #endif /*_INOTISPY_LOG_H_*/

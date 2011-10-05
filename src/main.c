@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     if (rv != 0)
         return 1;
 
-    _LOG_NOTICE("Initializing daemon");
+    log_notice("Initializing daemon");
 
     inotify_fd = inotify_setup();
     assert(inotify_fd > 0);
@@ -86,23 +86,23 @@ int main(int argc, char **argv)
     items[1].socket = zmq_receiver;
     items[1].events = ZMQ_POLLIN;
 
-    _LOG_DEBUG("Entering event loop...");
+    log_debug("Entering event loop...");
 
     while (1) {
 
         rv = zmq_poll(items, 2, -1);
         if (rv == -1) {
-            _LOG_ERROR("Failed to call zmq_poll(): %s", strerror(errno));
+            log_error("Failed to call zmq_poll(): %s", strerror(errno));
             continue;
         }
 
         if (items[0].revents & ZMQ_POLLIN) {
-            /* _LOG_TRACE("Found inotify event"); */
+            /* log_trace("Found inotify event"); */
             inotify_handle_event(inotify_fd);
         }
 
         if (items[1].revents & ZMQ_POLLIN) {
-            /* _LOG_TRACE("Found 0MQ event"); */
+            /* log_trace("Found 0MQ event"); */
             zmq_handle_event(zmq_receiver);
         }
     }
