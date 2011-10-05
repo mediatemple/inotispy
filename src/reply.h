@@ -47,6 +47,7 @@
 #define ERROR_INOTIFY_PARENT_OF_ROOT       0x0800
 #define ERROR_INOTIFY_ROOT_DOES_NOT_EXIST  0x1000
 #define ERROR_FAILED_TO_CREATE_NEW_THREAD  0x2000
+#define ERROR_MEMORY_ALLOCATION            0x4000
 
 #endif /*_INOTISPY_REPLY_ERRORS_*/
 
@@ -62,5 +63,8 @@ int reply_send_message(char *message);
 /* Wrapper functions for error and success. */
 int reply_send_error(unsigned int error_code);
 int reply_send_success(void);
+
+/* Stringify an error code. */
+char *error_to_string(unsigned int err_code);
 
 #endif /*_INOTISPY_REPLY_H_*/

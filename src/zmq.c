@@ -107,6 +107,13 @@ void zmq_handle_event(void *receiver)
     }
 
     json = malloc(msg_size + 1);
+    if (json == NULL) {
+        log_error("Failed to allocate memory for JSON message: %s",
+                  "zmq.c:zmq_handle_event()");
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
+
     memcpy(json, zmq_msg_data(&request), msg_size);
     zmq_msg_close(&request);
     json[msg_size] = '\0';
@@ -148,9 +155,14 @@ void zmq_handle_event(void *receiver)
 
     /* Handle JSON parsing and request here. */
     req = request_parse(json);  /* Function is in request.c */
-
-    if (req == NULL) {
-        log_warn("Invalid JSON message: %s", json);
+    if (req == (Request *) - 1) {
+        log_error("Failed to allocate memory for new JSON message: %s",
+                  json);
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        pthread_mutex_unlock(&zmq_mutex);
+        return;
+    } else if (req == NULL) {
+        log_error("Failed to parse JSON message: %s", json);
 
         free(json);
         reply_send_error(ERROR_JSON_PARSE);
@@ -343,6 +355,10 @@ void EVENT_get_events(Request * req)
 
     log_trace("Trying to get %d events for root '%s'", count, path);
     events = inotify_get_events(path, count);
+    if (events == (Event **) - 1) {
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
 
     if (events == NULL) {
         log_trace("No events found for root at path '%s'", path);
@@ -385,6 +401,10 @@ void EVENT_get_roots(void)
     }
 
     roots = inotify_get_roots();
+    if (roots == NULL) {
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
 
     jobj = json_object_new_object();
     jarr = json_object_new_array();
@@ -407,7 +427,7 @@ void zmq_dispatch_event(Request * req)
     char *call = req->call;
 
     log_debug("Dispatching call '%s' with data '%s'",
-               call, request_to_string(req));
+              call, request_to_string(req));
 
     if (strcmp(call, "watch") == 0) {
         EVENT_watch(req);

@@ -34,8 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *error_to_string(uint32_t err_code);
-
 int reply_send_message(char *message)
 {
     int rv;
@@ -49,7 +47,7 @@ int reply_send_message(char *message)
     }
 
     strncpy(zmq_msg_data(&msg), message, strlen(message));
-    rv = zmq_send(zmq_listener, &msg, 0);
+    rv = zmq_send(zmq_listener, &msg, ZMQ_NOBLOCK);
 
     if (rv != 0) {
         log_error("Failed to send message '%s': %s (%d)",
@@ -78,7 +76,7 @@ int reply_send_success(void)
     return reply_send_message("{\"success\":1}");
 }
 
-char *error_to_string(uint32_t err_code)
+char *error_to_string(unsigned int err_code)
 {
     if (err_code & ERROR_JSON_INVALID)
         return "Invalid JSON";
@@ -102,6 +100,8 @@ char *error_to_string(uint32_t err_code)
         return "This directory is the parent of a currently watched root";
     else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
         return "This directory does not exist";
+    else if (err_code & ERROR_MEMORY_ALLOCATION)
+        return "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
     else if (err_code & ERROR_FAILED_TO_CREATE_NEW_THREAD)
         return "Failed to create a new thread";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)

@@ -65,19 +65,18 @@ typedef struct thread_data {
 } T_Data;
 
 /* Prototypes for private functions. */
-Root *inotify_path_to_root(char *path);
-Root *make_root(char *path, int mask, int max_events);
-Watch *make_watch(int wd, char *path);
-int inotify_root_exists(char *path);
-char *inotify_is_parent(char *path);
-int inotify_enqueue(Root * root, IN_Event * event, char *path);
-void free_node_mem(Event * node, gpointer user_data);
+static Root *inotify_path_to_root(char *path);
+static Root *make_root(char *path, int mask, int max_events);
+static Watch *make_watch(int wd, char *path);
+static char *inotify_is_parent(char *path);
+static int inotify_enqueue(Root * root, IN_Event * event, char *path);
+static void free_node_mem(Event * node, gpointer user_data);
 
-int do_watch_tree(char *path, Root * root);
+static int do_watch_tree(char *path, Root * root);
 static void *_do_watch_tree(void *data);
 static void _do_watch_tree_rec(char *path, Root * root);
 
-int do_unwatch_tree(char *path, Root * root);
+static int do_unwatch_tree(char *path, Root * root);
 static void *_do_unwatch_tree(void *data);
 static void _do_unwatch_tree_rec(char *path);
 
@@ -166,7 +165,7 @@ void inotify_handle_event(int fd)
          */
         if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
             log_trace("Skipping inotify IN_CLOSE_NOWRITE event on wd %d",
-                       event->wd);
+                      event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
@@ -177,7 +176,7 @@ void inotify_handle_event(int fd)
          */
         if (event->mask & IN_IGNORED) {
             log_trace("Skipping inotify IN_IGNORED event on wd %d",
-                       event->wd);
+                      event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
@@ -190,11 +189,12 @@ void inotify_handle_event(int fd)
         }
 
         log_trace("Got inotify event on %s '%s' for wd %d",
-                   ((event->mask & IN_ISDIR) ? "directory" : "file"),
-                   event->name, event->wd);
+                  ((event->mask & IN_ISDIR) ? "directory" : "file"),
+                  event->name, event->wd);
 
         if (event->len) {
 
+            int rv;
             Root *root;
             char *path;
             char *abs_path;
@@ -233,7 +233,7 @@ void inotify_handle_event(int fd)
 
             if (root == NULL) {
                 log_error("Failed to look up meta data for root '%s'",
-                           path);
+                          path);
                 i += INOTIFY_EVENT_SIZE + event->len;
                 free(path);
                 continue;
@@ -255,7 +255,15 @@ void inotify_handle_event(int fd)
                     || (event->mask & IN_MOVED_TO)) {
                     log_debug("New directory '%s' found", abs_path);
 
-                    do_watch_tree(abs_path, root);
+                    rv = do_watch_tree(abs_path, root);
+                    if (rv != 0) {
+                        log_error("Failed to watch root at dir '%s': %s",
+                                  abs_path, error_to_string(rv));
+                        i += INOTIFY_EVENT_SIZE + event->len;
+                        free(path);
+                        free(abs_path);
+                        continue;
+                    }
                 }
 
                 /* Here we have directory deletion. So we need to tell
@@ -266,7 +274,7 @@ void inotify_handle_event(int fd)
                 else if ((event->mask & IN_DELETE)
                          || (event->mask & IN_MOVED_FROM)) {
                     log_debug("Existing directory '%s' has been removed",
-                               abs_path);
+                              abs_path);
 
                     /* TODO: How can we determine if the actual root itself
                      *       is being deleted since the root itself is not
@@ -281,7 +289,7 @@ void inotify_handle_event(int fd)
 
                     if (delete == NULL) {
                         log_warn("Failed to look up watcher for path %s",
-                                  abs_path);
+                                 abs_path);
                         i += INOTIFY_EVENT_SIZE + event->len;
                         free(path);
                         free(abs_path);
@@ -305,8 +313,12 @@ void inotify_handle_event(int fd)
             }
 
             /* Queue event */
-            if (event->mask & root->mask)
-                inotify_enqueue(root, event, path);
+            if (event->mask & root->mask) {
+                rv = inotify_enqueue(root, event, path);
+                if (rv != 0)
+                    log_warn("Failed to queue event for wd:%d path:%s",
+                             event->wd, path);
+            }
 
             free(path);
             free(abs_path);
@@ -321,7 +333,7 @@ void inotify_handle_event(int fd)
  * On success 0 (zero) is returned.
  * On failure 1 is returned.
  */
-int inotify_enqueue(Root * root, IN_Event * event, char *path)
+static int inotify_enqueue(Root * root, IN_Event * event, char *path)
 {
     int queue_len;
     Event *node;
@@ -332,22 +344,28 @@ int inotify_enqueue(Root * root, IN_Event * event, char *path)
     queue_len = (int) g_queue_get_length(root->queue);
 
     log_trace("Root '%s' has %d/%d events queued",
-               root->path, queue_len, root->max_events);
+              root->path, queue_len, root->max_events);
 
     if (queue_len >= root->max_events) {
         log_warn("Queue full for root '%s' (%d). Dropping event!",
-                  root->path, root->max_events);
+                 root->path, root->max_events);
         pthread_mutex_unlock(&inotify_mutex);
         return 1;
     }
 
     log_debug("Queuing event root:%s path:%s name:%s",
-               root->path, path, event->name);
+              root->path, path, event->name);
 
     /* Create our new queue node and copy over all
      * the data fields from the event.
      */
     node = (Event *) malloc(sizeof(Event));
+    if (node == NULL) {
+        log_error("Failed to allocate memory for new queue node: %s",
+                  "inotify.c:inotify_enqueue()");
+        return 1;
+    }
+
     node->wd = event->wd;
     node->mask = event->mask;
     node->cookie = event->cookie;
@@ -375,6 +393,12 @@ char **inotify_get_roots(void)
     keys = g_hash_table_get_keys(inotify_roots);
 
     roots = malloc((g_list_length(keys) + 1) * (sizeof *roots));
+    if (roots == NULL) {
+        log_error("Failed to allocate memory for roots list: %s",
+                  "inotify.c:inotify_get_roots()");
+        pthread_mutex_unlock(&inotify_mutex);
+        return NULL;
+    }
 
     for (; keys != NULL; keys = keys->next)
         asprintf(&roots[i++], "%s", (char *) keys->data);
@@ -410,14 +434,13 @@ void inotify_free_events(Event ** events)
     if (events != NULL) {
         for (i = 0; events[i]; i++) {
             free_node_mem(events[i], NULL);
-            free(events[i]);
         }
     }
 
     free(events);
 }
 
-Event **inotify_dequeue(Root * root, int count)
+static Event **inotify_dequeue(Root * root, int count)
 {
     int i, queue_len;
     Event *e, **events;
@@ -425,8 +448,7 @@ Event **inotify_dequeue(Root * root, int count)
     if (count == 0)
         log_debug("Dequeuing *all* events from root '%s'", root->path);
     else
-        log_debug("Dequeuing %d events from root '%s'", count,
-                   root->path);
+        log_debug("Dequeuing %d events from root '%s'", count, root->path);
 
     pthread_mutex_lock(&inotify_mutex);
 
@@ -441,15 +463,21 @@ Event **inotify_dequeue(Root * root, int count)
         count = queue_len;
 
     log_trace("Root '%s' has %d/%d events queued. Dequeueing %d events.",
-               root->path, queue_len, root->max_events, count);
+              root->path, queue_len, root->max_events, count);
 
     events = malloc((count + 1) * sizeof *events);
+    if (events == NULL) {
+        log_error("Failed to allocate memory for events list: %s",
+                  "inotify.c:inotify_dequeue()");
+        pthread_mutex_unlock(&inotify_mutex);
+        return (Event **) - 1;
+    }
 
     for (i = 0; i < count; i++) {
         e = g_queue_pop_head(root->queue);
 
-        log_debug("Dequeued event root:%s path:%s name:%s",
-                   root->path, e->path, e->name);
+        log_trace("Dequeued event root:%s path:%s name:%s",
+                  root->path, e->path, e->name);
 
         events[i] = e;
     }
@@ -589,16 +617,14 @@ char *inotify_is_parent(char *path)
  */
 int inotify_unwatch_tree(char *path)
 {
-    int rv;
+    int rv, last;
     DIR *d;
     Root *root;
 
     /* Clean up path by removing the trailing slash, if it exists. */
-    {
-        int last = strlen(path) - 1;
-        if (path[last] == '/')
-            path[last] = '\0';
-    }
+    last = strlen(path) - 1;
+    if (path[last] == '/')
+        path[last] = '\0';
 
     /* First check to see if the path is a valid,
      * watched root.
@@ -627,7 +653,7 @@ int inotify_unwatch_tree(char *path)
     d = opendir(path);
     if (d == NULL) {
         log_warn("Failed to open root at dir '%s': %s",
-                  path, strerror(errno));
+                 path, strerror(errno));
         closedir(d);
         return 1;
     }
@@ -640,7 +666,8 @@ int inotify_unwatch_tree(char *path)
      */
     rv = do_unwatch_tree(path, root);
     if (rv != 0) {
-        log_error("Failed to unwatch root at dir '%s'", path);
+        log_error("Failed to unwatch root at dir '%s': %s", path,
+                  error_to_string(rv));
         return 1;
     }
 
@@ -656,7 +683,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     int rv;
 
     log_trace("Entering inotify_watch_tree() on path '%s' with mask %lu",
-               path, mask);
+              path, mask);
 
     /* Clean up path by removing the trailing slash, it exists. */
     {
@@ -677,7 +704,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
 
         if (r != NULL) {
             log_warn("Already watching tree '%s' at root '%s'",
-                      path, r->path);
+                     path, r->path);
 
             pthread_mutex_unlock(&inotify_mutex);
             return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
@@ -708,7 +735,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
         DIR *d = opendir(path);
         if (d == NULL) {
             log_error("Failed to open root at dir '%s': %s",
-                       path, strerror(errno));
+                      path, strerror(errno));
             return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
         }
         closedir(d);
@@ -722,6 +749,14 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     pthread_mutex_lock(&inotify_mutex);
 
     new_root = make_root(path, mask, max_events);
+    if (new_root == NULL) {
+        log_error
+            ("Failed to create new root for path %s: memory allocation error",
+             path);
+        pthread_mutex_unlock(&inotify_mutex);
+        return ERROR_MEMORY_ALLOCATION;
+    }
+
     g_hash_table_replace(inotify_roots, g_strdup(path), new_root);
     ++inotify_num_watched_roots;
 
@@ -730,18 +765,28 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     /* Finally we need to recursively setup inotify
      * watches for our new root.
      */
-    rv = 0;
     rv = do_watch_tree(new_root->path, new_root);
+    if (rv != 0) {
+        log_error("Failed to watch root at dir '%s': %s", path,
+                  error_to_string(rv));
+    }
 
     return rv;
 }
 
 /* Threaded portion of inotify_unwatch_tree(). */
-int do_unwatch_tree(char *path, Root * root)
+static int do_unwatch_tree(char *path, Root * root)
 {
     int rc;
     pthread_t t;
-    T_Data *data = (T_Data *) malloc(sizeof(T_Data));
+    T_Data *data;
+
+    data = (T_Data *) malloc(sizeof(T_Data));
+    if (data == NULL) {
+        log_error("Failed to allocate memory for thread data: %s",
+                  "inotify.c:do_unwatch_tree()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
 
     asprintf(&data->path, "%s", path);
     data->root = root;
@@ -749,16 +794,16 @@ int do_unwatch_tree(char *path, Root * root)
     rc = pthread_create(&t, NULL, _do_unwatch_tree, (void *) data);
     if (rc) {
         log_error("Failed to create new thread for UN-watch on '%s': %d",
-                   path, rc);
+                  path, rc);
         free(data->path);
         free(data);
-        return 1;
+        return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
 
     return 0;
 }
 
-void *_do_unwatch_tree(void *thread_data)
+static void *_do_unwatch_tree(void *thread_data)
 {
     Root *root;
     T_Data *data;
@@ -783,7 +828,6 @@ void *_do_unwatch_tree(void *thread_data)
     --inotify_num_watched_roots;
     pthread_mutex_unlock(&inotify_mutex);
 
-    /* Clean up dynamically allocated memory. */
     free(data->path);
     free(data);
 
@@ -791,7 +835,7 @@ void *_do_unwatch_tree(void *thread_data)
 }
 
 /* Recursive portion of inotify_unwatch_tree(). */
-void _do_unwatch_tree_rec(char *path)
+static void _do_unwatch_tree_rec(char *path)
 {
     DIR *d;
     Watch *delete;
@@ -815,7 +859,7 @@ void _do_unwatch_tree_rec(char *path)
     int rv = inotify_rm_watch(inotify_fd, delete->wd);
     if (rv != 0) {
         log_warn("Failed call to inotify_rm_watch on dir '%s': %s",
-                  path, strerror(errno));
+                 path, strerror(errno));
     }
 
     g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(delete->wd));
@@ -856,11 +900,18 @@ void _do_unwatch_tree_rec(char *path)
 }
 
 /* Recursive, threaded portion of inotify_watch_tree(). */
-int do_watch_tree(char *path, Root * root)
+static int do_watch_tree(char *path, Root * root)
 {
     int rc;
     pthread_t t;
-    T_Data *data = (T_Data *) malloc(sizeof(T_Data));
+    T_Data *data;
+
+    data = (T_Data *) malloc(sizeof(T_Data));
+    if (data == NULL) {
+        log_error("Failed to allocate memory for thread data: %s",
+                  "inotify.c:do_watch_tree()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
 
     asprintf(&data->path, "%s", path);
     data->root = root;
@@ -868,7 +919,7 @@ int do_watch_tree(char *path, Root * root)
     rc = pthread_create(&t, NULL, _do_watch_tree, (void *) data);
     if (rc) {
         log_error("Failed to create new thread for watch on '%s': %d",
-                   path, rc);
+                  path, rc);
         free(data->path);
         free(data);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
@@ -877,7 +928,7 @@ int do_watch_tree(char *path, Root * root)
     return 0;
 }
 
-void *_do_watch_tree(void *thread_data)
+static void *_do_watch_tree(void *thread_data)
 {
     T_Data *data;
     data = thread_data;
@@ -891,7 +942,7 @@ void *_do_watch_tree(void *thread_data)
     return (void *) 0;
 }
 
-void _do_watch_tree_rec(char *path, Root * root)
+static void _do_watch_tree_rec(char *path, Root * root)
 {
     int wd;
     DIR *d;
@@ -903,7 +954,7 @@ void _do_watch_tree_rec(char *path, Root * root)
 
     if (wd < 0) {
         log_error("Failed to set up inotify watch for path '%s': %s",
-                   path, strerror(errno));
+                  path, strerror(errno));
         return;
     }
 
@@ -911,6 +962,11 @@ void _do_watch_tree_rec(char *path, Root * root)
 
 
     watch = make_watch(wd, path);
+    if (watch == NULL) {
+        log_error("Failed to create new watch for wd:%d path:%s: %s",
+                  "memory allocation error", wd, path);
+        return;
+    }
 
     pthread_mutex_lock(&inotify_mutex);
 
@@ -946,12 +1002,18 @@ void _do_watch_tree_rec(char *path, Root * root)
 }
 
 /* Create a new root meta data structure. */
-Root *make_root(char *path, int mask, int max_events)
+static Root *make_root(char *path, int mask, int max_events)
 {
-    Root *root = malloc(sizeof(Root));
+    Root *root;
 
-    root->path = malloc(strlen(path) + 1);
-    strcpy(root->path, path);
+    root = malloc(sizeof(Root));
+    if (root == NULL) {
+        log_error("Failed to allocate memory for new root: %s",
+                  "inotify.c:make_root()");
+        return NULL;
+    }
+
+    asprintf(&root->path, path);
 
     root->mask = mask;
     root->queue = g_queue_new();
@@ -968,25 +1030,33 @@ Root *make_root(char *path, int mask, int max_events)
  * for every single directory we set up an inotify watch
  * for.
  */
-Watch *make_watch(int wd, char *path)
+static Watch *make_watch(int wd, char *path)
 {
     size_t size;
     Watch *watch;
 
     size = strlen(path);
     watch = malloc(sizeof(Watch));
+    if (watch == NULL) {
+        log_error("Failed to allocate memory for new watch: %s",
+                  "inotify.c:make_watch()");
+        return NULL;
+    }
 
     watch->wd = wd;
 
-    watch->path = malloc(size + 1);
-    memcpy(watch->path, path, size);
-    watch->path[size] = '\0';
+    /*
+       watch->path = malloc(size + 1);
+       memcpy(watch->path, path, size);
+       watch->path[size] = '\0';
+     */
+    asprintf(&watch->path, path);
 
     return watch;
 }
 
 /* Free up the dynamically allocated memory of a queue node. */
-void free_node_mem(Event * node, gpointer user_data)
+static void free_node_mem(Event * node, gpointer user_data)
 {
     free(node->path);
     free(node->name);

@@ -72,6 +72,11 @@ Request *request_parse(char *json)
     }
 
     req = (Request *) malloc(sizeof(Request));
+    if (req == NULL) {
+        log_error("Failed to allocate memory for new request: %s",
+                  "request.c:request_parse()");
+        return (Request *) - 1;
+    }
 
     asprintf(&req->call, "%s", (char *) json_object_get_string(val));
     asprintf(&req->json, "%s", json);
@@ -85,7 +90,7 @@ char *request_get_key_str(Request * req, char *key)
     JOBJ val;
 
     log_trace("Calling request_get_key_str(): json='%s' key='%s'",
-               req->json, key);
+              req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
@@ -93,8 +98,7 @@ char *request_get_key_str(Request * req, char *key)
         log_debug("Failed to find key '%s' in JSON: %s", key, req->json);
         return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
-        log_debug("Found key '%s', but it is not a of type 'string'",
-                   key);
+        log_debug("Found key '%s', but it is not a of type 'string'", key);
         return NULL;
     }
 
@@ -109,7 +113,7 @@ int request_get_key_int(Request * req, char *key)
     JOBJ val;
 
     log_trace("Calling request_get_key_int(): json='%s' key='%s'",
-               req->json, key);
+              req->json, key);
 
     val = json_object_object_get(req->parser, key);
 
