@@ -103,6 +103,10 @@ Calls to Inotispy are incredibly simple. An example call in JSON would look like
 .fi
 .in
 .P
+This call tells Inotispy to recursively watch all directories starting at the
+root path \fI/foo/bar\fR and to start queuing up events for file system changes
+that happen under that root.
+.P
 See the \fBINOTISPY API\fR section below for the full list of calls and their arguments.
 .SS Responses
 Responses from Inotispy are also JSON and they come in 3 flavors: \fBsuccess\fR,
