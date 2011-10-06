@@ -365,7 +365,7 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
 
     if (root == NULL) {
         log_warn
-            ("Failed to enqueue because root at path %s does not exist");
+            ("Failed to enqueue because root at path %s does not exist", path);
         pthread_mutex_unlock(&inotify_mutex);
         return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
     }
