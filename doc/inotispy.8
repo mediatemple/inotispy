@@ -340,29 +340,6 @@ Retrieve inotify events from a given root's queue.
 \fB*\fR Using a value of 0 (zero) will retrieve \fIall\fR events from
 that root's queue.
 .P
-.SH ERRORS
-When Inotispy returns an error it provides a human understandable error message
-along with the error code. However, for reference (and people writing bindings)
-here are the defined error codes (from \fBsrc/reply.h\fR):
-.P
-.in +4n
-.nf
-#define \fBERROR_JSON_INVALID\fR                 0x0001 
-#define \fBERROR_JSON_PARSE\fR                   0x0002
-#define \fBERROR_JSON_KEY_NOT_FOUND\fR           0x0004
-#define \fBERROR_INOTIFY_WATCH_FAILED\fR         0x0008
-#define \fBERROR_INOTIFY_UNWATCH_FAILED\fR       0x0010
-#define \fBERROR_INVALID_EVENT_COUNT\fR          0x0020
-#define \fBERROR_ZERO_BYTE_MESSAGE\fR            0x0040
-#define \fBERROR_INOTIFY_ROOT_NOT_WATCHED\fR     0x0080
-#define \fBERROR_INOTIFY_ROOT_ALREADY_WATCHED\fR 0x0100
-#define \fBERROR_ZEROMQ_RECONNECT\fR             0x0200
-#define \fBERROR_NOT_ABSOLUTE_PATH\fR            0x0400
-#define \fBERROR_INOTIFY_PARENT_OF_ROOT\fR       0x0800
-#define \fBERROR_INOTIFY_ROOT_DOES_NOT_EXIST\fR  0x1000
-#define \fBERROR_FAILED_TO_CREATE_NEW_THREAD\fR  0x2000
-.fi
-.in
 .SH EXAMPLES
 For examples on writing a client to talk to Inotispy please take a look at the
 \fBexamples/\fR directory that ships with the distribution. There are examples
@@ -394,18 +371,19 @@ you can tweak:
 .SH LOGGING
 Inotispy outputs runtime information to a private log file, and alternatively
 to \fBsyslog\fR. The default location of the private log file is
-\fB/var/log/inotispy.log\fR. Using the configuration file (described above) you 
-can set the level of verbosity using the \fIlog_level\fR config parameter. By 
-default the level is set to \fBnotice\fR, which should make the output fairly
-limited, and logging to \fBsyslog\fR is \fBfalse\fR.
+\fB/var/log/inotispy.log\fR. Using the configuration file (described above)
+you can change the location of this log file as well as changing the level
+of verbosity you want to see in the log. By default the level is set to
+\fBnotice\fR, which should make the output fairly limited, and logging to
+\fBsyslog\fR is set to false\fBfalse\fR.
 .P
 If you want, or need, to see more of what's going on under the hood then change
 that level to \fBdebug\fR or \fBtrace\fR. Just be warned that these two levels
 can produce quite a bit of output, and in a production environment where Inotispy
 is being used heavily it \fBis not\fR recommended that you have your log level
-set to this amount of verbosity.
+set to anything higher than \fBnotice\fR.
 .P
-See \fBetc/inotispy.conf\fR for more details.
+See the comments in \fBetc/inotispy.conf\fR for more details.
 .SH LANGUAGE BINDINGS
 Inotispy provides an interface sutable for calling from programs in any language.
 Included with the Inotispy distribution are code samples with examples
