@@ -147,7 +147,7 @@ It looks like:
 .P
 The \fBdata\fR response is what you get when you request information from Inotispy,
 such as a call to \fBget_roots\fR or \fBget_events\fR. This will be a hash with one
-key, \fIdata\fR, whose value is an array containing the data you requested\fB*\fR.
+key, \fIdata\fR, whose value is an array containing the data you requested.\fB*\fR
 In the case of \fBget_roots\fR it will be an array of pathnames (strings). In the
 case of \fBget_events\fR it will be an array of hashes where each hash contains the
 data of an inotify event. (See \fBINOTISPY_API\fR below for more information). It
@@ -227,14 +227,16 @@ IN_DONT_FOLLOW
 \fR
 .in
 .P
-\fB**\fR See \fBinotify(7)\fR for more information on inotify events. A simple
+\fB**\fR See 
+.BR inotify(7)
+for more information on inotify events. A simple
 (non-working) example in \fBC\fR for using a custom mask would look something like:
 .P
 .in +4n
 .nf
 #include <zmq.h>
 #include <stdio.h>
-#include <sys/inotify.h>
+#include <\fBsys/inotify.h\fR>
 
 int
 main (void) {
@@ -243,11 +245,11 @@ main (void) {
     char *path = "/foo/bar";
 
     /* Let's just watch for create and delete events */
-    mask = IN_CREATE | IN_DELETE;
+    mask = \fBIN_CREATE\fR | \fBIN_DELETE\fR;
 
     asprintf(&json,
-        "{\\"call\\":\\"watch\\",\\"path\\":%s,\\"mask\\":%d}",
-        path, mask);
+        "{\\"call\\":\\"watch\\",\\"path\\":%s,\fB\\"mask\\":%d\fR}",
+        path, \fBmask\fR);
 
     /* Make 0MQ message from the 'json' variable here */
 
