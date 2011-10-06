@@ -248,6 +248,7 @@ void EVENT_watch(Request * req)
 
 void EVENT_unwatch(Request * req)
 {
+    int rv;
     char *path = request_get_path(req);
 
     if (path == NULL) {
@@ -256,8 +257,9 @@ void EVENT_unwatch(Request * req)
         return;
     }
 
-    if (inotify_unwatch_tree(path) != 0) {
-        reply_send_error(ERROR_INOTIFY_UNWATCH_FAILED);
+    rv = inotify_unwatch_tree(path);
+    if (rv != 0) {
+        reply_send_error(rv);
         return;
     }
 

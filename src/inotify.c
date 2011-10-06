@@ -35,7 +35,7 @@
 #include <errno.h>
 #include <ctype.h>              /* isalnum() */
 #include <dirent.h>
-#include <unistd.h>             /* read() */
+#include <unistd.h>             /* read(), usleep() */
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -124,6 +124,9 @@ void inotify_handle_event(int fd)
     int i = 0;
     int num_in_events;
     char buffer[INOTIFY_EVENT_BUF_LEN];
+    IN_Event *event;
+
+    event = NULL;
 
     /* Grab the next buffer of inotoify events. If the
      * length of this buffer is negative then we've
@@ -141,7 +144,12 @@ void inotify_handle_event(int fd)
      */
     while (i < num_in_events) {
 
-        IN_Event *event = (struct inotify_event *) &buffer[i];
+        event = (struct inotify_event *) &buffer[i];
+
+        if ((event == NULL) || (event->name == NULL)) {
+            i += INOTIFY_EVENT_SIZE + event->len;
+            continue;
+        }
 
         /* IN_Q_OVERFLOW is the event that occurrs when inotify's
          * event buffer is full.
@@ -178,9 +186,11 @@ void inotify_handle_event(int fd)
         }
 
         /* No name events or bogus events  get skipped. */
-        if ((event->name == NULL) || (strlen(event->name) == 0)
-            || (!isalnum(event->name[0]))) {
-            log_trace("Skipping bogus inotify event on wd %d", event->wd);
+        if ((event == NULL) || (event->name == NULL)
+            || (strlen(event->name) < 1)
+            || (event->name[0] == NULL) || (!isalnum(event->name[0]))) {
+            //log_trace("Skipping bogus inotify event on wd %d", event->wd);
+            log_trace("Skipping bogus inotify event");
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
         }
@@ -365,7 +375,8 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
 
     if (root == NULL) {
         log_warn
-            ("Failed to enqueue because root at path %s does not exist", path);
+            ("Failed to enqueue because root at path %s does not exist",
+             path);
         pthread_mutex_unlock(&inotify_mutex);
         return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
     }
@@ -692,6 +703,9 @@ static int destroy_root(Root * root)
         return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
     }
 
+    root->destroy = 1;
+    usleep(10000);
+
     pthread_mutex_lock(&inotify_mutex);
 
     rv = asprintf(&tmp, "%s/", root->path);
@@ -764,7 +778,6 @@ int inotify_unwatch_tree(char *path)
         return ERROR_INOTIFY_ROOT_NOT_WATCHED;
     }
 
-    root->destroy = 1;
     return destroy_root(root);
 }
 
@@ -795,11 +808,17 @@ int inotify_watch_tree(char *path, int mask, int max_events)
         Root *r = inotify_path_to_root(path);
 
         if (r != NULL) {
-            log_warn("Already watching tree '%s' at root '%s'",
-                     path, r->path);
-
             pthread_mutex_unlock(&inotify_mutex);
-            return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
+
+            if (strcmp(path, r->path) == 0) {
+                log_warn("Already watching tree at root '%s'", path);
+                return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
+            } else {
+                log_warn
+                    ("path '%s' is the child of already watched root '%s'",
+                     path, r->path);
+                return ERROR_INOTIFY_CHILD_OF_ROOT;
+            }
         }
 
         /* Second, we check to see if the path the user is trying
@@ -942,14 +961,14 @@ static void _do_watch_tree_rec(char *path, Root * root)
     Watch *watch;
     char *tmp;
 
-    pthread_mutex_lock(&inotify_mutex);
-
     if ((root == NULL) || (root->destroy != 0)) {
         log_trace("Skipping watch tree on path %s. %s", path,
                   "because root has been unwatched or is being destroyed");
         pthread_mutex_unlock(&inotify_mutex);
         return;
     }
+
+    pthread_mutex_lock(&inotify_mutex);
 
     wd = inotify_add_watch(inotify_fd, path,
                            IN_ALL_EVENTS | IN_DONT_FOLLOW);
@@ -995,6 +1014,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
                 log_error
                     ("Failed to allocate memroy for temporary path variable: %s",
                      "inotify.c:_do_watch_tree_rec");
+                closedir(d);
                 return;
             }
 
@@ -1002,6 +1022,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
                 log_trace("Skipping watch tree on path %s. %s", path,
                           "because root has been unwatched or is being destroyed");
                 free(tmp);
+                closedir(d);
                 return;
             }
 
@@ -1067,11 +1088,6 @@ static Watch *make_watch(int wd, char *path)
 
     watch->wd = wd;
 
-    /*
-       watch->path = malloc(size + 1);
-       memcpy(watch->path, path, size);
-       watch->path[size] = '\0';
-     */
     rv = asprintf(&watch->path, path);
     if (rv == -1) {
         log_error("Failed to allocate memory for new watch PATH: %s",

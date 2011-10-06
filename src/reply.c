@@ -91,8 +91,7 @@ int reply_send_success(void)
 
 char *error_to_string(unsigned int err_code)
 {
-    switch(err_code)
-    {
+    switch (err_code) {
     case ERROR_JSON_INVALID:
         return "Invalid JSON";
     case ERROR_JSON_PARSE:
@@ -100,23 +99,25 @@ char *error_to_string(unsigned int err_code)
     case ERROR_JSON_KEY_NOT_FOUND:
         return "Key not found in JSON";
     case ERROR_INOTIFY_WATCH_FAILED:
-        return "Failed to set up inotify watch";
+        return "Failed to set up new inotify watch";
     case ERROR_INOTIFY_UNWATCH_FAILED:
-        return "Failed to unwatch inotify watch";
+        return "Failed to unwatch root";
     case ERROR_INVALID_EVENT_COUNT:
-    return "Invald event count value";
+        return "Invald event count value";
     case ERROR_ZERO_BYTE_MESSAGE:
-    return "Zero byte message received";
+        return "Zero byte message received";
     case ERROR_INOTIFY_ROOT_NOT_WATCHED:
-    return "This root is currently not watched under inotify";
+        return "This root is currently not watched under inotify";
     case ERROR_INOTIFY_ROOT_ALREADY_WATCHED:
-    return "This root is currently being watched under inotify";
+        return "This root is currently being watched under inotify";
     case ERROR_INOTIFY_PARENT_OF_ROOT:
-    return "This directory is the parent of a currently watched root";
+        return "This directory is the parent of a currently watched root";
+    case ERROR_INOTIFY_CHILD_OF_ROOT:
+        return "This directory is the child of a currently watched root";
     case ERROR_INOTIFY_ROOT_QUEUE_FULL:
-    return "Inotify event queue is full for this root";
+        return "Inotify event queue is full for this root";
     case ERROR_INOTIFY_ROOT_DOES_NOT_EXIST:
-    return "This directory does not exist";
+        return "This directory does not exist";
     case ERROR_MEMORY_ALLOCATION:
         return
             "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
@@ -128,6 +129,6 @@ char *error_to_string(unsigned int err_code)
     case ERROR_NOT_ABSOLUTE_PATH:
         return "Path must be absolute";
     default:
-    return "Unknown error";
-}
+        return "Unknown error";
+    }
 }
