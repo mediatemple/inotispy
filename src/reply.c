@@ -91,40 +91,43 @@ int reply_send_success(void)
 
 char *error_to_string(unsigned int err_code)
 {
-    if (err_code & ERROR_JSON_INVALID)
+    switch(err_code)
+    {
+    case ERROR_JSON_INVALID:
         return "Invalid JSON";
-    else if (err_code & ERROR_JSON_PARSE)
+    case ERROR_JSON_PARSE:
         return "Failed to parse JSON";
-    else if (err_code & ERROR_JSON_KEY_NOT_FOUND)
+    case ERROR_JSON_KEY_NOT_FOUND:
         return "Key not found in JSON";
-    else if (err_code & ERROR_INOTIFY_WATCH_FAILED)
+    case ERROR_INOTIFY_WATCH_FAILED:
         return "Failed to set up inotify watch";
-    else if (err_code & ERROR_INOTIFY_UNWATCH_FAILED)
+    case ERROR_INOTIFY_UNWATCH_FAILED:
         return "Failed to unwatch inotify watch";
-    else if (err_code & ERROR_INVALID_EVENT_COUNT)
-        return "Invald event count value";
-    else if (err_code & ERROR_ZERO_BYTE_MESSAGE)
-        return "Zero byte message received";
-    else if (err_code & ERROR_INOTIFY_ROOT_NOT_WATCHED)
-        return "This root is currently not watched under inotify";
-    else if (err_code & ERROR_INOTIFY_ROOT_ALREADY_WATCHED)
-        return "This root is currently being watched under inotify";
-    else if (err_code & ERROR_INOTIFY_PARENT_OF_ROOT)
-        return "This directory is the parent of a currently watched root";
-    else if (err_code & ERROR_INOTIFY_ROOT_QUEUE_FULL)
-        return "Inotify event queue is full for this root";
-    else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
-        return "This directory does not exist";
-    else if (err_code & ERROR_MEMORY_ALLOCATION)
+    case ERROR_INVALID_EVENT_COUNT:
+    return "Invald event count value";
+    case ERROR_ZERO_BYTE_MESSAGE:
+    return "Zero byte message received";
+    case ERROR_INOTIFY_ROOT_NOT_WATCHED:
+    return "This root is currently not watched under inotify";
+    case ERROR_INOTIFY_ROOT_ALREADY_WATCHED:
+    return "This root is currently being watched under inotify";
+    case ERROR_INOTIFY_PARENT_OF_ROOT:
+    return "This directory is the parent of a currently watched root";
+    case ERROR_INOTIFY_ROOT_QUEUE_FULL:
+    return "Inotify event queue is full for this root";
+    case ERROR_INOTIFY_ROOT_DOES_NOT_EXIST:
+    return "This directory does not exist";
+    case ERROR_MEMORY_ALLOCATION:
         return
             "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
-    else if (err_code & ERROR_FAILED_TO_CREATE_NEW_THREAD)
+    case ERROR_FAILED_TO_CREATE_NEW_THREAD:
         return "Failed to create a new thread";
-    else if (err_code & ERROR_ZEROMQ_RECONNECT)
+    case ERROR_ZEROMQ_RECONNECT:
         return
             "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
-    else if (err_code & ERROR_NOT_ABSOLUTE_PATH)
+    case ERROR_NOT_ABSOLUTE_PATH:
         return "Path must be absolute";
-    else
-        return "Unknown error";
+    default:
+    return "Unknown error";
+}
 }
