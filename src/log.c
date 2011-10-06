@@ -183,7 +183,8 @@ void set_log_level(int level)
     } else {
         rv = asprintf(&err, "Log level %d is invalid", level);
         if (rv == -1)
-            err = "Failed to allocate memory for log message: log.c:set_log_level()";
+            err =
+                "Failed to allocate memory for log message: log.c:set_log_level()";
         log_warn(err);
         free(err);
     }

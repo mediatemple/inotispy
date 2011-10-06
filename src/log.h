@@ -55,10 +55,10 @@ void set_log_level(int level);
 /* Turn a integer log level into it's corresponding string value. */
 char *level_str(int level);
 
-void log_error  (char *fmt, ...);
-void log_warn   (char *fmt, ...);
-void log_notice (char *fmt, ...);
-void log_debug  (char *fmt, ...);
-void log_trace  (char *fmt, ...);
+void log_error(char *fmt, ...);
+void log_warn(char *fmt, ...);
+void log_notice(char *fmt, ...);
+void log_debug(char *fmt, ...);
+void log_trace(char *fmt, ...);
 
 #endif /*_INOTISPY_LOG_H_*/

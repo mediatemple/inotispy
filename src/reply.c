@@ -42,7 +42,7 @@ int reply_send_message(char *message)
     rv = zmq_msg_init_size(&msg, strlen(message));
     if (rv != 0) {
         log_error("Failed to initialize message '%s': %s (%d)",
-                   message, zmq_strerror(errno), errno);
+                  message, zmq_strerror(errno), errno);
         return 1;
     }
 
@@ -51,7 +51,7 @@ int reply_send_message(char *message)
 
     if (rv != 0) {
         log_error("Failed to send message '%s': %s (%d)",
-                   message, zmq_strerror(errno), errno);
+                  message, zmq_strerror(errno), errno);
         return 1;
     }
 
@@ -65,19 +65,21 @@ int reply_send_error(unsigned int err_code)
 
     do_free = 1;
     rv = asprintf(&err,
-             "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
-             err_code, error_to_string(err_code));
+                  "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
+                  err_code, error_to_string(err_code));
     if (rv == -1) {
         log_error("Failed to allocate memory for error reply: %s",
                   "reply.c:reply_send_error()");
-        err = "{\"error\": {\"code\":0, \"Memory allocation error. Please check the logs for more details\"}}";
+        err =
+            "{\"error\": {\"code\":0, \"Memory allocation error. Please check the logs for more details\"}}";
         do_free = 0;
     }
 
 
     rv = reply_send_message(err);
 
-    if (do_free) free(err);
+    if (do_free)
+        free(err);
 
     return rv;
 }
@@ -114,7 +116,8 @@ char *error_to_string(unsigned int err_code)
     else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
         return "This directory does not exist";
     else if (err_code & ERROR_MEMORY_ALLOCATION)
-        return "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
+        return
+            "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
     else if (err_code & ERROR_FAILED_TO_CREATE_NEW_THREAD)
         return "Failed to create a new thread";
     else if (err_code & ERROR_ZEROMQ_RECONNECT)

@@ -696,8 +696,9 @@ static int destroy_root(Root * root)
 
     rv = asprintf(&tmp, "%s/", root->path);
     if (rv == -1) {
-        log_error("Failed to allocate memory for temporary path variable: %s",
-                  "inotify.c:destroy_root()");
+        log_error
+            ("Failed to allocate memory for temporary path variable: %s",
+             "inotify.c:destroy_root()");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -808,11 +809,11 @@ int inotify_watch_tree(char *path, int mask, int max_events)
          */
         char *sub_path = inotify_is_parent(path);
         if (sub_path == (char *) -1) {
-            log_error("Memory allocation error while calling inotify_is_parent");
+            log_error
+                ("Memory allocation error while calling inotify_is_parent");
             pthread_mutex_unlock(&inotify_mutex);
             return ERROR_MEMORY_ALLOCATION;
-        }
-        else if (sub_path) {
+        } else if (sub_path) {
             log_warn
                 ("Path '%s' is the parent of already watched root '%s'",
                  path, sub_path);
@@ -916,8 +917,9 @@ static void *_do_watch_tree(void *thread_data)
     data = thread_data;
 
     if ((data->root == NULL) || (data->root->destroy != 0)) {
-        log_error("Bailing out of recursive watch because the root is not watched: %s",
-"inotify.c:_do_watch_tree()");
+        log_error
+            ("Bailing out of recursive watch because the root is not watched: %s",
+             "inotify.c:_do_watch_tree()");
         free(data->path);
         free(data);
         return (void *) 1;
@@ -990,8 +992,9 @@ static void _do_watch_tree_rec(char *path, Root * root)
 
             rv = asprintf(&tmp, "%s/%s", path, dir->d_name);
             if (rv == -1) {
-                log_error("Failed to allocate memroy for temporary path variable: %s",
-                          "inotify.c:_do_watch_tree_rec");
+                log_error
+                    ("Failed to allocate memroy for temporary path variable: %s",
+                     "inotify.c:_do_watch_tree_rec");
                 return;
             }
 
