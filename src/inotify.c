@@ -287,6 +287,7 @@ void inotify_handle_event(int fd)
                 if ((event->mask & IN_CREATE)
                     || (event->mask & IN_MOVED_TO)) {
                     log_debug("New directory '%s' found", abs_path);
+                    usleep(1000);
 
                     rv = do_watch_tree(abs_path, root);
                     if (rv != 0) {
@@ -704,7 +705,7 @@ static int destroy_root(Root * root)
     }
 
     root->destroy = 1;
-    usleep(10000);
+    usleep(1000);
 
     pthread_mutex_lock(&inotify_mutex);
 
@@ -747,6 +748,16 @@ static int destroy_root(Root * root)
     free(tmp);
 
     /* Destroy the root itself. */
+    watch = g_hash_table_lookup(inotify_path_to_watch, root->path);
+    if (watch != NULL) {
+        g_hash_table_remove(inotify_wd_to_watch,
+                            GINT_TO_POINTER(watch->wd));
+        g_hash_table_remove(inotify_path_to_watch, root->path);
+
+        free(watch->path);
+        free(watch);
+    }
+
     g_hash_table_remove(inotify_roots, root->path);
     free(root->path);
     root = NULL;
@@ -938,6 +949,15 @@ static void *_do_watch_tree(void *thread_data)
     if ((data->root == NULL) || (data->root->destroy != 0)) {
         log_error
             ("Bailing out of recursive watch because the root is not watched: %s",
+             "inotify.c:_do_watch_tree()");
+        free(data->path);
+        free(data);
+        return (void *) 1;
+    }
+
+    if (strlen(data->path) < strlen(data->root->path)) {
+        log_error
+            ("Bailing out of recursive watch because a bad path was given: %s",
              "inotify.c:_do_watch_tree()");
         free(data->path);
         free(data);
