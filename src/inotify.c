@@ -188,7 +188,7 @@ void inotify_handle_event(int fd)
         /* No name events or bogus events  get skipped. */
         if ((event == NULL) || (event->name == NULL)
             || (strlen(event->name) < 1)
-            || (event->name[0] == NULL) || (!isalnum(event->name[0]))) {
+            || (event->name[0] == 0) || (!isalnum(event->name[0]))) {
             //log_trace("Skipping bogus inotify event on wd %d", event->wd);
             log_trace("Skipping bogus inotify event");
             i += INOTIFY_EVENT_SIZE + event->len;
