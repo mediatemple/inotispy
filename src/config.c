@@ -89,7 +89,14 @@ int init_config(gboolean silent)
                 error->message);
         error = NULL;
     } else {
-        asprintf(&CONFIG->log_file, "%s", str_rv);
+        int_rv = asprintf(&CONFIG->log_file, "%s", str_rv);
+        if (int_rv == -1) {
+            fprintf(stderr,
+                    "** Failed to allocate memory for user supplied log file %s: %s %s **",
+                    str_rv, "using default log file", LOG_FILE);
+            CONFIG->log_file = LOG_FILE;
+        }
+
         g_free(str_rv);
     }
 
@@ -112,8 +119,8 @@ int init_config(gboolean silent)
         } else if (strcmp(str_rv, "error") == 0) {
             CONFIG->log_level = LOG_LEVEL_ERROR;
         } else {
-            fprintf(stderr, "Found invalid valud for 'log_level': %s\n",
-                    str_rv);
+            fprintf(stderr,
+                    "Found invalid valud for 'log_level': %s\n", str_rv);
         }
 
         g_free(str_rv);
@@ -132,8 +139,8 @@ int init_config(gboolean silent)
 
     /* max_inotify_events */
     int_rv =
-        g_key_file_get_integer(kf, CONF_GROUP, "max_inotify_events",
-                               &error);
+        g_key_file_get_integer(kf, CONF_GROUP,
+                               "max_inotify_events", &error);
     if (error != NULL) {
         fprintf(stderr,
                 "Failed to read config value for 'max_inotify_events': %s\n",

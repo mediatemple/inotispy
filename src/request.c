@@ -49,6 +49,7 @@ JOBJ _parse_json(char *json)
 
 Request *request_parse(char *json)
 {
+    int rv;
     JOBJ jobj, val;
     Request *req;
 
@@ -78,8 +79,21 @@ Request *request_parse(char *json)
         return (Request *) - 1;
     }
 
-    asprintf(&req->call, "%s", (char *) json_object_get_string(val));
-    asprintf(&req->json, "%s", json);
+    rv = asprintf(&req->call, "%s", (char *) json_object_get_string(val));
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new request CALL: %s",
+                  "request.c:request_parse()");
+        return (Request *) - 1;
+    }
+
+    rv = asprintf(&req->json, "%s", json);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new request JSON: %s",
+                  "request.c:request_parse()");
+        return (Request *) - 1;
+    }
+
+
     req->parser = jobj;
 
     return req;

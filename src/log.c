@@ -106,11 +106,17 @@ static char *time_str(void)
 
 static void log_msg(int level, char *fmt, va_list ap)
 {
+    int rv;
+    char *msg;
+
     if (level > log_level)
         return;
 
-    char *msg;
-    vasprintf(&msg, fmt, ap);
+    rv = vasprintf(&msg, fmt, ap);
+    if (rv == -1) {
+        level = LOG_LEVEL_ERROR;
+        msg = "Failed to allocate memory for log message: log.c:log_msg()";
+    }
 
     fprintf(logger, "[%s] [%s] %s\n", time_str(), level_str(level), msg);
     fflush(logger);
@@ -169,11 +175,15 @@ int get_log_level(void)
 
 void set_log_level(int level)
 {
+    int rv;
+    char *err;
+
     if (level >= LOG_LEVEL_ERROR && level <= LOG_LEVEL_TRACE) {
         log_level = level;
     } else {
-        char *err;
-        asprintf(&err, "Log level %d is invalid", level);
+        rv = asprintf(&err, "Log level %d is invalid", level);
+        if (rv == -1)
+            err = "Failed to allocate memory for log message: log.c:set_log_level()";
         log_warn(err);
         free(err);
     }

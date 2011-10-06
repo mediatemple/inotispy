@@ -60,14 +60,25 @@ int reply_send_message(char *message)
 
 int reply_send_error(unsigned int err_code)
 {
+    int rv, do_free;
     char *err;
-    asprintf(&err,
+
+    do_free = 1;
+    rv = asprintf(&err,
              "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
              err_code, error_to_string(err_code));
+    if (rv == -1) {
+        log_error("Failed to allocate memory for error reply: %s",
+                  "reply.c:reply_send_error()");
+        err = "{\"error\": {\"code\":0, \"Memory allocation error. Please check the logs for more details\"}}";
+        do_free = 0;
+    }
 
-    int rv = reply_send_message(err);
 
-    free(err);
+    rv = reply_send_message(err);
+
+    if (do_free) free(err);
+
     return rv;
 }
 
@@ -98,6 +109,8 @@ char *error_to_string(unsigned int err_code)
         return "This root is currently being watched under inotify";
     else if (err_code & ERROR_INOTIFY_PARENT_OF_ROOT)
         return "This directory is the parent of a currently watched root";
+    else if (err_code & ERROR_INOTIFY_ROOT_QUEUE_FULL)
+        return "Inotify event queue is full for this root";
     else if (err_code & ERROR_INOTIFY_ROOT_DOES_NOT_EXIST)
         return "This directory does not exist";
     else if (err_code & ERROR_MEMORY_ALLOCATION)

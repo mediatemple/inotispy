@@ -76,10 +76,6 @@ static int do_watch_tree(char *path, Root * root);
 static void *_do_watch_tree(void *data);
 static void _do_watch_tree_rec(char *path, Root * root);
 
-static int do_unwatch_tree(char *path, Root * root);
-static void *_do_unwatch_tree(void *data);
-static void _do_unwatch_tree_rec(char *path);
-
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
  * On success the inotify file descriptor is returned.
@@ -182,7 +178,8 @@ void inotify_handle_event(int fd)
         }
 
         /* No name events or bogus events  get skipped. */
-        if ((strlen(event->name) == 0) || (!isalnum(event->name[0]))) {
+        if ((event->name == NULL) || (strlen(event->name) == 0)
+            || (!isalnum(event->name[0]))) {
             log_trace("Skipping bogus inotify event on wd %d", event->wd);
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
@@ -217,7 +214,7 @@ void inotify_handle_event(int fd)
              *      for directories it doesn't know it's watching.
              */
             if (watch == NULL) {
-                log_error
+                log_warn
                     ("Failed to look up watcher for wd %d in inotify_handle_event",
                      event->wd);
                 i += INOTIFY_EVENT_SIZE + event->len;
@@ -226,21 +223,47 @@ void inotify_handle_event(int fd)
             }
 
             /* Look up the root meta data. */
-            asprintf(&path, "%s", watch->path);
+            rv = asprintf(&path, watch->path);
+            if (rv == -1) {
+                log_error
+                    ("Failed to allocate memory while copying watch path: %s",
+                     "inotify.c:inotify_handle_event()");
+                i += INOTIFY_EVENT_SIZE + event->len;
+                pthread_mutex_unlock(&inotify_mutex);
+                continue;
+            }
+
             root = inotify_path_to_root(path);
+
+            if (root == NULL) {
+                log_debug("Failed to look up meta data for root '%s'",
+                          path);
+                i += INOTIFY_EVENT_SIZE + event->len;
+                free(path);
+                pthread_mutex_unlock(&inotify_mutex);
+                continue;
+            }
+
+            if (root->destroy != 0) {
+                log_trace("Root is being destroyed. Skipping event");
+                i += INOTIFY_EVENT_SIZE + event->len;
+                free(path);
+                pthread_mutex_unlock(&inotify_mutex);
+                continue;
+            }
 
             pthread_mutex_unlock(&inotify_mutex);
 
-            if (root == NULL) {
-                log_error("Failed to look up meta data for root '%s'",
-                          path);
+            /* Construct the absolute path for this event. */
+            rv = asprintf(&abs_path, "%s/%s", path, event->name);
+            if (rv == -1) {
+                log_error
+                    ("Failed to allocate memory while creating absolute event path: %s",
+                     "inotify.c:inotify_handle_event()");
                 i += INOTIFY_EVENT_SIZE + event->len;
                 free(path);
                 continue;
             }
-
-            /* Construct the absolute path for this event. */
-            asprintf(&abs_path, "%s/%s", path, event->name);
 
             log_debug("Got event for '%s'", abs_path);
 
@@ -267,9 +290,9 @@ void inotify_handle_event(int fd)
                 }
 
                 /* Here we have directory deletion. So we need to tell
-                 * inotify to stop watching this directory tree for us,
-                 * as well as remove the mapping we have stored in our
-                 * watch descriptor hash map.
+                 * inotify to stop watching this directory for us, as
+                 * well as remove the mapping we have stored in our
+                 * watch descriptor meta maps.
                  */
                 else if ((event->mask & IN_DELETE)
                          || (event->mask & IN_MOVED_FROM)) {
@@ -316,8 +339,8 @@ void inotify_handle_event(int fd)
             if (event->mask & root->mask) {
                 rv = inotify_enqueue(root, event, path);
                 if (rv != 0)
-                    log_warn("Failed to queue event for wd:%d path:%s",
-                             event->wd, path);
+                    log_warn("Failed to queue event for wd:%d path:%s: %s",
+                             event->wd, path, error_to_string(rv));
             }
 
             free(path);
@@ -335,10 +358,17 @@ void inotify_handle_event(int fd)
  */
 static int inotify_enqueue(Root * root, IN_Event * event, char *path)
 {
-    int queue_len;
+    int rv, queue_len;
     Event *node;
 
     pthread_mutex_lock(&inotify_mutex);
+
+    if (root == NULL) {
+        log_warn
+            ("Failed to enqueue because root at path %s does not exist");
+        pthread_mutex_unlock(&inotify_mutex);
+        return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
+    }
 
     /* Check to make sure we don't overflow the queue */
     queue_len = (int) g_queue_get_length(root->queue);
@@ -347,10 +377,11 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
               root->path, queue_len, root->max_events);
 
     if (queue_len >= root->max_events) {
-        log_warn("Queue full for root '%s' (%d). Dropping event!",
-                 root->path, root->max_events);
+        log_warn
+            ("Queue full for root '%s' (max_events=%d). Dropping event!",
+             root->path, root->max_events);
         pthread_mutex_unlock(&inotify_mutex);
-        return 1;
+        return ERROR_INOTIFY_ROOT_QUEUE_FULL;
     }
 
     log_debug("Queuing event root:%s path:%s name:%s",
@@ -363,7 +394,7 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
     if (node == NULL) {
         log_error("Failed to allocate memory for new queue node: %s",
                   "inotify.c:inotify_enqueue()");
-        return 1;
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     node->wd = event->wd;
@@ -371,11 +402,23 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
     node->cookie = event->cookie;
     node->len = event->len;
 
-    asprintf(&node->name, "%s", event->name);
-    asprintf(&node->path, "%s", path);
+    rv = asprintf(&node->name, event->name);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new queue node NAME: %s",
+                  "inotify.c:inotify_enqueue()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
+
+    rv = asprintf(&node->path, path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new queue node PATH: %s",
+                  "inotify.c:inotify_enqueue()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
 
     /* Add new node to the queue. */
-    g_queue_push_tail(root->queue, node);
+    if (root != NULL)
+        g_queue_push_tail(root->queue, node);
 
     pthread_mutex_unlock(&inotify_mutex);
     return 0;
@@ -384,7 +427,7 @@ static int inotify_enqueue(Root * root, IN_Event * event, char *path)
 /* Return a list of all the currently watched root paths. */
 char **inotify_get_roots(void)
 {
-    int i = 0;
+    int i = 0, rv;
     char **roots;
     GList *keys;
 
@@ -400,8 +443,15 @@ char **inotify_get_roots(void)
         return NULL;
     }
 
-    for (; keys != NULL; keys = keys->next)
-        asprintf(&roots[i++], "%s", (char *) keys->data);
+    for (; keys != NULL; keys = keys->next) {
+        rv = asprintf(&roots[i++], (char *) keys->data);
+        if (rv == -1) {
+            log_error
+                ("Failed to allocate memory while adding root to list: %s",
+                 "inotify.c:inotify_get_roots()");
+            return NULL;
+        }
+    }
 
     roots[i] = NULL;
 
@@ -535,6 +585,7 @@ Root *inotify_is_root(char *path)
  */
 Root *inotify_path_to_root(char *path)
 {
+    int rv;
     GList *keys;
 
     keys = g_hash_table_get_keys(inotify_roots);
@@ -542,7 +593,13 @@ Root *inotify_path_to_root(char *path)
     for (; keys != NULL; keys = keys->next) {
 
         char *tmp;
-        asprintf(&tmp, "%s/", (char *) keys->data);
+        rv = asprintf(&tmp, "%s/", (char *) keys->data);
+        if (rv == -1) {
+            log_error
+                ("Failed to allocate memory while copying data to a temporary variable: %s",
+                 "inotify.c:inotify_path_to_root()");
+            return NULL;
+        }
 
         if ((strcmp(path, keys->data) == 0) || strstr(path, tmp)) {
             free(tmp);
@@ -559,6 +616,7 @@ Root *inotify_path_to_root(char *path)
             log_trace("Found root '%s' for path '%s'", keys->data, path);
 
             g_list_free(keys);
+
             return root;
         }
 
@@ -591,10 +649,17 @@ Root *inotify_path_to_root(char *path)
  */
 char *inotify_is_parent(char *path)
 {
+    int rv;
     char *tmp;
     GList *keys;
 
-    asprintf(&tmp, "%s/", path);
+    rv = asprintf(&tmp, "%s/", path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for temporary path '%s': %s",
+                  path, "inotify.c:inotify_is_parent()");
+        return (char *) -1;
+    }
+
 
     keys = g_hash_table_get_keys(inotify_roots);
 
@@ -612,13 +677,74 @@ char *inotify_is_parent(char *path)
     return NULL;
 }
 
-/* Recursively unwatch a tree. This includes removing each inotify
- * watch, as well as removing entries in the meta data mappings.
+/* When a client app makes an 'unwatch' call this is the function
+ * that eventually gets called to do the dirty work.
  */
+static int destroy_root(Root * root)
+{
+    int rv;
+    Watch *watch;
+    char *tmp, *path;
+    GList *keys;
+
+    if (root == NULL) {
+        log_warn("Attempting to destroy an unwatched root");
+        return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
+    }
+
+    pthread_mutex_lock(&inotify_mutex);
+
+    rv = asprintf(&tmp, "%s/", root->path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for temporary path variable: %s",
+                  "inotify.c:destroy_root()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
+
+    /* Destroy all the queue data associated with this root. */
+    g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
+    g_queue_free(root->queue);
+
+    /* Destroy all the watches associated with this root. */
+    for (; keys != NULL; keys = keys->next) {
+        path = (char *) keys->data;
+
+        if (strstr(path, tmp)) {
+            printf("Path %s has root %s\n", path, tmp);
+
+            watch = g_hash_table_lookup(inotify_path_to_watch, path);
+
+            if (watch == NULL) {
+                log_warn
+                    ("During recusrive delete unable to look up watch for path %s",
+                     path);
+                continue;
+            }
+
+            g_hash_table_remove(inotify_wd_to_watch,
+                                GINT_TO_POINTER(watch->wd));
+            g_hash_table_remove(inotify_path_to_watch, path);
+
+            free(watch->path);
+            free(watch);
+        }
+    }
+    free(tmp);
+
+    /* Destroy the root itself. */
+    g_hash_table_remove(inotify_roots, root->path);
+    free(root->path);
+    root = NULL;
+    --inotify_num_watched_roots;
+
+    pthread_mutex_unlock(&inotify_mutex);
+
+    return 0;
+}
+
 int inotify_unwatch_tree(char *path)
 {
-    int rv, last;
-    DIR *d;
+    int last;
     Root *root;
 
     /* Clean up path by removing the trailing slash, if it exists. */
@@ -630,48 +756,15 @@ int inotify_unwatch_tree(char *path)
      * watched root.
      */
     root = inotify_is_root(path);
-    if (root == NULL) {
+    if ((root == NULL) || (root->destroy != 0)) {
         log_warn
             ("Cannot unwatch path '%s' since it is not a watched root'",
              path);
-        return 1;
+        return ERROR_INOTIFY_ROOT_NOT_WATCHED;
     }
 
-    /* Next make sure we're not currently performing a recursive 
-     * watch on this tree.
-     */
-    if (root->busy == 1) {
-        log_warn
-            ("Root '%s' is currently being initialized. Unwatch aborted",
-             path);
-        return 1;
-    }
-
-    /* Finally check to make sure the path is a valid, open-able,
-     * directory.
-     */
-    d = opendir(path);
-    if (d == NULL) {
-        log_warn("Failed to open root at dir '%s': %s",
-                 path, strerror(errno));
-        closedir(d);
-        return 1;
-    }
-    closedir(d);
-
-    log_notice("Un-watching tree at root '%s'", path);
-
-    /* Recursively remove the inotify watches of each
-     * sub directory of this root.
-     */
-    rv = do_unwatch_tree(path, root);
-    if (rv != 0) {
-        log_error("Failed to unwatch root at dir '%s': %s", path,
-                  error_to_string(rv));
-        return 1;
-    }
-
-    return 0;
+    root->destroy = 1;
+    return destroy_root(root);
 }
 
 /* Recursively watch a tree. This involves setting up inotify watches
@@ -680,17 +773,15 @@ int inotify_unwatch_tree(char *path)
  */
 int inotify_watch_tree(char *path, int mask, int max_events)
 {
-    int rv;
+    int rv, last;
 
     log_trace("Entering inotify_watch_tree() on path '%s' with mask %lu",
               path, mask);
 
     /* Clean up path by removing the trailing slash, it exists. */
-    {
-        int last = strlen(path) - 1;
-        if (path[last] == '/')
-            path[last] = '\0';
-    }
+    last = strlen(path) - 1;
+    if (path[last] == '/')
+        path[last] = '\0';
 
     /* A quick check of the current state of watched roots. */
     {
@@ -716,8 +807,12 @@ int inotify_watch_tree(char *path, int mask, int max_events)
          * requests a watch at '/foo'.
          */
         char *sub_path = inotify_is_parent(path);
-
-        if (sub_path) {
+        if (sub_path == (char *) -1) {
+            log_error("Memory allocation error while calling inotify_is_parent");
+            pthread_mutex_unlock(&inotify_mutex);
+            return ERROR_MEMORY_ALLOCATION;
+        }
+        else if (sub_path) {
             log_warn
                 ("Path '%s' is the parent of already watched root '%s'",
                  path, sub_path);
@@ -774,137 +869,18 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     return rv;
 }
 
-/* Threaded portion of inotify_unwatch_tree(). */
-static int do_unwatch_tree(char *path, Root * root)
-{
-    int rc;
-    pthread_t t;
-    T_Data *data;
-
-    data = (T_Data *) malloc(sizeof(T_Data));
-    if (data == NULL) {
-        log_error("Failed to allocate memory for thread data: %s",
-                  "inotify.c:do_unwatch_tree()");
-        return ERROR_MEMORY_ALLOCATION;
-    }
-
-    asprintf(&data->path, "%s", path);
-    data->root = root;
-
-    rc = pthread_create(&t, NULL, _do_unwatch_tree, (void *) data);
-    if (rc) {
-        log_error("Failed to create new thread for UN-watch on '%s': %d",
-                  path, rc);
-        free(data->path);
-        free(data);
-        return ERROR_FAILED_TO_CREATE_NEW_THREAD;
-    }
-
-    return 0;
-}
-
-static void *_do_unwatch_tree(void *thread_data)
-{
-    Root *root;
-    T_Data *data;
-
-    data = thread_data;
-    root = data->root;
-
-    /* Blow away this root's meta-data. */
-    pthread_mutex_lock(&inotify_mutex);
-    free(root->path);
-    g_queue_foreach(root->queue, (GFunc) free_node_mem, NULL);
-    g_queue_free(root->queue);
-    pthread_mutex_unlock(&inotify_mutex);
-
-    /* Do our recursive UN-watching. */
-    root->busy = 1;
-    _do_unwatch_tree_rec(data->path);
-
-    /* Blow away this root */
-    pthread_mutex_lock(&inotify_mutex);
-    g_hash_table_remove(inotify_roots, data->path);
-    --inotify_num_watched_roots;
-    pthread_mutex_unlock(&inotify_mutex);
-
-    free(data->path);
-    free(data);
-
-    return (void *) 0;
-}
-
-/* Recursive portion of inotify_unwatch_tree(). */
-static void _do_unwatch_tree_rec(char *path)
-{
-    DIR *d;
-    Watch *delete;
-    struct dirent *dir;
-
-    pthread_mutex_lock(&inotify_mutex);
-
-    delete = g_hash_table_lookup(inotify_path_to_watch, path);
-
-    if (delete == NULL) {
-        log_warn
-            ("Failed to look up watcher for path '%s' during recursive unwatch",
-             path);
-        pthread_mutex_unlock(&inotify_mutex);
-        return;
-    }
-
-    log_trace("Un-watching wd:%d path:%s", delete->wd, path);
-
-    /* Remove inotify watch and blow away meta data mappings. */
-    int rv = inotify_rm_watch(inotify_fd, delete->wd);
-    if (rv != 0) {
-        log_warn("Failed call to inotify_rm_watch on dir '%s': %s",
-                 path, strerror(errno));
-    }
-
-    g_hash_table_remove(inotify_wd_to_watch, GINT_TO_POINTER(delete->wd));
-    g_hash_table_remove(inotify_path_to_watch, path);
-
-    free(delete->path);
-    free(delete);
-
-    pthread_mutex_unlock(&inotify_mutex);
-
-    d = opendir(path);
-    if (d == NULL) {
-        log_error("Failed to open dir '%s': %s", path, strerror(errno));
-        closedir(d);
-        return;
-    }
-
-    /* XXX: WARNING! dirent::d_type flags DO NOT work on XFS...
-     *               (and apparently several other file systems)
-     */
-    while ((dir = readdir(d))) {
-        if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0 || dir->d_type == DT_LNK) { /* Skip symlinks! */
-            continue;
-        }
-
-        if (dir->d_type == DT_DIR) {
-            char *tmp;
-            asprintf(&tmp, "%s/%s", path, dir->d_name);
-
-            /* Recurse! */
-            _do_unwatch_tree_rec(tmp);
-
-            free(tmp);
-        }
-    }
-
-    closedir(d);
-}
-
 /* Recursive, threaded portion of inotify_watch_tree(). */
 static int do_watch_tree(char *path, Root * root)
 {
-    int rc;
+    int rv;
     pthread_t t;
     T_Data *data;
+
+    if ((root == NULL) || (root->destroy != 0)) {
+        log_trace("Bailing out watch tree on path %s. %s", path,
+                  "It's root is either unwatched or is being destroyed");
+        return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
+    }
 
     data = (T_Data *) malloc(sizeof(T_Data));
     if (data == NULL) {
@@ -913,13 +889,19 @@ static int do_watch_tree(char *path, Root * root)
         return ERROR_MEMORY_ALLOCATION;
     }
 
-    asprintf(&data->path, "%s", path);
+    rv = asprintf(&data->path, path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for thread data PATH: %s",
+                  "inotify.c:do_watch_tree()");
+        return ERROR_MEMORY_ALLOCATION;
+    }
+
     data->root = root;
 
-    rc = pthread_create(&t, NULL, _do_watch_tree, (void *) data);
-    if (rc) {
+    rv = pthread_create(&t, NULL, _do_watch_tree, (void *) data);
+    if (rv) {
         log_error("Failed to create new thread for watch on '%s': %d",
-                  path, rc);
+                  path, rv);
         free(data->path);
         free(data);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
@@ -933,6 +915,14 @@ static void *_do_watch_tree(void *thread_data)
     T_Data *data;
     data = thread_data;
 
+    if ((data->root == NULL) || (data->root->destroy != 0)) {
+        log_error("Bailing out of recursive watch because the root is not watched: %s",
+"inotify.c:_do_watch_tree()");
+        free(data->path);
+        free(data);
+        return (void *) 1;
+    }
+
     data->root->busy = 1;
     _do_watch_tree_rec(data->path, data->root);
     data->root->busy = 0;
@@ -944,10 +934,20 @@ static void *_do_watch_tree(void *thread_data)
 
 static void _do_watch_tree_rec(char *path, Root * root)
 {
-    int wd;
+    int wd, rv;
     DIR *d;
     struct dirent *dir;
     Watch *watch;
+    char *tmp;
+
+    pthread_mutex_lock(&inotify_mutex);
+
+    if ((root == NULL) || (root->destroy != 0)) {
+        log_trace("Skipping watch tree on path %s. %s", path,
+                  "because root has been unwatched or is being destroyed");
+        pthread_mutex_unlock(&inotify_mutex);
+        return;
+    }
 
     wd = inotify_add_watch(inotify_fd, path,
                            IN_ALL_EVENTS | IN_DONT_FOLLOW);
@@ -955,20 +955,19 @@ static void _do_watch_tree_rec(char *path, Root * root)
     if (wd < 0) {
         log_error("Failed to set up inotify watch for path '%s': %s",
                   path, strerror(errno));
+        pthread_mutex_unlock(&inotify_mutex);
         return;
     }
 
     log_debug("Watching wd:%d path:%s", wd, path);
 
-
     watch = make_watch(wd, path);
     if (watch == NULL) {
         log_error("Failed to create new watch for wd:%d path:%s: %s",
                   "memory allocation error", wd, path);
+        pthread_mutex_unlock(&inotify_mutex);
         return;
     }
-
-    pthread_mutex_lock(&inotify_mutex);
 
     g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
     g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
@@ -988,8 +987,20 @@ static void _do_watch_tree_rec(char *path, Root * root)
         }
 
         if (dir->d_type == DT_DIR) {
-            char *tmp;
-            asprintf(&tmp, "%s/%s", path, dir->d_name);
+
+            rv = asprintf(&tmp, "%s/%s", path, dir->d_name);
+            if (rv == -1) {
+                log_error("Failed to allocate memroy for temporary path variable: %s",
+                          "inotify.c:_do_watch_tree_rec");
+                return;
+            }
+
+            if ((root == NULL) || (root->destroy != 0)) {
+                log_trace("Skipping watch tree on path %s. %s", path,
+                          "because root has been unwatched or is being destroyed");
+                free(tmp);
+                return;
+            }
 
             /* Recurse! */
             _do_watch_tree_rec(tmp, root);
@@ -1004,6 +1015,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
 /* Create a new root meta data structure. */
 static Root *make_root(char *path, int mask, int max_events)
 {
+    int rv;
     Root *root;
 
     root = malloc(sizeof(Root));
@@ -1013,11 +1025,17 @@ static Root *make_root(char *path, int mask, int max_events)
         return NULL;
     }
 
-    asprintf(&root->path, path);
+    rv = asprintf(&root->path, path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new root PATH: %s",
+                  "inotify.c:make_root()");
+        return NULL;
+    }
 
     root->mask = mask;
     root->queue = g_queue_new();
     root->max_events = max_events;
+    root->destroy = 0;
     root->busy = 0;
     root->persist = 0;          /* TODO: Future feature */
 
@@ -1032,6 +1050,7 @@ static Root *make_root(char *path, int mask, int max_events)
  */
 static Watch *make_watch(int wd, char *path)
 {
+    int rv;
     size_t size;
     Watch *watch;
 
@@ -1050,7 +1069,12 @@ static Watch *make_watch(int wd, char *path)
        memcpy(watch->path, path, size);
        watch->path[size] = '\0';
      */
-    asprintf(&watch->path, path);
+    rv = asprintf(&watch->path, path);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for new watch PATH: %s",
+                  "inotify.c:make_watch()");
+        return NULL;
+    }
 
     return watch;
 }

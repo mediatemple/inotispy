@@ -45,11 +45,16 @@ pthread_mutex_t zmq_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *zmq_setup(void)
 {
-    int bind_rv;
+    int rv, bind_rv;
     void *zmq_context;
     char *zmq_uri;
 
-    asprintf(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
+    rv = asprintf(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for the ZeroMQ URI: %s",
+                  "zmq.c:zmq_setup()");
+        return NULL;
+    }
 
     zmq_context = zmq_init(ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
@@ -188,7 +193,13 @@ void EVENT_watch(Request * req)
     /* Grab the path from our request, or bail if the user
      * did not supply a valid one.
      */
-    asprintf(&path, request_get_path(req));
+    rv = asprintf(&path, request_get_path(req));
+    if (rv == -1) {
+        log_error("Failed to allocate memory for watch path: %s",
+                  "zmq.c:EVENT_watch()");
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
 
     if (path == NULL) {
         log_warn("JSON parsed successfully but no 'path' field found");
@@ -295,6 +306,7 @@ JOBJ inotify_event_to_jobj(Event * event)
 
 void EVENT_get_queue_size(Request * req)
 {
+    int rv;
     char *path, *reply;
     Root *root;
     guint size;
@@ -319,7 +331,14 @@ void EVENT_get_queue_size(Request * req)
     size = g_queue_get_length(root->queue);
     pthread_mutex_unlock(&zmq_mutex);
 
-    asprintf(&reply, "{\"data\":%d}", size);
+    rv = asprintf(&reply, "{\"data\":%d}", size);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for reply JSON: %s",
+                  "zmq.c:EVENT_get_queue_size");
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
+
     reply_send_message(reply);
 
     free(reply);

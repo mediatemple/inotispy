@@ -60,6 +60,7 @@ typedef struct inotify_root {
     int max_events;
     GQueue *queue;
     int busy;
+    int destroy;
     int persist;                /* Future feature */
 } Root;
 
