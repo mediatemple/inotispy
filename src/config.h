@@ -29,7 +29,7 @@
 #ifndef _INOTISPY_CONFIG_H_
 #define _INOTISPY_CONFIG_H_
 
-#include "zmq.h"
+#include "zeromq.h"
 #include "log.h"
 #include "inotify.h"
 

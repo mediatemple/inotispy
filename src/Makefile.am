@@ -25,26 +25,21 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-AUTOMAKE_OPTIONS = foreign
-
-CFLAGS= -g -std=c99 --pedantic -Wall -O2 -D_GNU_SOURCE -D_REENTRANT \
-    $(pkg-config --cflags glib-2.0) 
-LDFLAGS= -lglib-2.0 -ljson -lzmq -lpthread
-DEFAULT_INCLUDES=
+AM_CPPFLAGS = $(DEPS_CFLAGS)
+inotispy_LDADD = $(DEPS_LIBS)
 
 sbin_PROGRAMS = inotispy
 inotispy_SOURCES = \
-    main.c \
-    zmq.c \
+    config.c \
+    config.h \
     inotify.c \
+    inotify.h \
     log.c \
+    log.h \
+    main.c \
     reply.c \
     reply.h \
     request.c \
     request.h \
-    zmq.h \
-    inotify.h \
-    log.h \
-    config.c \
-    config.h
-
+    zeromq.c \
+    zeromq.h

@@ -25,5 +25,4 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-etcdir = /etc
-etc_DATA = inotispy.conf
+sysconf_DATA = inotispy.conf

@@ -27,7 +27,7 @@
  */
 
 #include "log.h"
-#include "zmq.h"
+#include "zeromq.h"
 #include "reply.h"
 
 #include <stdio.h>

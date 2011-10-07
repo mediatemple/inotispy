@@ -27,7 +27,7 @@
  */
 
 #include "log.h"
-#include "zmq.h"
+#include "zeromq.h"
 #include "config.h"
 #include "inotify.h"
 

@@ -26,36 +26,26 @@
 # SUCH DAMAGE.
 
 AC_PREREQ([2.67])
-AC_INIT([inotispy], [1.0.1], [james@jamesconerly.com])
 
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+AC_INIT([inotispy], [1.0.1], [james@jamesconerly.com])
 AC_CONFIG_SRCDIR([src/main.c])
+AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
+
+AC_DEFINE(_GNU_SOURCE)
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
 
-# Checks for libraries.
-PKG_CHECK_MODULES(GLIB2, glib-2.0 >= 2.22)
+# Checks for packages via pkg-config
+PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.22 json libzmq)
 
-# CPPFLAGS for Glib
-CPPFLAGS=$(pkg-config --cflags glib-2.0)
-#CPPFLAGS="-I/usr/lib64/glib-2.0/include/ -I/usr/lib/glib-2.0/include -I/usr/include/glib-2.0"
-
-# Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software.]))
-AC_CHECK_HEADER([zmq.h],,AC_MSG_ERROR([Cannot find header zmq.h. Please download and install ZeroMQ from http://www.zeromq.org/area:download ]))
-AC_CHECK_HEADER([json/json.h],,AC_MSG_ERROR([Cannot find header json/json.h. Please download and install json-c http://oss.metaparadigm.com/json-c/]))
-AC_CHECK_HEADER([pthread.h],,AC_MSG_ERROR([Cannot find header pthread.h. Please make sure pthreads are installed and that your system is capable of running threaded software.]))
 
-AC_CHECK_HEADERS(syslog.h stdint.h stdlib.h string.h unistd.h time.h errno.h dirent.h unistd.h [sys/stat.h] [sys/types.h] stdarg.h [linux/limits.h])
+m4_include([ax_pthread.m4])
 
-# Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_SIZE_T
-AC_TYPE_UINT32_T
+AX_PTHREAD([],AC_MSG_ERROR([Must have POSIX threads]))
 
-# Checks for library functions.
-AC_FUNC_MALLOC
-AC_CHECK_FUNCS([strerror strstr vasprintf strcpy asprintf read])
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
 AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile)
