@@ -104,7 +104,7 @@ static char *time_str(void)
     return t_str;
 }
 
-static void log_msg(int level, char *fmt, va_list ap)
+static void log_msg(int level, const char *fmt, va_list ap)
 {
     int rv;
     char *msg;
@@ -128,7 +128,7 @@ static void log_msg(int level, char *fmt, va_list ap)
     free(msg);
 }
 
-void log_error(char *fmt, ...)
+void log_error(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -136,7 +136,7 @@ void log_error(char *fmt, ...)
     va_end(ap);
 }
 
-void log_warn(char *fmt, ...)
+void log_warn(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -144,7 +144,7 @@ void log_warn(char *fmt, ...)
     va_end(ap);
 }
 
-void log_notice(char *fmt, ...)
+void log_notice(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -152,7 +152,7 @@ void log_notice(char *fmt, ...)
     va_end(ap);
 }
 
-void log_debug(char *fmt, ...)
+void log_debug(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -160,7 +160,7 @@ void log_debug(char *fmt, ...)
     va_end(ap);
 }
 
-void log_trace(char *fmt, ...)
+void log_trace(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
