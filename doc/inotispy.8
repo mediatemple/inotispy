@@ -25,13 +25,13 @@
 .\" SUCH DAMAGE.
 .TH "INOTISPY" "8" "21 September 2011" "Inotispy 1\&.0\&.1" "Inotispy Manual"
 .SH NAME
-inotispy \- efficient inotify daemon
+inotispy \- efficient Inotify daemon
 .SH SYNOPSIS
 .B inotispy [options]
 .SH DESCRIPTION
 Inotispy is an efficient file system change notification daemon built on top
 of the
-.BR inotify
+.BR Inotify
 kernel module. It recursively watches directory trees, queues file system
 events that occur within those trees, and delivers those events to client
 applications via
@@ -43,7 +43,7 @@ Inotispy is written in the C programmaing language and was tested against
 for memory leaks.
 .SH OPTIONS
 Inotispy doesn't have many command line options. If you are interested
-in further changing the behavior of Inotispy please see the \fBCONFIGURATION
+in further changing the behavior of Inotispy, please see the \fBCONFIGURATION
 FILE\fR section below.
 .PP
 \fB\-h\fR, \fB\-\-help\fR
@@ -52,7 +52,7 @@ Print the help menu.
 .RE
 \fB\-s\fR, \fB\-\-silent\fR
 .RS 4
-Run silently, and only messages will be appended to the log file. Inotispy
+Run silently and only messages will be appended to the log file. Inotispy
 prints very little information to \fBstderr\fR and only does so at start up.
 So this feature isn't very useful unless it's important that it runs with
 nothing printed to the terminal.
@@ -79,17 +79,17 @@ is:
 .in
 .P
 Inotispy's main goal is to make it so that you, the coder, the one with
-the file system monitoring project, can hook into inotify without having
+the file system monitoring project, can hook in to Inotify without having
 to write your own code to recursively watch directories, manage mappings
 between paths and watch descriptors, and handle event queuing. 
 .P
 Also, Inotispy is a service which is completely decoupled from your
 application. This means that you can bring your application down for
-maintenance (or a code release) and you won't lose the events from the
-directory trees your application was watching.
+maintenance or a code release and you won't lose the events from the
+directory trees that your application was watching.
 .P
-Communication with Inotispy is done through \fBZeroMQ\fR sockets and the protocol
-is \fBJSON\fR. Each JSON request must contain a \fIcall\fR field and then a set
+Communication with Inotispy is done through \fBZeroMQ\fR sockets using the
+\fBJSON\fR protocol. Each JSON request must contain a \fIcall\fR field and then a set
 of required and optional arguments, depending on the call.
 .SS Calls
 Calls to Inotispy are incredibly simple. An example call in JSON would look like:
@@ -105,11 +105,11 @@ Calls to Inotispy are incredibly simple. An example call in JSON would look like
 .P
 This call tells Inotispy to recursively watch all directories starting at the
 root path \fI/foo/bar\fR and to start queuing up events for file system changes
-that happen under that root.
+that happen under that root path.
 .P
 See the \fBINOTISPY API\fR section below for the full list of calls and their arguments.
 .SS Responses
-Responses from Inotispy are also JSON and they come in 3 flavors: \fBsuccess\fR,
+Responses from Inotispy are also JSON and come in 3 flavors: \fBsuccess\fR,
 \fBerror\fR, and \fBdata\fR.
 .P
 \fIsuccess\fR
@@ -117,7 +117,7 @@ Responses from Inotispy are also JSON and they come in 3 flavors: \fBsuccess\fR,
 The \fBsuccess\fR response is actually pretty useless. This is the response you get
 when you tell Inotispy to \fIwatch\fR or \fIunwatch\fR a directory tree and it
 successfully kicks off the routine that recursively watches (or unwatches) your
-tree. (As a client, what you're more interested in is an \fBerror\fR response.)
+tree (as a client, what you're more interested in is an \fBerror\fR response)
 The \fBsuccess\fR response looks like:
 .P
 .RS 4
@@ -126,11 +126,11 @@ The \fBsuccess\fR response looks like:
 .P
 \fIerror\fR
 .P
-The \fBerror\fR response tells you that something went wrong with your request,
-naturally, by returning you an \fBerror code\fR and an \fBerror message\fR. Since
-any of the calls can generate an error a client should \fIalways\fR first check
-the response to see if it contains an \fBerror\fR field, and then react accordingly.
-It looks like:
+The \fBerror\fR response tells you that something went wrong with your request
+by returning you an \fBerror code\fR and an \fBerror message\fR. Since
+any of the calls can generate an error, a client should \fIalways\fR first check
+the response to see if it contains an \fBerror\fR field and then react accordingly.
+The \fBerror\fR response looks like:
 .P
 .in +4n
 .nf
@@ -145,13 +145,13 @@ It looks like:
 .P
 \fIdata\fR
 .P
-The \fBdata\fR response is what you get when you request information from Inotispy,
+The \fBdata\fR response is what you get when you request information from Inotispy
 such as a call to \fBget_roots\fR or \fBget_events\fR. This will be a hash with one
 key, \fIdata\fR, whose value is an array containing the data you requested.\fB*\fR
-In the case of \fBget_roots\fR it will be an array of pathnames (strings). In the
-case of \fBget_events\fR it will be an array of hashes where each hash contains the
-data of an inotify event. (See \fBINOTISPY_API\fR below for more information). It
-looks like:
+In the case of \fBget_roots\fR, it will be an array of pathnames (strings). In the
+case of \fBget_events\fR, it will be an array of hashes with each hash containing the
+data of an Inotify event (see \fBINOTISPY_API\fR below for more information).
+The \fBdata\fR response looks like:
 .P
 .in +4n
 .nf
@@ -175,7 +175,7 @@ value of the data field is an integer, not an array, which will look like:
 .P
 .SH INOTISPY API
 .P
-Here is the list of supported calls, and their arguments and return values.
+Here is the list of supported calls with their arguments and return values.
 .P
 .SS watch
 Watch a new directory tree.
@@ -189,7 +189,7 @@ Watch a new directory tree.
 \fBmask\fR       - Inotify mask defining the file system events\fB*\fR
              you want to receive notifications for.\fB**\fR
 .br
-\fBmax_events\fR - Max number of inotify events to queue for
+\fBmax_events\fR - Max number of Inotify events to queue for
              this root. The default is 65536.
 .P
 \fIReturn Value\fR
@@ -209,7 +209,7 @@ Watch a new directory tree.
 .fi
 .in
 .P
-\fB*\fR If you don't supply your own mask Inotify provides a default mask for you.
+\fB*\fR If you don't supply your own mask, Inotify provides a default mask for you.
 The events in the default mask are:
 .P
 .in +4n
@@ -228,7 +228,7 @@ IN_UNMOUNT
 .P
 \fB**\fR See 
 .BR inotify(7)
-for more information on inotify events. A simple
+for more information on Inotify events. A simple
 (non-working) example in \fBC\fR for using a custom mask would look something like:
 .P
 .in +4n
@@ -316,7 +316,7 @@ Get the number of events in a given root's queue.
 .in
 .P
 .SS get_events
-Retrieve inotify events from a given root's queue.
+Retrieve Inotify events from a given root's queue.
 .P
 \fIRequired Arguments\fR
 .br
@@ -346,17 +346,17 @@ Retrieve inotify events from a given root's queue.
 that root's queue.
 .P
 .SH EXAMPLES
-For examples on writing a client to talk to Inotispy please take a look at the
-\fBexamples/\fR directory that ships with the distribution. There are examples
+For examples on writing a client to talk to Inotispy please, take a look at the
+\fBexamples/\fR directory that ships with its distribution. There are examples
 in several languages, including \fBC\fR and \fBPerl\fR.
 .P
-If you're writing your client code in \fBC\fR a full blown example is
+If you're writing your client code in \fBC\fR, a full-blown (working) example is
 \fBbin/inotispyctl.c\fR. 
 .SH CONFIGURATION FILE
 Inotispy ships with a small configuration file that you can use to modify a few
-of it's characteristics. The config file that comes with the distribution
-(\fBetc/inotispy.conf\fR) is thoroughly documented and it's full contents will
-not be repeated here. However, here is the high level rundown of the parameters
+of its characteristics. The config file that comes with the distribution
+(\fBetc/inotispy.conf\fR) is thoroughly documented and its full contents will
+not be repeated here. However, here is the high-level rundown of the parameters
 you can tweak:
 .P
 .RS 4
@@ -370,22 +370,22 @@ you can tweak:
 .br
 \fBlog_syslog\fR         - toggle log output to syslog
 .br
-\fBmax_inotify_events\fR - cap the number of per/root inotify
+\fBmax_inotify_events\fR - cap the number of per/root Inotify
                      events to be queued
 .RE
 .SH LOGGING
-Inotispy outputs runtime information to a private log file, and alternatively
+Inotispy outputs runtime information to a private log file and alternatively
 to \fBsyslog\fR. The default location of the private log file is
-\fB/var/log/inotispy.log\fR. Using the configuration file (described above)
+\fB/var/log/inotispy.log\fR. Using the configuration file described above,
 you can change the location of this log file as well as change the level
-of verbosity you want to see in the log. By default the level is set to
-\fBnotice\fR, which should make the output fairly limited, and logging to
+of verbosity you want to see in the log. By default, the level is set to
+\fBnotice\fR (which should make the output fairly limited) and logging to
 \fBsyslog\fR is set to \fBfalse\fR.
 .P
-If you want, or need, to see more of what's going on under the hood then change
-that level to \fBdebug\fR or \fBtrace\fR. Just be warned that these two levels
-can produce quite a bit of output, and in a production environment where Inotispy
-is being used heavily it \fBis not\fR recommended that you have your log level
+If you want or need to see more of what's going on under the hood, then change
+the level to \fBdebug\fR or \fBtrace\fR. Just be warned that these two levels
+can produce quite a bit of output: in a production environment where Inotispy
+is being used heavily, it \fBis not\fR recommended that you have your log level
 set to anything higher than \fBnotice\fR.
 .P
 See the comments in \fBetc/inotispy.conf\fR for more details.
@@ -393,13 +393,13 @@ See the comments in \fBetc/inotispy.conf\fR for more details.
 Inotispy provides an interface sutable for calling from programs in any language.
 Included with the Inotispy distribution are code samples with examples
 in several different languages. However, because this daemon is built on top of
-.BR ZeroMQ
+.BR ZeroMQ,
 the best alternative resource would be the
 .BR zmq (7)
 documentation itself.
 .PP
-At the time of this writing Inotispy does not have any official bindings, however
-because there are \fBZeroMQ\fR bindings in many popular languages it shouldn't be
+At the time of this writing, Inotispy does not have any official bindings. However,
+because there are \fBZeroMQ\fR bindings in many popular languages, it shouldn't be
 difficult to roll a solution of your own.
 .SH BUGS
 Inotispy \fBdoes not\fR work on \fBXFS\fR. This is because XFS does not support
@@ -409,12 +409,12 @@ Inotispy \fBdoes not\fR work on \fBXFS\fR. This is because XFS does not support
 .I http://nerdfortress.com/2008/09/19/linux-xfs-does-not-support-direntd_type/
 .RE
 .P
-Eventually Inotispy should (and will) include a hook to determine the file
-system it's it's being requested to watch and use
+Eventually, Inotispy should (and will) include a hook to determine the file
+system that's being requested to watch and use
 .BR stat (2)
 instead of \fBdirent::d_type\fR to differentiate directories from regular files.
-This does, however, have serious performance implications when watching large
-directory trees as it adds a call to \fBstat()\fR for every single file found
+However, this does have serious performance implications when watching large
+directory trees as it makes calls to \fBstat()\fR for \fBevery file\fR found
 while performing a recursive watch.
 .P
 So while we can (and will) make Inotispy work on XFS the reality is that it wont

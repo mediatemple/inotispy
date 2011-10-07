@@ -30,34 +30,34 @@ inotispyctl \- command line tool for poking the inotispy daemon
 .B inotispyctl\fR [\fIoption\fR] \fBcommand\fR [\fIcommand args\fR]
 .SH DESCRIPTION
 This is a simple command line tool for using the \fBinotispy(8)\fR daemon.
-It can be used as an administrative tool, or just for getting started with
+It can be used as an administrative tool or to help getting started with
 Inotispy.
 .SH OPTIONS
 \fB\-h\fR, \fB\-\-help\fR
 .RS 4
-Print the help menu
+Print the help menu.
 .RE
 \fB\-p\fR, \fB\-\-port\fR
 .RS 4
-Connect to a port other than the default 5559
+Connect to a port other than the default 5559.
 .RE
 .SH COMMANDS
 .SS list_roots
-List each currently watched root
+List each currently watched root.
 .SS list_queues
-List each currently watched root and the number of events in each queue
+List each currently watched root and the number of events in each queue.
 .SS watch\fR \fIdir\fR
-Watch a new root at directory \fIdir\fR
+Watch a new root at directory \fIdir\fR.
 .SS unwatch\fR \fIdir\fR
-Unwatch the root at directory \fIdir\fR
+Unwatch the root at directory \fIdir\fR.
 .SS queue_size\fR \fIdir\fR
-Get the queue size for a watched root
+Get the queue size for a watched root.
 .SS flush_queue\fR \fIdir\fR
-Flush the queue for a watched root
+Flush the queue for a watched root.
 .SS get_events\fR \fIdir\fR \fIcount\fR
 Get events for a specific root. The \fIcount\fR value is an integer value
->= to 0 (zero). A count of \fB0\fR (zero) will retrieve \fBall\fR the events
-currently in that root's queue
+>= to 0 (zero). A count of \fB0\fR (zero) will retrieve \fBall\fR of the events
+currently in that root's queue.
 .SH EXAMPLE USAGE
 The following is an example terminal session using \fBinotispyctl\fR:
 .PP
@@ -102,7 +102,7 @@ There are no currently watched roots
 .fi
 .in
 .SH BUGS
-See the man page \fBinotispy(8)\fR for a list of known Inotispy bugs.
+See the \fBinotispy(8)\fR man page for a list of known Inotispy bugs.
 .SH RESOURCES
 Main web site:
 .BR http://www.inotispy.org
