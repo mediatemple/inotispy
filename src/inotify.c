@@ -119,7 +119,7 @@ int inotify_setup(void)
     return inotify_fd;
 }
 
-void inotify_handle_event(int fd)
+void inotify_handle_event(void)
 {
     int i = 0;
     int num_in_events;
@@ -132,7 +132,7 @@ void inotify_handle_event(int fd)
      * length of this buffer is negative then we've
      * encountered a read error.
      */
-    num_in_events = read(fd, buffer, INOTIFY_EVENT_BUF_LEN);
+    num_in_events = read(inotify_fd, buffer, INOTIFY_EVENT_BUF_LEN);
 
     if (num_in_events < 0) {
         log_error("Inotify read error: %s", strerror(errno));

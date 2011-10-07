@@ -43,6 +43,8 @@
 
 pthread_mutex_t zmq_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static void zmq_dispatch_event(Request * req);
+
 void *zmq_setup(void)
 {
     int rv, bind_rv;
@@ -76,7 +78,7 @@ void *zmq_setup(void)
  * and contains the manditory 'call' field then this request is
  * sent to the dispatcher.
  */
-void zmq_handle_event(void *receiver)
+void zmq_handle_event(void)
 {
     int i, rv, nil, msg_size;
     char *json;
@@ -185,7 +187,7 @@ void zmq_handle_event(void *receiver)
  * Event handlers
  */
 
-void EVENT_watch(Request * req)
+static void EVENT_watch(Request * req)
 {
     int rv, mask, max_events;
     char *path;
@@ -246,7 +248,7 @@ void EVENT_watch(Request * req)
     reply_send_success();
 }
 
-void EVENT_unwatch(Request * req)
+static void EVENT_unwatch(Request * req)
 {
     int rv;
     char *path = request_get_path(req);
@@ -266,7 +268,7 @@ void EVENT_unwatch(Request * req)
     reply_send_success();
 }
 
-JOBJ inotify_event_to_jobj(Event * event)
+static JOBJ inotify_event_to_jobj(Event * event)
 {
     JOBJ jobj;
     JOBJ jint_mask, jint_cookie;
@@ -306,7 +308,7 @@ JOBJ inotify_event_to_jobj(Event * event)
     return jobj;
 }
 
-void EVENT_get_queue_size(Request * req)
+static void EVENT_get_queue_size(Request * req)
 {
     int rv;
     char *path, *reply;
@@ -346,7 +348,7 @@ void EVENT_get_queue_size(Request * req)
     free(reply);
 }
 
-void EVENT_get_events(Request * req)
+static void EVENT_get_events(Request * req)
 {
     int i, count;
     char *path;
@@ -410,7 +412,7 @@ void EVENT_get_events(Request * req)
 /* This is just a way for client code to see all of the
  * roots Inotispy is currently watching.
  */
-void EVENT_get_roots(void)
+static void EVENT_get_roots(void)
 {
     int i;
     char **roots;
@@ -443,7 +445,7 @@ void EVENT_get_roots(void)
     json_object_put(jobj);
 }
 
-void zmq_dispatch_event(Request * req)
+static void zmq_dispatch_event(Request * req)
 {
     char *call = req->call;
 

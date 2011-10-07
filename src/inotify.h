@@ -159,7 +159,7 @@ int inotify_setup(void);
 Root *inotify_is_root(char *path);
 
 /* Event handler for new inotify alerts. */
-void inotify_handle_event(int fd);
+void inotify_handle_event(void);
 
 /* Recursively watch a directory tree */
 int inotify_watch_tree(char *path, int mask, int max_events);

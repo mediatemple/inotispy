@@ -41,8 +41,11 @@
 #define ZMQ_THREADS     16
 #define ZMQ_MAX_MSG_LEN 1024
 
-/* 0MQ socket listener. */
+/* 0MQ socket for client connections. */
 void *zmq_listener;
+
+/* 0MQ socket for INPROC requests to set up a new inotify watch. */
+void *zmq_inproc;
 
 #endif /*_INOTISPY_ZMQ_H_META_*/
 
@@ -68,11 +71,6 @@ void *zmq_setup(void);
  * 4. If JSON parsed successfully and there was a "call" field
  *    create a Request struct/blob and send that off to the dispatcher.
  */
-void zmq_handle_event(void *receiver);
-
-/* Given a successfully parsed request, take the "call" value and
- * invoke the appropriate EVENT_* funcion to handle that request.
- */
-void zmq_dispatch_event(Request * req);
+void zmq_handle_event(void);
 
 #endif /*_INOTISPY_ZMQ_H_*/

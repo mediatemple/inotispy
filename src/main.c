@@ -98,12 +98,12 @@ int main(int argc, char **argv)
 
         if (items[0].revents & ZMQ_POLLIN) {
             /* log_trace("Found inotify event"); */
-            inotify_handle_event(inotify_fd);
+            inotify_handle_event();
         }
 
         if (items[1].revents & ZMQ_POLLIN) {
             /* log_trace("Found 0MQ event"); */
-            zmq_handle_event(zmq_receiver);
+            zmq_handle_event();
         }
     }
 
