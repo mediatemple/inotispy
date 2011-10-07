@@ -665,6 +665,8 @@ char *inotify_is_parent(char *path)
     char *tmp;
     GList *keys;
 
+    keys = NULL;
+
     rv = asprintf(&tmp, "%s/", path);
     if (rv == -1) {
         log_error("Failed to allocate memory for temporary path '%s': %s",
@@ -699,6 +701,8 @@ static int destroy_root(Root * root)
     char *tmp, *path;
     GList *keys;
 
+    keys = NULL;
+
     if (root == NULL) {
         log_warn("Attempting to destroy an unwatched root");
         return ERROR_INOTIFY_ROOT_DOES_NOT_EXIST;
@@ -722,11 +726,13 @@ static int destroy_root(Root * root)
     g_queue_free(root->queue);
 
     /* Destroy all the watches associated with this root. */
+    keys = g_hash_table_get_keys(inotify_path_to_watch);
+
     for (; keys != NULL; keys = keys->next) {
+
         path = (char *) keys->data;
 
         if (strstr(path, tmp)) {
-            printf("Path %s has root %s\n", path, tmp);
 
             watch = g_hash_table_lookup(inotify_path_to_watch, path);
 
@@ -762,6 +768,8 @@ static int destroy_root(Root * root)
     free(root->path);
     root = NULL;
     --inotify_num_watched_roots;
+
+    g_list_free(keys);
 
     pthread_mutex_unlock(&inotify_mutex);
 
