@@ -187,7 +187,7 @@ void zmq_handle_event(void)
  * Event handlers
  */
 
-static void EVENT_watch(Request * req)
+static void EVENT_watch(const Request * req)
 {
     int rv, mask, max_events;
     char *path;
@@ -248,7 +248,7 @@ static void EVENT_watch(Request * req)
     reply_send_success();
 }
 
-static void EVENT_unwatch(Request * req)
+static void EVENT_unwatch(const Request * req)
 {
     int rv;
     char *path = request_get_path(req);
@@ -268,7 +268,7 @@ static void EVENT_unwatch(Request * req)
     reply_send_success();
 }
 
-static JOBJ inotify_event_to_jobj(Event * event)
+static JOBJ inotify_event_to_jobj(const Event * event)
 {
     JOBJ jobj;
     JOBJ jint_mask, jint_cookie;
@@ -308,14 +308,14 @@ static JOBJ inotify_event_to_jobj(Event * event)
     return jobj;
 }
 
-static void EVENT_get_queue_size(Request * req)
+static void EVENT_get_queue_size(const Request * req)
 {
     int rv;
-    char *path, *reply;
+    char *reply;
     Root *root;
     guint size;
 
-    path = request_get_path(req);
+    const char* path = request_get_path(req);
 
     if (path == NULL) {
         log_warn("JSON parsed successfully but no 'path' field found");
@@ -348,7 +348,7 @@ static void EVENT_get_queue_size(Request * req)
     free(reply);
 }
 
-static void EVENT_get_events(Request * req)
+static void EVENT_get_events(const Request * req)
 {
     int i, count;
     char *path;

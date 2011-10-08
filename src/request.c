@@ -29,7 +29,7 @@
 #include "log.h"
 #include "request.h"
 
-JOBJ _parse_json(char *json)
+JOBJ _parse_json(const char *json)
 {
     JOBJ jobj;
     JTOK jtok;
@@ -47,7 +47,7 @@ JOBJ _parse_json(char *json)
     return jobj;
 }
 
-Request *request_parse(char *json)
+Request *request_parse(const char *json)
 {
     int rv;
     JOBJ jobj, val;
@@ -99,7 +99,7 @@ Request *request_parse(char *json)
     return req;
 }
 
-char *request_get_key_str(Request * req, char *key)
+char *request_get_key_str(const Request * req, const char *key)
 {
     JOBJ val;
 
@@ -122,7 +122,7 @@ char *request_get_key_str(Request * req, char *key)
 /* The following function returns -1 upon error because zero
  * is a valid value.
  */
-int request_get_key_int(Request * req, char *key)
+int request_get_key_int(const Request * req, const char *key)
 {
     JOBJ val;
 
@@ -143,12 +143,12 @@ int request_get_key_int(Request * req, char *key)
 
 }
 
-char *request_get_call(Request * req)
+char *request_get_call(const Request * req)
 {
     return request_get_key_str(req, "call");
 }
 
-char *request_get_path(Request * req)
+char *request_get_path(const const Request * req)
 {
     int last;
     char *path;
@@ -165,7 +165,7 @@ char *request_get_path(Request * req)
     return path;
 }
 
-int request_get_max_events(Request * req)
+int request_get_max_events(const Request * req)
 {
     int max_events;
 
@@ -179,7 +179,7 @@ int request_get_max_events(Request * req)
     return max_events;
 }
 
-int request_get_mask(Request * req)
+int request_get_mask(const Request * req)
 {
     int mask;
 
@@ -200,7 +200,7 @@ int request_get_mask(Request * req)
  * that it should bail out of this request without dequeueing any
  * events.
  */
-int request_get_count(Request * req)
+int request_get_count(const Request * req)
 {
     int count;
 
@@ -221,7 +221,7 @@ int request_get_count(Request * req)
     return count;
 }
 
-char *request_to_string(Request * req)
+const char *request_to_string(const Request * req)
 {
     return req->json;
 }
