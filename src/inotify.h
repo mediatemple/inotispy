@@ -156,7 +156,7 @@ GHashTable *inotify_path_to_watch;
 int inotify_setup(void);
 
 /* Verify is a path is a currently watched root */
-Root *inotify_is_root(char *path);
+Root *inotify_is_root(const char *path);
 
 /* Event handler for new inotify alerts. */
 void inotify_handle_event(void);
@@ -175,7 +175,7 @@ void inotify_free_roots(char **roots);
 void inotify_free_events(Event ** events);
 
 /* Functions for retrieving queued events */
-Event **inotify_get_event(char *path);
-Event **inotify_get_events(char *path, int count);
+Event **inotify_get_event(const char *path);
+Event **inotify_get_events(const char *path, int count);
 
 #endif /*_INOTISPY_INOTIFY_H_*/

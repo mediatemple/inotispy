@@ -65,16 +65,16 @@ typedef struct thread_data {
 } T_Data;
 
 /* Prototypes for private functions. */
-static Root *inotify_path_to_root(char *path);
-static Root *make_root(char *path, int mask, int max_events);
-static Watch *make_watch(int wd, char *path);
-static char *inotify_is_parent(char *path);
-static int inotify_enqueue(Root * root, IN_Event * event, char *path);
+static Root *inotify_path_to_root(const char *path);
+static Root *make_root(const char *path, int mask, int max_events);
+static Watch *make_watch(int wd, const char *path);
+static char *inotify_is_parent(const char *path);
+static int inotify_enqueue(const Root * root, const IN_Event * event, const char *path);
 static void free_node_mem(Event * node, gpointer user_data);
 
-static int do_watch_tree(char *path, Root * root);
+static int do_watch_tree(const char *path, Root * root);
 static void *_do_watch_tree(void *data);
-static void _do_watch_tree_rec(char *path, Root * root);
+static void _do_watch_tree_rec(const char *path, Root * root);
 
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
@@ -367,7 +367,7 @@ void inotify_handle_event(void)
  * On success 0 (zero) is returned.
  * On failure 1 is returned.
  */
-static int inotify_enqueue(Root * root, IN_Event * event, char *path)
+static int inotify_enqueue(const Root * root, const IN_Event * event, const char *path)
 {
     int rv, queue_len;
     Event *node;
@@ -552,7 +552,7 @@ static Event **inotify_dequeue(Root * root, int count)
 /* Given a root path return 'count' events from the
  * front of the queue, if there are any.
  */
-Event **inotify_get_events(char *path, int count)
+Event **inotify_get_events(const char *path, int count)
 {
     Root *root;
 
@@ -568,7 +568,7 @@ Event **inotify_get_events(char *path, int count)
 }
 
 /* Given a root path grab a single event off the queue */
-Event **inotify_get_event(char *path)
+Event **inotify_get_event(const char *path)
 {
     return inotify_get_events(path, 1);
 }
@@ -579,7 +579,7 @@ Event **inotify_get_event(char *path)
  * Since roots are stored in a hash table this is really not
  * necessary, it just provides a little syntatic sugar.
  */
-Root *inotify_is_root(char *path)
+Root *inotify_is_root(const char *path)
 {
     return g_hash_table_lookup(inotify_roots, path);
 }
@@ -595,7 +595,7 @@ Root *inotify_is_root(char *path)
  *   /zing/zang/zong
  *   /zing/zang/zoop/boop
  */
-Root *inotify_path_to_root(char *path)
+Root *inotify_path_to_root(const char *path)
 {
     int rv;
     GList *keys;
@@ -659,7 +659,7 @@ Root *inotify_path_to_root(char *path)
  * to watch a directory tree will collide with a tree that's already
  * being watched.
  */
-char *inotify_is_parent(char *path)
+char *inotify_is_parent(const char *path)
 {
     int rv;
     char *tmp;
@@ -909,7 +909,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
 }
 
 /* Recursive, threaded portion of inotify_watch_tree(). */
-static int do_watch_tree(char *path, Root * root)
+static int do_watch_tree(const char *path, Root * root)
 {
     int rv;
     pthread_t t;
@@ -981,7 +981,7 @@ static void *_do_watch_tree(void *thread_data)
     return (void *) 0;
 }
 
-static void _do_watch_tree_rec(char *path, Root * root)
+static void _do_watch_tree_rec(const char *path, Root * root)
 {
     int wd, rv;
     DIR *d;
@@ -1065,7 +1065,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
 }
 
 /* Create a new root meta data structure. */
-static Root *make_root(char *path, int mask, int max_events)
+static Root *make_root(const char *path, int mask, int max_events)
 {
     int rv;
     Root *root;
@@ -1100,7 +1100,7 @@ static Root *make_root(char *path, int mask, int max_events)
  * for every single directory we set up an inotify watch
  * for.
  */
-static Watch *make_watch(int wd, char *path)
+static Watch *make_watch(int wd, const char *path)
 {
     int rv;
     size_t size;
