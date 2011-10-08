@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int reply_send_message(char *message)
+int reply_send_message(const char *message)
 {
     int rv;
     zmq_msg_t msg;
@@ -89,7 +89,7 @@ int reply_send_success(void)
     return reply_send_message("{\"success\":1}");
 }
 
-char *error_to_string(unsigned int err_code)
+const char *error_to_string(unsigned int err_code)
 {
     switch (err_code) {
     case ERROR_JSON_INVALID:

@@ -63,13 +63,13 @@ enum inotispy_error {
  * the client. The calling code is responsible for formatting
  * the message into JSON.
  */
-int reply_send_message(char *message);
+int reply_send_message(const char *message);
 
 /* Wrapper functions for error and success. */
 int reply_send_error(unsigned int error_code);
 int reply_send_success(void);
 
 /* Stringify an error code. */
-char *error_to_string(unsigned int err_code);
+const char *error_to_string(unsigned int err_code);
 
 #endif /*_INOTISPY_REPLY_H_*/
