@@ -9,10 +9,13 @@ before compiling and running it.
  * pthreads - Your system must support pthreads.
 
  * ZeroMQ   - http://www.zeromq.org/area:download
+            - sudo yum install zeromq-devel
 
  * json-c   - http://oss.metaparadigm.com/json-c/
+            - sudo yum install json-c-devel
 
  * Glib-2.0 - http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
+            - sudo yum install glib2-devel
 
 Some of these may already be packaged up in your distro's package
 repository. So search yum or apt to see what's already there.
@@ -20,15 +23,22 @@ repository. So search yum or apt to see what's already there.
 INSTALLING
 ----------
 
-This is a typical autoconf install/uninstall process. From the 
-top folder of this package:
+From a dist working copy:
 
-$ ./configure --prefix=/usr
-$ make
-$ make install
+ $ ./autogen.sh
+
+ Then follow the instructions for a dist tarball below.
+
+From a dist tarball:
+
+ This is a typical autoconf install/uninstall process. From the top
+ folder of this package:
+
+ $ ./configure --prefix=/usr
+ $ make
+ $ make install
 
 UNINSTALLING
 ------------
 
-$ make uninstall
-
+ $ make uninstall
