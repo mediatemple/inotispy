@@ -25,4 +25,4 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-man_MANS = inotispy.8 inotispyctl.8
+dist_man_MANS = inotispy.8 inotispyctl.8

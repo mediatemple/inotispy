@@ -25,4 +25,4 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-sysconf_DATA = inotispy.conf
+dist_sysconf_DATA = inotispy.conf
