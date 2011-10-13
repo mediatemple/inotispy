@@ -31,10 +31,10 @@ From a dist working copy:
 
 From a dist tarball:
 
- This is a typical autoconf install/uninstall process. From the top
- folder of this package:
+ This is a typical autoconf install process plus a few
+ extra flags. From the top folder of this package:
 
- $ ./configure --prefix=/usr
+ $ ./configure --prefix=/usr --sysconfdir=/etc
  $ make
  $ make install
 
