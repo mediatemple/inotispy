@@ -232,6 +232,21 @@ void inotify_handle_event(void)
             }
 
             /* Look up the root meta data. */
+            int path_len = strlen(watch->path);
+            path = malloc(path_len + 1);
+            if (path == NULL) {
+                log_error
+                    ("Failed to allocate memory while copying watch path '%s': %s",
+                     watch->path, "inotify.c:inotify_handle_event()");
+                i += INOTIFY_EVENT_SIZE + event->len;
+                pthread_mutex_unlock(&inotify_mutex);
+                continue;
+            }
+
+            memcpy(path, watch->path, path_len);
+            path[path_len] = '\0';
+
+            /*
             rv = asprintf(&path, watch->path);
             if (rv == -1) {
                 log_error
@@ -241,6 +256,7 @@ void inotify_handle_event(void)
                 pthread_mutex_unlock(&inotify_mutex);
                 continue;
             }
+            */
 
             root = inotify_path_to_root(path);
 
