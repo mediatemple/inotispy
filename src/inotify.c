@@ -246,18 +246,6 @@ void inotify_handle_event(void)
             memcpy(path, watch->path, path_len);
             path[path_len] = '\0';
 
-            /*
-            rv = asprintf(&path, watch->path);
-            if (rv == -1) {
-                log_error
-                    ("Failed to allocate memory while copying watch path: %s",
-                     "inotify.c:inotify_handle_event()");
-                i += INOTIFY_EVENT_SIZE + event->len;
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-            */
-
             root = inotify_path_to_root(path);
 
             if (root == NULL) {
@@ -718,7 +706,7 @@ static int destroy_root(Root * root)
 {
     int rv;
     Watch *watch;
-    char *tmp, *path;
+    char *tmp, *path, *ptr;
     GList *keys;
 
     keys = NULL;
@@ -752,7 +740,7 @@ static int destroy_root(Root * root)
 
         path = (char *) keys->data;
 
-        if (strstr(path, tmp)) {
+        if ((ptr = strstr(path, tmp)) && ptr == path) {
 
             watch = g_hash_table_lookup(inotify_path_to_watch, path);
 
@@ -773,7 +761,7 @@ static int destroy_root(Root * root)
     }
     free(tmp);
 
-    /* Destroy the root itself. */
+    /* Destroy the root watch itself. */
     watch = g_hash_table_lookup(inotify_path_to_watch, root->path);
     if (watch != NULL) {
         g_hash_table_remove(inotify_wd_to_watch,
@@ -1041,8 +1029,16 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         return;
     }
 
-    g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
-    g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
+    if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
+        log_warn("Failed to add new watch wd:%d path:%s because it already exists",
+                 wd, path);
+        free(watch->path);
+        free(watch);
+    }
+    else {
+        g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
+        g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
+    }
 
     pthread_mutex_unlock(&inotify_mutex);
 
