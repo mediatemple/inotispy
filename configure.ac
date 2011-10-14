@@ -48,4 +48,4 @@ AX_PTHREAD([],AC_MSG_ERROR([Must have POSIX threads]))
 LIBS="$PTHREAD_LIBS $LIBS"
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
-AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile)
+AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile examples/Makefile)

@@ -25,4 +25,19 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = src bin etc doc examples
+cexampledir = $(datarootdir)/doc/@PACKAGE@/examples
+dist_cexample_DATA = c/get_roots.c \
+    c/get_events.c \
+    c/get_queue_size.c \
+    c/watch_dir.c \
+    c/unwatch_dir.c \
+    c/Makefile \
+    c/README
+
+perlexampledir = $(datarootdir)/doc/@PACKAGE@/examples
+dist_perlexample_DATA = perl/get_roots.pl \
+    perl/get_events.pl \
+    perl/get_queue_size.pl \
+    perl/watch_dir.pl \
+    perl/unwatch_dir.pl \
+    perl/README
