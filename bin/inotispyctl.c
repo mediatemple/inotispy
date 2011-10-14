@@ -27,6 +27,7 @@
  */
 
 #include <zmq.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,6 +146,23 @@ int get_queue_size(char *path)
     return rv;
 }
 
+int is_unsigned_int (char *str)
+{
+    int i, len;
+
+    len = strlen(str);
+
+    if (str[0] == '-')
+        return 0;
+
+    for (i = 0; i < len; i++) {
+        if (!isdigit(str[i]))
+            return 0;
+    }
+
+    return 1;
+}
+
 char *get_events_raw(char *path, int count)
 {
     char *request;
@@ -200,12 +218,12 @@ void print_events(json_object * events)
     }
 }
 
-void list_events(char *path, int count)
+void list_events(char *path, char *count)
 {
     char *reply;
     json_object *jobj, *events;
 
-    if (count < 0) {
+    if (!is_unsigned_int(count)) {
         printf
             ("ERROR: Invalid value for 'count' while calling get_events.\n");
         printf
@@ -215,8 +233,8 @@ void list_events(char *path, int count)
             ("       Run `inotispyctl --help` or `man inotispyctl` for more info.\n");
         exit(1);
     }
-
-    reply = get_events_raw(path, count);
+   
+    reply = get_events_raw(path, atoi(count));
     jobj = parse_json(reply);
     free(reply);
 
@@ -352,7 +370,7 @@ int main(int argc, char **argv)
                 ("ERROR: Command get_events requires a target dir and a count\n");
             print_help();
         }
-        list_events(argv[dir_idx], atoi(argv[dir_idx + 1]));
+        list_events(argv[dir_idx], argv[dir_idx + 1]);
     } else if (strcmp(command, "queue_size") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command queue_size requires a target dir\n");
