@@ -189,7 +189,6 @@ void inotify_handle_event(void)
         if ((event == NULL) || (event->name == NULL)
             || (strlen(event->name) < 1)
             || (event->name[0] == 0) || (!isalnum(event->name[0]))) {
-            //log_trace("Skipping bogus inotify event on wd %d", event->wd);
             log_trace("Skipping bogus inotify event");
             i += INOTIFY_EVENT_SIZE + event->len;
             continue;
@@ -662,7 +661,7 @@ Root *inotify_path_to_root(const char *path)
 char *inotify_is_parent(const char *path)
 {
     int rv;
-    char *tmp;
+    char *tmp, *parent;
     GList *keys;
 
     keys = NULL;
@@ -674,14 +673,19 @@ char *inotify_is_parent(const char *path)
         return (char *) -1;
     }
 
-
     keys = g_hash_table_get_keys(inotify_roots);
 
     for (; keys != NULL; keys = keys->next) {
         if (strstr(keys->data, tmp)) {
+            rv = asprintf(&parent, keys->data);
+            if (rv == -1) {
+                log_error("Failed to allocate memory for return value '%s': %s",
+                          path, "inotify.c:inotify_is_parent()");
+                return (char *) -1;
+            }
             free(tmp);
             g_list_free(keys);
-            return keys->data;
+            return parent;
         }
     }
 
@@ -764,8 +768,9 @@ static int destroy_root(Root * root)
         free(watch);
     }
 
-    g_hash_table_remove(inotify_roots, root->path);
-    free(root->path);
+    char *root_path = root->path;
+    g_hash_table_remove(inotify_roots, root_path);
+    free(root_path);
     root = NULL;
     --inotify_num_watched_roots;
 
@@ -849,12 +854,14 @@ int inotify_watch_tree(char *path, int mask, int max_events)
         if (sub_path == (char *) -1) {
             log_error
                 ("Memory allocation error while calling inotify_is_parent");
+            free(sub_path);
             pthread_mutex_unlock(&inotify_mutex);
             return ERROR_MEMORY_ALLOCATION;
         } else if (sub_path) {
             log_warn
                 ("Path '%s' is the parent of already watched root '%s'",
                  path, sub_path);
+            free(sub_path);
             pthread_mutex_unlock(&inotify_mutex);
             return ERROR_INOTIFY_PARENT_OF_ROOT;
         }
@@ -1102,7 +1109,7 @@ static Root *make_root(const char *path, int mask, int max_events)
  */
 static Watch *make_watch(int wd, const char *path)
 {
-    int rv;
+    int rv, len;
     size_t size;
     Watch *watch;
 
@@ -1116,12 +1123,16 @@ static Watch *make_watch(int wd, const char *path)
 
     watch->wd = wd;
 
-    rv = asprintf(&watch->path, path);
-    if (rv == -1) {
-        log_error("Failed to allocate memory for new watch PATH: %s",
-                  "inotify.c:make_watch()");
+    len = strlen(path);
+    watch->path = malloc(len+1);
+    if (watch->path == NULL) {
+        log_error("Failed to allocate memory for new watch PATH '%s': %s",
+                  path, "inotify.c:make_watch()");
         return NULL;
     }
+
+    memcpy(watch->path, path, len);
+    watch->path[len] = '\0';
 
     return watch;
 }
