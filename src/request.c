@@ -150,16 +150,17 @@ char *request_get_call(const Request * req)
 
 char *request_get_path(const const Request * req)
 {
-    int last;
+    int i;
     char *path;
 
     path = request_get_key_str(req, "path");
 
-    /* Clean up path by removing the trailing slash, if it exists. */
+    /* Clean up path by removing trailing slashes,
+     * if they exists.
+     */
     if (strlen(path) > 0) {
-        last = strlen(path) - 1;
-        if (path[last] == '/')
-            path[last] = '\0';
+        for(i = (strlen(path)-1); path[i] == '/'; path[i] = '\0', i--)
+            ;
     }
 
     return path;
