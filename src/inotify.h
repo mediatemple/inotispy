@@ -121,7 +121,7 @@ int inotify_num_watched_roots;
  *   path to the event; it's up to you to re-construct that.
  * 
  *   So, let's say we watch directory /a/b/c and get back wd=1.
- *   If someone creates file '/a/b/c/foo.txt' the even we get
+ *   If someone creates file '/a/b/c/foo.txt' the event we get
  *   back will look something like:
  * 
  *     {

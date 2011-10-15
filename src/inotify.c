@@ -368,7 +368,7 @@ void inotify_handle_event(void)
 /* Add a new inotify event to its Root's queue.
  *
  * On success 0 (zero) is returned.
- * On failure 1 is returned.
+ * On failure the appropriate error code is returned.
  */
 static int inotify_enqueue(const Root * root, const IN_Event * event, const char *path)
 {
