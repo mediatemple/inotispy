@@ -32,32 +32,32 @@
 
 int mk_string (char **ret, const char *fmt, ...)
 {
-    int count, len;
+    int len;
     va_list ap;
     char *buf;
 
     *ret = NULL;
 
     va_start(ap, fmt);
-    len = count = vsnprintf(NULL, 0, fmt, ap);
+    len = vsnprintf(NULL, 0, fmt, ap);
     va_end(ap);
 
-    if (count >= 0) {
+    if (len >= 0) {
 
-        if ((buf = malloc(count + 1)) == NULL)
+        if ((buf = malloc(len + 1)) == NULL)
             return 1;
 
         va_start(ap, fmt);
-        count = vsnprintf(buf, count + 1, fmt, ap);
+        len = vsnprintf(buf, len + 1, fmt, ap);
         va_end(ap);
 
-        if (count < 0) {
+        if (len < 0) {
             free(buf);
-            return count;
+            return len;
         }
         buf[len] = '\0';
         *ret = buf;
     }
 
-    return count;
+    return len;
 }
