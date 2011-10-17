@@ -29,6 +29,7 @@
 #include "log.h"
 #include "zeromq.h"
 #include "reply.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,7 +65,7 @@ int reply_send_error(unsigned int err_code)
     char *err;
 
     do_free = 1;
-    rv = asprintf(&err,
+    rv = mk_string(&err,
                   "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
                   err_code, error_to_string(err_code));
     if (rv == -1) {

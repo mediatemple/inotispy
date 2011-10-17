@@ -30,6 +30,8 @@ inotispy_LDADD = $(DEPS_LIBS)
 
 sbin_PROGRAMS = inotispy
 inotispy_SOURCES = \
+    utils.h \
+    utils.c \
     config.c \
     config.h \
     inotify.c \

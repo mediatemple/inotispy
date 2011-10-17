@@ -27,6 +27,7 @@
  */
 
 #include "config.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -89,7 +90,7 @@ int init_config(gboolean silent)
                 error->message);
         error = NULL;
     } else {
-        int_rv = asprintf(&CONFIG->log_file, "%s", str_rv);
+        int_rv = mk_string(&CONFIG->log_file, "%s", str_rv);
         if (int_rv == -1) {
             fprintf(stderr,
                     "** Failed to allocate memory for user supplied log file %s: %s %s **",

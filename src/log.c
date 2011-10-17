@@ -28,6 +28,7 @@
 
 #include "log.h"
 #include "config.h"
+#include "utils.h"
 
 #include <time.h>
 #include <errno.h>
@@ -181,7 +182,7 @@ void set_log_level(int level)
     if (level >= LOG_LEVEL_ERROR && level <= LOG_LEVEL_TRACE) {
         log_level = level;
     } else {
-        rv = asprintf(&err, "Log level %d is invalid", level);
+        rv = mk_string(&err, "Log level %d is invalid", level);
         if (rv == -1)
             err =
                 "Failed to allocate memory for log message: log.c:set_log_level()";

@@ -29,6 +29,7 @@
 #include "log.h"
 #include "reply.h"
 #include "inotify.h"
+#include "utils.h"
 
 #include <glib.h>
 #include <stdio.h>
@@ -268,7 +269,7 @@ void inotify_handle_event(void)
             pthread_mutex_unlock(&inotify_mutex);
 
             /* Construct the absolute path for this event. */
-            rv = asprintf(&abs_path, "%s/%s", path, event->name);
+            rv = mk_string(&abs_path, "%s/%s", path, event->name);
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memory while creating absolute event path: %s",
@@ -417,14 +418,14 @@ static int inotify_enqueue(const Root * root, const IN_Event * event, const char
     node->cookie = event->cookie;
     node->len = event->len;
 
-    rv = asprintf(&node->name, event->name);
+    rv = mk_string(&node->name, event->name);
     if (rv == -1) {
         log_error("Failed to allocate memory for new queue node NAME: %s",
                   "inotify.c:inotify_enqueue()");
         return ERROR_MEMORY_ALLOCATION;
     }
 
-    rv = asprintf(&node->path, path);
+    rv = mk_string(&node->path, path);
     if (rv == -1) {
         log_error("Failed to allocate memory for new queue node PATH: %s",
                   "inotify.c:inotify_enqueue()");
@@ -459,7 +460,7 @@ char **inotify_get_roots(void)
     }
 
     for (; keys != NULL; keys = keys->next) {
-        rv = asprintf(&roots[i++], (char *) keys->data);
+        rv = mk_string(&roots[i++], (char *) keys->data);
         if (rv == -1) {
             log_error
                 ("Failed to allocate memory while adding root to list: %s",
@@ -608,7 +609,7 @@ Root *inotify_path_to_root(const char *path)
     for (; keys != NULL; keys = keys->next) {
 
         char *tmp;
-        rv = asprintf(&tmp, "%s/", (char *) keys->data);
+        rv = mk_string(&tmp, "%s/", (char *) keys->data);
         if (rv == -1) {
             log_error
                 ("Failed to allocate memory while copying data to a temporary variable: %s",
@@ -670,7 +671,7 @@ char *inotify_is_parent(const char *path)
 
     keys = NULL;
 
-    rv = asprintf(&tmp, "%s/", path);
+    rv = mk_string(&tmp, "%s/", path);
     if (rv == -1) {
         log_error("Failed to allocate memory for temporary path '%s': %s",
                   path, "inotify.c:inotify_is_parent()");
@@ -681,7 +682,7 @@ char *inotify_is_parent(const char *path)
 
     for (; keys != NULL; keys = keys->next) {
         if (strstr(keys->data, tmp)) {
-            rv = asprintf(&parent, keys->data);
+            rv = mk_string(&parent, keys->data);
             if (rv == -1) {
                 log_error("Failed to allocate memory for return value '%s': %s",
                           path, "inotify.c:inotify_is_parent()");
@@ -721,7 +722,7 @@ static int destroy_root(Root * root)
 
     pthread_mutex_lock(&inotify_mutex);
 
-    rv = asprintf(&tmp, "%s/", root->path);
+    rv = mk_string(&tmp, "%s/", root->path);
     if (rv == -1) {
         log_error
             ("Failed to allocate memory for temporary path variable: %s",
@@ -945,7 +946,7 @@ static int do_watch_tree(const char *path, Root * root)
         return ERROR_MEMORY_ALLOCATION;
     }
 
-    rv = asprintf(&data->path, path);
+    rv = mk_string(&data->path, path);
     if (rv == -1) {
         log_error("Failed to allocate memory for thread data PATH: %s",
                   "inotify.c:do_watch_tree()");
@@ -1062,7 +1063,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
         if (dir->d_type == DT_DIR) {
 
-            rv = asprintf(&tmp, "%s/%s", path, dir->d_name);
+            rv = mk_string(&tmp, "%s/%s", path, dir->d_name);
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memroy for temporary path variable: %s",
@@ -1102,7 +1103,7 @@ static Root *make_root(const char *path, int mask, int max_events)
         return NULL;
     }
 
-    rv = asprintf(&root->path, path);
+    rv = mk_string(&root->path, path);
     if (rv == -1) {
         log_error("Failed to allocate memory for new root PATH: %s",
                   "inotify.c:make_root()");

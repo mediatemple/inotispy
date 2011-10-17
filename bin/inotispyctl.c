@@ -31,11 +31,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <json/json.h>
 
 void *socket, *context;
 
 void print_help(void);
+
+int mk_string (char **ret, const char *fmt, ...)
+{
+    int count, len;
+    va_list ap;
+    char *buf;
+
+    *ret = NULL;
+
+    va_start(ap, fmt);
+    len = count = vsnprintf(NULL, 0, fmt, ap);
+    va_end(ap);
+
+    if (count >= 0) {
+
+        if ((buf = malloc(count + 1)) == NULL)
+            return 1;
+
+        va_start(ap, fmt);
+        count = vsnprintf(buf, count + 1, fmt, ap);
+        va_end(ap);
+
+        if (count < 0) {
+            free(buf);
+            return count;
+        }
+        buf[len] = '\0';
+        *ret = buf;
+    }
+
+    return count;
+}
 
 json_object *parse_json(char *json)
 {
@@ -123,8 +156,15 @@ int get_queue_size(char *path)
     char *request, *reply;
     json_object *jobj, *queue_size;
 
-    asprintf(&request, "{\"call\":\"get_queue_size\",\"path\":\"%s\"}",
+    rv = mk_string(&request, "{\"call\":\"get_queue_size\",\"path\":\"%s\"}",
              path);
+    
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "get_queue_size()");
+        exit(1);
+    }
+
     send_request(request);
     free(request);
 
@@ -136,9 +176,11 @@ int get_queue_size(char *path)
     if (queue_size == NULL) {
         printf("Failed to find data for queue_size in reply\n");
         exit(1);
-    } else if (json_object_is_type(queue_size, json_type_int)) {
+    }
+    else if (json_object_is_type(queue_size, json_type_int)) {
         rv = json_object_get_int(queue_size);
-    } else {
+    }
+    else {
         printf("Data received from server had invalid format\n");
         exit(1);
     }
@@ -163,13 +205,23 @@ int is_unsigned_int (char *str)
     return 1;
 }
 
+
+
 char *get_events_raw(char *path, int count)
 {
+    int rv;
     char *request;
 
-    asprintf(&request,
+    rv = mk_string(&request,
              "{\"call\":\"get_events\",\"path\":\"%s\",\"count\":%d}",
              path, count);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "get_events_raw()");
+        exit(1);
+    }
+
     send_request(request);
     free(request);
 
@@ -184,6 +236,7 @@ void flush_queue(char *path)
 
 char *fmt_event(json_object * event)
 {
+    int rv;
     json_object *name, *path, *mask;
     char *fmt;
 
@@ -191,8 +244,14 @@ char *fmt_event(json_object * event)
     name = json_object_object_get(event, "name");
     path = json_object_object_get(event, "path");
 
-    asprintf(&fmt, "%s/%s  %d", json_object_get_string(path),
+    rv = mk_string(&fmt, "%s/%s  %d", json_object_get_string(path),
              json_object_get_string(name), json_object_get_int(mask));
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for formatted event in function %s",
+               "fmt_event()");
+        exit(1);
+    }
 
     return fmt;
 }
@@ -259,9 +318,17 @@ void list_queue_size(char *path)
 
 void watch(char *path)
 {
+    int rv;
     char *message;
 
-    asprintf(&message, "{\"call\":\"watch\",\"path\":\"%s\"}", path);
+    rv = mk_string(&message, "{\"call\":\"watch\",\"path\":\"%s\"}", path);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "watch()");
+        exit(1);
+    }
+
     send_request(message);
     free(message);
 
@@ -271,9 +338,17 @@ void watch(char *path)
 
 void unwatch(char *path)
 {
+    int rv;
     char *message;
 
-    asprintf(&message, "{\"call\":\"unwatch\",\"path\":\"%s\"}", path);
+    rv = mk_string(&message, "{\"call\":\"unwatch\",\"path\":\"%s\"}", path);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "unwatch()");
+        exit(1);
+    }
+
     send_request(message);
     free(message);
 
@@ -318,7 +393,7 @@ void list_roots(int queue)
 
 int main(int argc, char **argv)
 {
-    int connect_rv, dir_idx, cmd_idx, port;
+    int rv, connect_rv, dir_idx, cmd_idx, port;
     char *command, *zmq_uri;
 
     if (argc < 2) {
@@ -338,14 +413,20 @@ int main(int argc, char **argv)
         port = atoi(argv[2]);
         cmd_idx = 3;
         dir_idx = 4;
-    } else {
+    }
+    else {
         port = 5559;
         cmd_idx = 1;
         dir_idx = 2;
     }
 
     /* 0MQ connection */
-    asprintf(&zmq_uri, "tcp://127.0.0.1:%d", port);
+    rv = mk_string(&zmq_uri, "tcp://127.0.0.1:%d", port);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for ZeroMQ URI in function main()");
+        exit(1);
+    }
 
     context = zmq_init(1);
     socket = zmq_socket(context, ZMQ_REQ);
@@ -362,40 +443,47 @@ int main(int argc, char **argv)
     command = argv[cmd_idx];
     if (strcmp(command, "list_roots") == 0) {
         list_roots(0);
-    } else if (strcmp(command, "list_queues") == 0) {
+    }
+    else if (strcmp(command, "list_queues") == 0) {
         list_roots(1);
-    } else if (strcmp(command, "get_events") == 0) {
+    }
+    else if (strcmp(command, "get_events") == 0) {
         if (argc != (dir_idx + 2)) {
             printf
                 ("ERROR: Command get_events requires a target dir and a count\n");
             print_help();
         }
         list_events(argv[dir_idx], argv[dir_idx + 1]);
-    } else if (strcmp(command, "queue_size") == 0) {
+    }
+    else if (strcmp(command, "queue_size") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command queue_size requires a target dir\n");
             print_help();
         }
         list_queue_size(argv[dir_idx]);
-    } else if (strcmp(command, "flush_queue") == 0) {
+    }
+    else if (strcmp(command, "flush_queue") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command flush_queue requires a target dir\n");
             print_help();
         }
         flush_queue(argv[dir_idx]);
-    } else if (strcmp(command, "watch") == 0) {
+    }
+    else if (strcmp(command, "watch") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command watch requires a target dir\n");
             print_help();
         }
         watch(argv[dir_idx]);
-    } else if (strcmp(command, "unwatch") == 0) {
+    }
+    else if (strcmp(command, "unwatch") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command unwatch requires a target dir\n");
             print_help();
         }
         unwatch(argv[dir_idx]);
-    } else {
+    }
+    else {
         printf("ERROR: Unknown command: %s\n", command);
         print_help();
     }

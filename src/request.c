@@ -28,6 +28,7 @@
 
 #include "log.h"
 #include "request.h"
+#include "utils.h"
 
 JOBJ _parse_json(const char *json)
 {
@@ -79,20 +80,19 @@ Request *request_parse(const char *json)
         return (Request *) - 1;
     }
 
-    rv = asprintf(&req->call, "%s", (char *) json_object_get_string(val));
+    rv = mk_string(&req->call, "%s", (char *) json_object_get_string(val));
     if (rv == -1) {
         log_error("Failed to allocate memory for new request CALL: %s",
                   "request.c:request_parse()");
         return (Request *) - 1;
     }
 
-    rv = asprintf(&req->json, "%s", json);
+    rv = mk_string(&req->json, "%s", json);
     if (rv == -1) {
         log_error("Failed to allocate memory for new request JSON: %s",
                   "request.c:request_parse()");
         return (Request *) - 1;
     }
-
 
     req->parser = jobj;
 
