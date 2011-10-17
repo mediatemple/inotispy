@@ -751,6 +751,12 @@ static int destroy_root(Root * root)
                 continue;
             }
 
+            rv = inotify_rm_watch(inotify_fd, watch->wd);
+            if (rv != 0) {
+                log_warn("Failed to call inotify_rm_watch() on wd:%d: %s",
+                         watch->wd, strerror(errno));
+            }
+
             g_hash_table_remove(inotify_wd_to_watch,
                                 GINT_TO_POINTER(watch->wd));
             g_hash_table_remove(inotify_path_to_watch, path);
