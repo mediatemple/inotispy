@@ -124,6 +124,8 @@ const char *error_to_string(unsigned int err_code)
             "Failed to allocate new memory. Check the log for the specific module and function where the error occurred.";
     case ERROR_FAILED_TO_CREATE_NEW_THREAD:
         return "Failed to create a new thread";
+    case ERROR_INOTIFY_ROOT_BEING_DESTROYED:
+        return "Inotify root currently being destroyed";
     case ERROR_ZEROMQ_RECONNECT:
         return
             "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";

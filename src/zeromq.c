@@ -321,32 +321,41 @@ static void EVENT_get_queue_size(const Request * req)
     if (path == NULL) {
         log_warn("JSON parsed successfully but no 'path' field found");
         reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+        pthread_mutex_unlock(&zmq_mutex);
         return;
     }
 
+    pthread_mutex_lock(&zmq_mutex);
     root = inotify_is_root(path);
 
     if (root == NULL) {
         log_warn("Path '%s' is not a currently watch root", path);
         reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+        pthread_mutex_unlock(&zmq_mutex);
+        return;
+    }
+    else if (root->destroy) {
+        log_warn("Cannot get queue size as tree at root '%s' is being destroyed", path);
+        reply_send_message("{\"data\":0}");
+        pthread_mutex_unlock(&zmq_mutex);
         return;
     }
 
-    pthread_mutex_lock(&zmq_mutex);
     size = g_queue_get_length(root->queue);
-    pthread_mutex_unlock(&zmq_mutex);
 
     rv = mk_string(&reply, "{\"data\":%d}", size);
     if (rv == -1) {
         log_error("Failed to allocate memory for reply JSON: %s",
                   "zmq.c:EVENT_get_queue_size");
         reply_send_error(ERROR_MEMORY_ALLOCATION);
+        pthread_mutex_unlock(&zmq_mutex);
         return;
     }
 
     reply_send_message(reply);
-
     free(reply);
+
+    pthread_mutex_unlock(&zmq_mutex);
 }
 
 static void EVENT_get_events(const Request * req)

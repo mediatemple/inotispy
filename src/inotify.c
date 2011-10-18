@@ -75,8 +75,9 @@ static int inotify_enqueue(const Root * root, const IN_Event * event,
 static void free_node_mem(Event * node, gpointer user_data);
 
 static int do_watch_tree(const char *path, Root * root);
-static void *_do_watch_tree(void *data);
+static void *_do_watch_tree(void *thread_data);
 static void _do_watch_tree_rec(const char *path, Root * root);
+static void *_destroy_root(void *thread_data);
 
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
@@ -709,11 +710,7 @@ char *inotify_is_parent(const char *path)
 static int destroy_root(Root * root)
 {
     int rv;
-    Watch *watch;
-    char *tmp, *path, *ptr;
-    GList *keys;
-
-    keys = NULL;
+    pthread_t t;
 
     if (root == NULL) {
         log_warn("Attempting to destroy an unwatched root");
@@ -723,6 +720,26 @@ static int destroy_root(Root * root)
     root->destroy = 1;
     usleep(1000);
 
+    rv = pthread_create(&t, NULL, _destroy_root, (void *) root);
+    if (rv) {
+        log_error("Failed to create new thread for destroying root '%s'", root->path);
+        return ERROR_FAILED_TO_CREATE_NEW_THREAD;
+    }
+
+    return 0;
+}
+
+static void *_destroy_root(void *thread_data)
+{
+    Root *root;
+    int rv;
+    Watch *watch;
+    char *tmp, *path, *ptr;
+    GList *keys;
+
+    root = thread_data;
+    keys = NULL;
+
     pthread_mutex_lock(&inotify_mutex);
 
     rv = mk_string(&tmp, "%s/", root->path);
@@ -730,7 +747,7 @@ static int destroy_root(Root * root)
         log_error
             ("Failed to allocate memory for temporary path variable: %s",
              "inotify.c:destroy_root()");
-        return ERROR_MEMORY_ALLOCATION;
+        return NULL;
     }
 
     /* Destroy all the queue data associated with this root. */
@@ -740,13 +757,19 @@ static int destroy_root(Root * root)
     /* Destroy all the watches associated with this root. */
     keys = g_hash_table_get_keys(inotify_path_to_watch);
 
+    pthread_mutex_unlock(&inotify_mutex);
+
     for (; keys != NULL; keys = keys->next) {
+//FART
+sleep(2);
 
         path = (char *) keys->data;
 
         if ((ptr = strstr(path, tmp)) && ptr == path) {
 
+            pthread_mutex_lock(&inotify_mutex);
             watch = g_hash_table_lookup(inotify_path_to_watch, path);
+            pthread_mutex_unlock(&inotify_mutex);
 
             if (watch == NULL) {
                 log_warn
@@ -755,21 +778,27 @@ static int destroy_root(Root * root)
                 continue;
             }
 
+            log_debug("Unwatching path '%s'", path);
+
             rv = inotify_rm_watch(inotify_fd, watch->wd);
             if (rv != 0) {
                 log_warn("Failed to call inotify_rm_watch() on wd:%d: %s",
                          watch->wd, strerror(errno));
             }
 
+            pthread_mutex_lock(&inotify_mutex);
             g_hash_table_remove(inotify_wd_to_watch,
                                 GINT_TO_POINTER(watch->wd));
             g_hash_table_remove(inotify_path_to_watch, path);
+            pthread_mutex_unlock(&inotify_mutex);
 
             free(watch->path);
             free(watch);
         }
     }
     free(tmp);
+
+    pthread_mutex_lock(&inotify_mutex);
 
     /* Destroy the root watch itself. */
     watch = g_hash_table_lookup(inotify_path_to_watch, root->path);
@@ -791,8 +820,6 @@ static int destroy_root(Root * root)
     g_list_free(keys);
 
     pthread_mutex_unlock(&inotify_mutex);
-
-    return 0;
 }
 
 int inotify_unwatch_tree(char *path)
@@ -809,11 +836,15 @@ int inotify_unwatch_tree(char *path)
      * watched root.
      */
     root = inotify_is_root(path);
-    if ((root == NULL) || (root->destroy != 0)) {
+    if (root == NULL) {
         log_warn
             ("Cannot unwatch path '%s' since it is not a watched root'",
              path);
         return ERROR_INOTIFY_ROOT_NOT_WATCHED;
+    }
+    else if (root->destroy) {
+        log_warn("Currently destroying tree at root '%s'", path);
+        return ERROR_INOTIFY_ROOT_BEING_DESTROYED;
     }
 
     return destroy_root(root);
@@ -849,8 +880,14 @@ int inotify_watch_tree(char *path, int mask, int max_events)
             pthread_mutex_unlock(&inotify_mutex);
 
             if (strcmp(path, r->path) == 0) {
-                log_warn("Already watching tree at root '%s'", path);
-                return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
+                if (r->destroy) {
+                    log_warn("Currently destroying tree at root '%s'", path);
+                    return ERROR_INOTIFY_ROOT_BEING_DESTROYED;
+                }
+                else {
+                    log_warn("Already watching tree at root '%s'", path);
+                    return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
+                }
             } else {
                 log_warn
                     ("path '%s' is the child of already watched root '%s'",
