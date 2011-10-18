@@ -33,6 +33,6 @@
  * replacement for asprintf(), which is non-standard and has proven
  * to fail where a more traditional malloc+vsnprintf works just fine.
  */
-int mk_string (char **ret, const char *fmt, ...);
+int mk_string(char **ret, const char *fmt, ...);
 
 #endif /*_INOTISPY_UTILS_H_*/

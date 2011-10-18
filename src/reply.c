@@ -66,8 +66,8 @@ int reply_send_error(unsigned int err_code)
 
     do_free = 1;
     rv = mk_string(&err,
-                  "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
-                  err_code, error_to_string(err_code));
+                   "{\"error\": {\"code\":%d, \"message\":\"%s\"}}",
+                   err_code, error_to_string(err_code));
     if (rv == -1) {
         log_error("Failed to allocate memory for error reply: %s",
                   "reply.c:reply_send_error()");

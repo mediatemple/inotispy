@@ -70,7 +70,8 @@ static Root *inotify_path_to_root(const char *path);
 static Root *make_root(const char *path, int mask, int max_events);
 static Watch *make_watch(int wd, const char *path);
 static char *inotify_is_parent(const char *path);
-static int inotify_enqueue(const Root * root, const IN_Event * event, const char *path);
+static int inotify_enqueue(const Root * root, const IN_Event * event,
+                           const char *path);
 static void free_node_mem(Event * node, gpointer user_data);
 
 static int do_watch_tree(const char *path, Root * root);
@@ -371,7 +372,8 @@ void inotify_handle_event(void)
  * On success 0 (zero) is returned.
  * On failure the appropriate error code is returned.
  */
-static int inotify_enqueue(const Root * root, const IN_Event * event, const char *path)
+static int inotify_enqueue(const Root * root, const IN_Event * event,
+                           const char *path)
 {
     int rv, queue_len;
     Event *node;
@@ -684,8 +686,9 @@ char *inotify_is_parent(const char *path)
         if (strstr(keys->data, tmp)) {
             rv = mk_string(&parent, keys->data);
             if (rv == -1) {
-                log_error("Failed to allocate memory for return value '%s': %s",
-                          path, "inotify.c:inotify_is_parent()");
+                log_error
+                    ("Failed to allocate memory for return value '%s': %s",
+                     path, "inotify.c:inotify_is_parent()");
                 return (char *) -1;
             }
             free(tmp);
@@ -1037,13 +1040,14 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     }
 
     if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
-        log_warn("Failed to add new watch wd:%d path:%s because it already exists",
-                 wd, path);
+        log_warn
+            ("Failed to add new watch wd:%d path:%s because it already exists",
+             wd, path);
         free(watch->path);
         free(watch);
-    }
-    else {
-        g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
+    } else {
+        g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
+                             watch);
         g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
     }
 
@@ -1143,7 +1147,7 @@ static Watch *make_watch(int wd, const char *path)
     watch->wd = wd;
 
     len = strlen(path);
-    watch->path = malloc(len+1);
+    watch->path = malloc(len + 1);
     if (watch->path == NULL) {
         log_error("Failed to allocate memory for new watch PATH '%s': %s",
                   path, "inotify.c:make_watch()");

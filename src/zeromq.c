@@ -316,7 +316,7 @@ static void EVENT_get_queue_size(const Request * req)
     Root *root;
     guint size;
 
-    const char* path = request_get_path(req);
+    const char *path = request_get_path(req);
 
     if (path == NULL) {
         log_warn("JSON parsed successfully but no 'path' field found");

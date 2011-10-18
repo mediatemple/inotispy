@@ -159,8 +159,7 @@ char *request_get_path(const const Request * req)
      * if they exists.
      */
     if (strlen(path) > 0) {
-        for(i = (strlen(path)-1); path[i] == '/'; path[i] = '\0', i--)
-            ;
+        for (i = (strlen(path) - 1); path[i] == '/'; path[i] = '\0', i--);
     }
 
     return path;

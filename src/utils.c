@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-int mk_string (char **ret, const char *fmt, ...)
+int mk_string(char **ret, const char *fmt, ...)
 {
     int len;
     va_list ap;
