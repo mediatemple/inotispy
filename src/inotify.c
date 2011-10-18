@@ -760,8 +760,6 @@ static void *_destroy_root(void *thread_data)
     pthread_mutex_unlock(&inotify_mutex);
 
     for (; keys != NULL; keys = keys->next) {
-//FART
-sleep(2);
 
         path = (char *) keys->data;
 
