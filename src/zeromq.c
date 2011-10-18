@@ -474,6 +474,7 @@ static void zmq_dispatch_event(Request * req)
         EVENT_get_roots();
     } else {
         log_warn("Unknown call: '%s'", call);
+        reply_send_error(ERROR_BAD_CALL);
     }
 
     request_free(req);

@@ -37,9 +37,10 @@
 #include <assert.h>
 #include <stdlib.h>             /* exit() */
 #include <signal.h>
+#include <unistd.h>             /* alarm() */
 
 void print_help_and_exit(void);
-void signal_handler(int sig);
+void sig_handler(int sig);
 
 int main(int argc, char **argv)
 {
@@ -47,10 +48,6 @@ int main(int argc, char **argv)
     void *zmq_receiver;
 
     zmq_pollitem_t items[2];
-
-    /* Signal handling. */
-    (void) signal(SIGSEGV, signal_handler);
-    (void) signal(SIGINT, signal_handler);
 
     /* A few command line args to handle. */
     if (argc == 2 &&
@@ -67,11 +64,20 @@ int main(int argc, char **argv)
     if (!CONFIG->silent)
         fprintf(stderr, "Running Inotispy...\n");
 
-    /* Run all initialization functionality. */
-
     rv = init_logger();
     if (rv != 0)
-        return 1;
+        return EXIT_FAILURE;
+
+    /* Signal handling for segmentation faults and alarms. */
+    if (signal(SIGSEGV, sig_handler) == SIG_ERR) {
+        fprintf(stderr, "Failed to set up SIGSEGV signal handler\n");
+        return EXIT_FAILURE;
+    }
+    if (signal(SIGALRM, sig_handler) == SIG_ERR) {
+        fprintf(stderr, "Failed to set up SIGALRM signal handler\n");
+        return EXIT_FAILURE;
+    }
+    alarm(1);
 
     log_notice("Initializing daemon");
 
@@ -82,7 +88,7 @@ int main(int argc, char **argv)
     if (zmq_receiver == NULL) {
         fprintf(stderr,
                 "Failed to start Inotispy. Please see the log file for details\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     items[0].socket = NULL;
@@ -97,36 +103,37 @@ int main(int argc, char **argv)
     while (1) {
 
         rv = zmq_poll(items, 2, -1);
-        if (rv == -1) {
-            log_error("Failed to call zmq_poll(): %s", strerror(errno));
+        if ((rv == -1) && (errno != EINTR)) {
+            log_error("Failed to call zmq_poll(): %d: %s", errno, strerror(errno));
             continue;
         }
 
         if (items[0].revents & ZMQ_POLLIN) {
-            /* log_trace("Found inotify event"); */
             inotify_handle_event();
         }
 
         if (items[1].revents & ZMQ_POLLIN) {
-            /* log_trace("Found 0MQ event"); */
             zmq_handle_event();
         }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void signal_handler(int sig)
+void sig_handler(int sig)
 {
     switch (sig) {
     case SIGSEGV:
-        printf("Seg fault!\n");
+        log_error("Inotispy encounterd a segmentation fault. %s",
+                  "Dumping roots and exiting");
+        inotify_dump_roots();
+        exit(sig);
         break;
-    case SIGINT:
-        printf("Interrupt!\n");
+    case SIGALRM:
+        inotify_dump_roots();
+        alarm(1);
         break;
     }
-    exit(sig);
 }
 
 void print_help_and_exit(void)
@@ -148,5 +155,5 @@ void print_help_and_exit(void)
     printf
         ("please refer to the documentation found at http://www.inotispy.org\n\n");
 
-    exit(1);
+    exit(EXIT_SUCCESS);
 }

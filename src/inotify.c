@@ -86,6 +86,8 @@ static void *_destroy_root(void *thread_data);
  */
 int inotify_setup(void)
 {
+    int rv;
+
     inotify_num_watched_roots = 0;
 
     inotify_fd = inotify_init();
@@ -116,6 +118,13 @@ int inotify_setup(void)
 
     if (inotify_roots == NULL) {
         log_error("Failed to init GHashTable inotify_roots");
+        return 0;
+    }
+
+    rv = mkdir(INOTIFY_ROOT_DUMP_DIR, 0644);
+    if ((rv == -1) && (errno != EEXIST)) {
+        log_error("Failed to create dump directory: %d: %s",
+                  errno, strerror(errno));
         return 0;
     }
 
@@ -491,6 +500,46 @@ void inotify_free_roots(char **roots)
     for (i = 0; roots[i]; free(roots[i++]));
 
     free(roots);
+}
+
+void inotify_dump_roots(void)
+{
+    int i, rv;
+    char **roots;
+    FILE *fp;
+    char *dump_file;
+
+    roots = inotify_get_roots();
+    if (roots == NULL) {
+        log_error("Failed to allocate memory getting inotify roots: %s",
+                  "inotify.c:inotify_dump_roots");
+        return;
+    }
+
+    rv = mk_string(&dump_file, "%s/%s", INOTIFY_ROOT_DUMP_DIR, "roots.dump");
+    if (rv == -1) {
+        log_error
+            ("Failed to allocate memory while creating the root dump file: %s",
+             "inotify.c:inotify_dump_roots()");
+        inotify_free_roots(roots);
+        return;
+    } 
+
+    fp = fopen(dump_file, "w");
+    if (fp == NULL) {
+        log_error("Failed to open root dump file %s for writing: %s",
+                  dump_file, strerror(errno));
+        free(dump_file);
+        inotify_free_roots(roots);
+        return;
+    }
+
+    for (i = 0; roots[i]; i++)
+        fprintf(fp, "%s\n", roots[i]);
+
+    fclose(fp);
+    free(dump_file);
+    inotify_free_roots(roots);
 }
 
 /* Take the data structure that holds events and free all

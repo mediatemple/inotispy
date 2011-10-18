@@ -34,6 +34,7 @@
 #include <glib/gqueue.h>
 #include <sys/inotify.h>
 
+#define INOTIFY_ROOT_DUMP_DIR  "/var/run/inotispy"
 #define INOTIFY_EVENT_SIZE     ( sizeof (struct inotify_event) )
 #define INOTIFY_EVENT_BUF_LEN  ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
 #define INOTIFY_MAX_EVENTS     65536    /* This number is arbatrary */
@@ -177,5 +178,10 @@ void inotify_free_events(Event ** events);
 /* Functions for retrieving queued events */
 Event **inotify_get_event(const char *path);
 Event **inotify_get_events(const char *path, int count);
+
+/* Dump the currently watched roots to a file so that the
+ * server can re-watch them automatically on start up.
+ */
+void inotify_dump_roots(void);
 
 #endif /*_INOTISPY_INOTIFY_H_*/

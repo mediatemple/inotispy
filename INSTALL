@@ -2,7 +2,7 @@ PREREQUISITES
 -------------
 
 Inotispy has a few dependencies that you must check for/install
-before compiling and running it.
+before compiling and running it:
 
  * inotify  - Your system must be equipped with inotify.
 
@@ -17,13 +17,17 @@ before compiling and running it.
  * Glib-2.0 - http://www.linuxfromscratch.org/blfs/view/cvs/general/glib2.html
             - sudo yum install glib2-devel
 
+If you build from a working copy:
+
+ * libtool  - http://ftp.gnu.org/gnu/libtool/
+
 Some of these may already be packaged up in your distro's package
 repository. So search yum or apt to see what's already there.
 
 INSTALLING
 ----------
 
-From a dist working copy:
+From a dist working copy (for this you'll need libtool installed):
 
  $ ./autogen.sh
 

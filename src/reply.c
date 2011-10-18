@@ -131,6 +131,8 @@ const char *error_to_string(unsigned int err_code)
             "Please re-initialize your ZeroMQ connection and reconnect to Inotispy";
     case ERROR_NOT_ABSOLUTE_PATH:
         return "Path must be absolute";
+    case ERROR_BAD_CALL:
+        return "User tried to execute an unsupported call";
     default:
         return "Unknown error";
     }
