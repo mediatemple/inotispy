@@ -36,8 +36,10 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>             /* exit() */
+#include <signal.h>
 
 void print_help_and_exit(void);
+void signal_handler(int sig);
 
 int main(int argc, char **argv)
 {
@@ -45,6 +47,10 @@ int main(int argc, char **argv)
     void *zmq_receiver;
 
     zmq_pollitem_t items[2];
+
+    /* Signal handling. */
+    (void) signal(SIGSEGV, signal_handler);
+    (void) signal(SIGINT, signal_handler);
 
     /* A few command line args to handle. */
     if (argc == 2 &&
@@ -108,6 +114,19 @@ int main(int argc, char **argv)
     }
 
     return 0;
+}
+
+void signal_handler(int sig)
+{
+    switch (sig) {
+    case SIGSEGV:
+        printf("Seg fault!\n");
+        break;
+    case SIGINT:
+        printf("Interrupt!\n");
+        break;
+    }
+    exit(sig);
 }
 
 void print_help_and_exit(void)
