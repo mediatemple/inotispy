@@ -69,9 +69,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
 
     /* Signal handling for segmentation faults and alarms. */
-    signal(SIGINT, sig_handler);
-    signal(SIGALRM, sig_handler);
-    signal(SIGSEGV, sig_handler);
+    //signal(SIGINT, sig_handler);
+    //signal(SIGALRM, sig_handler);
+    //signal(SIGSEGV, sig_handler);
 
     log_notice("Initializing daemon");
 
