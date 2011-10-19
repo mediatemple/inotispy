@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     items[1].events = ZMQ_POLLIN;
 
     log_debug("Entering event loop...");
-    alarm(1);
+    //alarm(1);
 
     while (1) {
 
