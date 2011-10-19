@@ -35,9 +35,10 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
-#include <stdlib.h>             /* exit() */
 #include <signal.h>
+#include <stdlib.h>             /* exit() */
 #include <unistd.h>             /* alarm() */
+#include <sys/utsname.h>        /* uname() */
 
 void print_help_and_exit(void);
 void sig_handler(int sig);
@@ -46,8 +47,21 @@ int main(int argc, char **argv)
 {
     int rv, inotify_fd;
     void *zmq_receiver;
+    struct utsname u_name;
 
     zmq_pollitem_t items[2];
+
+    /* Make sure we're on linux. */
+    rv = uname(&u_name);
+    if (rv == -1) {
+        fprintf(stderr, "Failed to call uname(2): %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }    
+
+    if (strcmp(u_name.sysname, "Linux") != 0) {
+        fprintf(stderr, "Tisk tisk... Inotispy is for Linux.\n");
+        exit(EXIT_FAILURE);
+    }
 
     /* A few command line args to handle. */
     if (argc == 2 &&
