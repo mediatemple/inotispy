@@ -1183,7 +1183,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
          * efficient for large trees, but it's what we're left with.
          */
         if (dir->d_type == DT_UNKNOWN) {
-            stat(tmp, &stat_buf);
+            lstat(tmp, &stat_buf);
 
             if (S_ISLNK(stat_buf.st_mode) || !S_ISDIR(stat_buf.st_mode)) {
                 free(tmp);
