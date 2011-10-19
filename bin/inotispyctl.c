@@ -38,7 +38,7 @@ void *socket, *context;
 
 void print_help(void);
 
-int mk_string (char **ret, const char *fmt, ...)
+int mk_string(char **ret, const char *fmt, ...)
 {
     int count, len;
     va_list ap;
@@ -156,9 +156,9 @@ int get_queue_size(char *path)
     char *request, *reply;
     json_object *jobj, *queue_size;
 
-    rv = mk_string(&request, "{\"call\":\"get_queue_size\",\"path\":\"%s\"}",
-             path);
-    
+    rv = mk_string(&request,
+                   "{\"call\":\"get_queue_size\",\"path\":\"%s\"}", path);
+
     if (rv == -1) {
         printf("Failed to allocate memory for JSON request in function %s",
                "get_queue_size()");
@@ -176,11 +176,9 @@ int get_queue_size(char *path)
     if (queue_size == NULL) {
         printf("Failed to find data for queue_size in reply\n");
         exit(1);
-    }
-    else if (json_object_is_type(queue_size, json_type_int)) {
+    } else if (json_object_is_type(queue_size, json_type_int)) {
         rv = json_object_get_int(queue_size);
-    }
-    else {
+    } else {
         printf("Data received from server had invalid format\n");
         exit(1);
     }
@@ -188,7 +186,7 @@ int get_queue_size(char *path)
     return rv;
 }
 
-int is_unsigned_int (char *str)
+int is_unsigned_int(char *str)
 {
     int i, len;
 
@@ -213,8 +211,8 @@ char *get_events_raw(char *path, int count)
     char *request;
 
     rv = mk_string(&request,
-             "{\"call\":\"get_events\",\"path\":\"%s\",\"count\":%d}",
-             path, count);
+                   "{\"call\":\"get_events\",\"path\":\"%s\",\"count\":%d}",
+                   path, count);
 
     if (rv == -1) {
         printf("Failed to allocate memory for JSON request in function %s",
@@ -245,11 +243,13 @@ char *fmt_event(json_object * event)
     path = json_object_object_get(event, "path");
 
     rv = mk_string(&fmt, "%s/%s  %d", json_object_get_string(path),
-             json_object_get_string(name), json_object_get_int(mask));
+                   json_object_get_string(name),
+                   json_object_get_int(mask));
 
     if (rv == -1) {
-        printf("Failed to allocate memory for formatted event in function %s",
-               "fmt_event()");
+        printf
+            ("Failed to allocate memory for formatted event in function %s",
+             "fmt_event()");
         exit(1);
     }
 
@@ -292,7 +292,7 @@ void list_events(char *path, char *count)
             ("       Run `inotispyctl --help` or `man inotispyctl` for more info.\n");
         exit(1);
     }
-   
+
     reply = get_events_raw(path, atoi(count));
     jobj = parse_json(reply);
     free(reply);
@@ -341,7 +341,8 @@ void unwatch(char *path)
     int rv;
     char *message;
 
-    rv = mk_string(&message, "{\"call\":\"unwatch\",\"path\":\"%s\"}", path);
+    rv = mk_string(&message, "{\"call\":\"unwatch\",\"path\":\"%s\"}",
+                   path);
 
     if (rv == -1) {
         printf("Failed to allocate memory for JSON request in function %s",
@@ -413,8 +414,7 @@ int main(int argc, char **argv)
         port = atoi(argv[2]);
         cmd_idx = 3;
         dir_idx = 4;
-    }
-    else {
+    } else {
         port = 5559;
         cmd_idx = 1;
         dir_idx = 2;
@@ -424,7 +424,8 @@ int main(int argc, char **argv)
     rv = mk_string(&zmq_uri, "tcp://127.0.0.1:%d", port);
 
     if (rv == -1) {
-        printf("Failed to allocate memory for ZeroMQ URI in function main()");
+        printf
+            ("Failed to allocate memory for ZeroMQ URI in function main()");
         exit(1);
     }
 
@@ -443,47 +444,40 @@ int main(int argc, char **argv)
     command = argv[cmd_idx];
     if (strcmp(command, "list_roots") == 0) {
         list_roots(0);
-    }
-    else if (strcmp(command, "list_queues") == 0) {
+    } else if (strcmp(command, "list_queues") == 0) {
         list_roots(1);
-    }
-    else if (strcmp(command, "get_events") == 0) {
+    } else if (strcmp(command, "get_events") == 0) {
         if (argc != (dir_idx + 2)) {
             printf
                 ("ERROR: Command get_events requires a target dir and a count\n");
             print_help();
         }
         list_events(argv[dir_idx], argv[dir_idx + 1]);
-    }
-    else if (strcmp(command, "queue_size") == 0) {
+    } else if (strcmp(command, "queue_size") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command queue_size requires a target dir\n");
             print_help();
         }
         list_queue_size(argv[dir_idx]);
-    }
-    else if (strcmp(command, "flush_queue") == 0) {
+    } else if (strcmp(command, "flush_queue") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command flush_queue requires a target dir\n");
             print_help();
         }
         flush_queue(argv[dir_idx]);
-    }
-    else if (strcmp(command, "watch") == 0) {
+    } else if (strcmp(command, "watch") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command watch requires a target dir\n");
             print_help();
         }
         watch(argv[dir_idx]);
-    }
-    else if (strcmp(command, "unwatch") == 0) {
+    } else if (strcmp(command, "unwatch") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command unwatch requires a target dir\n");
             print_help();
         }
         unwatch(argv[dir_idx]);
-    }
-    else {
+    } else {
         printf("ERROR: Unknown command: %s\n", command);
         print_help();
     }
