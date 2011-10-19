@@ -516,14 +516,15 @@ void inotify_dump_roots(void)
         return;
     }
 
-    rv = mk_string(&dump_file, "%s/%s", INOTIFY_ROOT_DUMP_DIR, "roots.dump");
+    rv = mk_string(&dump_file, "%s/%s", INOTIFY_ROOT_DUMP_DIR,
+                   "roots.dump");
     if (rv == -1) {
         log_error
             ("Failed to allocate memory while creating the root dump file: %s",
              "inotify.c:inotify_dump_roots()");
         inotify_free_roots(roots);
         return;
-    } 
+    }
 
     fp = fopen(dump_file, "w");
     if (fp == NULL) {
@@ -771,7 +772,8 @@ static int destroy_root(Root * root)
 
     rv = pthread_create(&t, NULL, _destroy_root, (void *) root);
     if (rv) {
-        log_error("Failed to create new thread for destroying root '%s'", root->path);
+        log_error("Failed to create new thread for destroying root '%s'",
+                  root->path);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
 
@@ -888,8 +890,7 @@ int inotify_unwatch_tree(char *path)
             ("Cannot unwatch path '%s' since it is not a watched root'",
              path);
         return ERROR_INOTIFY_ROOT_NOT_WATCHED;
-    }
-    else if (root->destroy) {
+    } else if (root->destroy) {
         log_warn("Currently destroying tree at root '%s'", path);
         return ERROR_INOTIFY_ROOT_BEING_DESTROYED;
     }
@@ -928,10 +929,10 @@ int inotify_watch_tree(char *path, int mask, int max_events)
 
             if (strcmp(path, r->path) == 0) {
                 if (r->destroy) {
-                    log_warn("Currently destroying tree at root '%s'", path);
+                    log_warn("Currently destroying tree at root '%s'",
+                             path);
                     return ERROR_INOTIFY_ROOT_BEING_DESTROYED;
-                }
-                else {
+                } else {
                     log_warn("Already watching tree at root '%s'", path);
                     return ERROR_INOTIFY_ROOT_ALREADY_WATCHED;
                 }

@@ -333,9 +333,10 @@ static void EVENT_get_queue_size(const Request * req)
         reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
         pthread_mutex_unlock(&zmq_mutex);
         return;
-    }
-    else if (root->destroy) {
-        log_warn("Cannot get queue size as tree at root '%s' is being destroyed", path);
+    } else if (root->destroy) {
+        log_warn
+            ("Cannot get queue size as tree at root '%s' is being destroyed",
+             path);
         reply_send_message("{\"data\":0}");
         pthread_mutex_unlock(&zmq_mutex);
         return;

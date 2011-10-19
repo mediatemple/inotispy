@@ -99,7 +99,8 @@ int main(int argc, char **argv)
 
         rv = zmq_poll(items, 2, -1);
         if ((rv == -1) && (errno != EINTR)) {
-            log_error("Failed to call zmq_poll(): %d: %s", errno, strerror(errno));
+            log_error("Failed to call zmq_poll(): %d: %s", errno,
+                      strerror(errno));
             continue;
         }
 
