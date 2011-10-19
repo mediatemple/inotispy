@@ -1185,7 +1185,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         if (dir->d_type == DT_UNKNOWN) {
             stat(tmp, &stat_buf);
 
-            if (!S_ISDIR(stat_buf.st_mode)) {
+            if (S_ISLNK(stat_buf.st_mode) || !S_ISDIR(stat_buf.st_mode)) {
                 free(tmp);
                 continue;
             }
