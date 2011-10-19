@@ -402,24 +402,7 @@ At the time of this writing, Inotispy does not have any official bindings. Howev
 because there are \fBZeroMQ\fR bindings in many popular languages, it shouldn't be
 difficult to roll a solution of your own.
 .SH BUGS
-Inotispy \fBdoes not\fR work on \fBXFS\fR. This is because XFS does not support
-\fBdirent::d_type\fR. See link:
-.P
-.RS 4
-.I http://nerdfortress.com/2008/09/19/linux-xfs-does-not-support-direntd_type/
-.RE
-.P
-Eventually, Inotispy should (and will) include a hook to determine the file
-system that's being requested to watch and use
-.BR stat (2)
-instead of \fBdirent::d_type\fR to differentiate directories from regular files.
-However, this does have serious performance implications when watching large
-directory trees as it makes calls to \fBstat()\fR for \fBevery file\fR found
-while performing a recursive watch.
-.P
-So while we can (and will) make Inotispy work on XFS the reality is that it wont
-perform well on large trees and the recommendation will be to not run Inotispy
-on XFS.
+No major bugs have yet to be reported.
 .SH RESOURCES
 Main web site:
 .BR http://www.inotispy.org

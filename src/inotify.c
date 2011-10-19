@@ -1102,6 +1102,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     struct dirent *dir;
     Watch *watch;
     char *tmp;
+     struct stat stat_buf;
 
     if ((root == NULL) || (root->destroy != 0)) {
         log_trace("Skipping watch tree on path %s. %s", path,
@@ -1154,38 +1155,59 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     }
 
     while ((dir = readdir(d))) {
-        if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0 || dir->d_type == DT_LNK) { /* Skip symlinks! */
+
+        if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+            continue;
+
+        if (strcmp(path, "/") == 0)
+            rv = mk_string(&tmp, "/%s", dir->d_name);
+        else
+            rv = mk_string(&tmp, "%s/%s", path, dir->d_name);
+
+        if (rv == -1) {
+            log_error
+                ("Failed to allocate memroy for temporary path variable: %s",
+                 "inotify.c:_do_watch_tree_rec");
+            free(tmp);
+            closedir(d);
+            return;
+        }
+
+        /* If d_type is DT_UNKNOWN then we are on a file system that
+         * does not support dirent::d_type flags. This includes XFS
+         * and ZFS, and probably others.
+         *
+         * Since we cannot use the d_type flag on XFS and ZFS to
+         * determine if a file is a directory we have to make a call
+         * to stat() for each file we encounter. This is not very
+         * efficient for large trees, but it's what we're left with.
+         */
+        if (dir->d_type == DT_UNKNOWN) {
+            stat(tmp, &stat_buf);
+
+            if (!S_ISDIR(stat_buf.st_mode)) {
+                free(tmp);
+                continue;
+            }
+        }
+        else if ((dir->d_type == DT_LNK) || (dir->d_type != DT_DIR)) {
+            free(tmp);
             continue;
         }
 
-        if (dir->d_type == DT_DIR) {
-
-            if (strcmp(path, "/") == 0)
-                rv = mk_string(&tmp, "/%s", dir->d_name);
-            else
-                rv = mk_string(&tmp, "%s/%s", path, dir->d_name);
-
-            if (rv == -1) {
-                log_error
-                    ("Failed to allocate memroy for temporary path variable: %s",
-                     "inotify.c:_do_watch_tree_rec");
-                closedir(d);
-                return;
-            }
-
-            if ((root == NULL) || (root->destroy != 0)) {
-                log_trace("Skipping watch tree on path %s. %s", path,
-                          "because root has been unwatched or is being destroyed");
-                free(tmp);
-                closedir(d);
-                return;
-            }
-
-            /* Recurse! */
-            _do_watch_tree_rec(tmp, root);
-
+        /* Make sure that while looping our root hasn't been destroyed. */
+        if ((root == NULL) || (root->destroy != 0)) {
+            log_trace("Skipping watch tree on path %s. %s", path,
+                      "because root has been unwatched or is being destroyed");
             free(tmp);
+            closedir(d);
+            return;
         }
+
+        /* Recurse! */
+        _do_watch_tree_rec(tmp, root);
+
+        free(tmp);
     }
 
     closedir(d);
