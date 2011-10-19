@@ -69,15 +69,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
 
     /* Signal handling for segmentation faults and alarms. */
-    if (signal(SIGSEGV, sig_handler) == SIG_ERR) {
-        fprintf(stderr, "Failed to set up SIGSEGV signal handler\n");
-        return EXIT_FAILURE;
-    }
-    if (signal(SIGALRM, sig_handler) == SIG_ERR) {
-        fprintf(stderr, "Failed to set up SIGALRM signal handler\n");
-        return EXIT_FAILURE;
-    }
-    alarm(1);
+    signal(SIGINT, sig_handler);
+    signal(SIGALRM, sig_handler);
+    signal(SIGSEGV, sig_handler);
 
     log_notice("Initializing daemon");
 
@@ -99,6 +93,7 @@ int main(int argc, char **argv)
     items[1].events = ZMQ_POLLIN;
 
     log_debug("Entering event loop...");
+    alarm(1);
 
     while (1) {
 
@@ -123,6 +118,12 @@ int main(int argc, char **argv)
 void sig_handler(int sig)
 {
     switch (sig) {
+    case SIGINT:
+        log_notice("Inotispy receieved an interrupt. %s",
+                   "Dumping roots and exiting");
+        inotify_dump_roots();
+        exit(sig);
+        break;
     case SIGSEGV:
         log_error("Inotispy encounterd a segmentation fault. %s",
                   "Dumping roots and exiting");
