@@ -280,7 +280,11 @@ void inotify_handle_event(void)
             pthread_mutex_unlock(&inotify_mutex);
 
             /* Construct the absolute path for this event. */
-            rv = mk_string(&abs_path, "%s/%s", path, event->name);
+            if (strcmp(path, "/") == 0)
+                rv = mk_string(&abs_path, "/%s", path, event->name);
+            else
+                rv = mk_string(&abs_path, "%s/%s", path, event->name);
+
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memory while creating absolute event path: %s",
@@ -656,12 +660,17 @@ Root *inotify_path_to_root(const char *path)
 {
     int rv;
     GList *keys;
+    char *tmp;
+    Root *root;
+
+    root = g_hash_table_lookup(inotify_roots, "/");
+    if (root != NULL)
+        return root;
 
     keys = g_hash_table_get_keys(inotify_roots);
 
     for (; keys != NULL; keys = keys->next) {
 
-        char *tmp;
         rv = mk_string(&tmp, "%s/", (char *) keys->data);
         if (rv == -1) {
             log_error
@@ -672,7 +681,6 @@ Root *inotify_path_to_root(const char *path)
 
         if ((strcmp(path, keys->data) == 0) || strstr(path, tmp)) {
             free(tmp);
-            Root *root;
 
             root = g_hash_table_lookup(inotify_roots, keys->data);
 
@@ -911,7 +919,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
 
     /* Clean up path by removing the trailing slash, it exists. */
     last = strlen(path) - 1;
-    if (path[last] == '/')
+    if ((path[last] == '/') && (strcmp(path, "/") != 0))
         path[last] = '\0';
 
     /* A quick check of the current state of watched roots. */
@@ -1152,7 +1160,11 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
         if (dir->d_type == DT_DIR) {
 
-            rv = mk_string(&tmp, "%s/%s", path, dir->d_name);
+            if (strcmp(path, "/") == 0)
+                rv = mk_string(&tmp, "/%s", dir->d_name);
+            else
+                rv = mk_string(&tmp, "%s/%s", path, dir->d_name);
+
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memroy for temporary path variable: %s",
