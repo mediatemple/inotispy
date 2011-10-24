@@ -148,7 +148,19 @@ char *request_get_call(const Request * req)
     return request_get_key_str(req, "call");
 }
 
-char *request_get_path(const const Request * req)
+int request_is_verbose(const Request * req)
+{
+    int v;
+
+    v = request_get_key_int(req, "verbose");
+
+    if (v > 0)
+        return 1;
+
+    return 0;
+}
+
+char *request_get_path(const Request * req)
 {
     int i;
     char *path;

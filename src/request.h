@@ -51,7 +51,7 @@ typedef struct request {
 /* Take a printable string and attempt to parse
  * is as JSON.
  */
-Request *request_parse(const const char *json);
+Request *request_parse(const char *json);
 
 /* Look up a key in the JSON hash and return it's
  * value, or NULL if it doesn't exist.
@@ -65,6 +65,7 @@ int request_get_max_events(const Request * req);
 int request_get_mask(const Request * req);
 char *request_get_call(const Request * req);
 char *request_get_path(const Request * req);
+int request_is_verbose(const Request * req);
 
 /* Turn the JSON object into a printable string. */
 const char *request_to_string(const Request * req);
