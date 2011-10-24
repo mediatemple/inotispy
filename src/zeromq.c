@@ -196,7 +196,7 @@ static void EVENT_watch(const Request * req)
     /* Grab the path from our request, or bail if the user
      * did not supply a valid one.
      */
-    rv = mk_string(&path, request_get_path(req));
+    rv = mk_string(&path, "%s", request_get_path(req));
     if (rv == -1) {
         log_error("Failed to allocate memory for watch path: %s",
                   "zmq.c:EVENT_watch()");

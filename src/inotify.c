@@ -434,14 +434,14 @@ static int inotify_enqueue(const Root * root, const IN_Event * event,
     node->cookie = event->cookie;
     node->len = event->len;
 
-    rv = mk_string(&node->name, event->name);
+    rv = mk_string(&node->name, "%s", event->name);
     if (rv == -1) {
         log_error("Failed to allocate memory for new queue node NAME: %s",
                   "inotify.c:inotify_enqueue()");
         return ERROR_MEMORY_ALLOCATION;
     }
 
-    rv = mk_string(&node->path, path);
+    rv = mk_string(&node->path, "%s", path);
     if (rv == -1) {
         log_error("Failed to allocate memory for new queue node PATH: %s",
                   "inotify.c:inotify_enqueue()");
@@ -476,7 +476,7 @@ char **inotify_get_roots(void)
     }
 
     for (; keys != NULL; keys = keys->next) {
-        rv = mk_string(&roots[i++], (char *) keys->data);
+        rv = mk_string(&roots[i++], "%s", (char *) keys->data);
         if (rv == -1) {
             log_error
                 ("Failed to allocate memory while adding root to list: %s",
@@ -743,7 +743,7 @@ char *inotify_is_parent(const char *path)
 
     for (; keys != NULL; keys = keys->next) {
         if (strstr(keys->data, tmp)) {
-            rv = mk_string(&parent, keys->data);
+            rv = mk_string(&parent, "%s", keys->data);
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memory for return value '%s': %s",
@@ -1042,7 +1042,7 @@ static int do_watch_tree(const char *path, Root * root)
         return ERROR_MEMORY_ALLOCATION;
     }
 
-    rv = mk_string(&data->path, path);
+    rv = mk_string(&data->path, "%s", path);
     if (rv == -1) {
         log_error("Failed to allocate memory for thread data PATH: %s",
                   "inotify.c:do_watch_tree()");
@@ -1226,7 +1226,7 @@ static Root *make_root(const char *path, int mask, int max_events)
         return NULL;
     }
 
-    rv = mk_string(&root->path, path);
+    rv = mk_string(&root->path, "%s", path);
     if (rv == -1) {
         log_error("Failed to allocate memory for new root PATH: %s",
                   "inotify.c:make_root()");
