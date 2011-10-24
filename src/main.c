@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     if (rv == -1) {
         fprintf(stderr, "Failed to call uname(2): %s\n", strerror(errno));
         exit(EXIT_FAILURE);
-    }    
+    }
 
     if (strcmp(u_name.sysname, "Linux") != 0) {
         fprintf(stderr, "Tisk tisk... Inotispy is for Linux.\n");

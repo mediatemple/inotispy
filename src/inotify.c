@@ -1102,7 +1102,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     struct dirent *dir;
     Watch *watch;
     char *tmp;
-     struct stat stat_buf;
+    struct stat stat_buf;
 
     if ((root == NULL) || (root->destroy != 0)) {
         log_trace("Skipping watch tree on path %s. %s", path,
@@ -1156,7 +1156,8 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
     while ((dir = readdir(d))) {
 
-        if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+        if (strcmp(dir->d_name, ".") == 0
+            || strcmp(dir->d_name, "..") == 0)
             continue;
 
         if (strcmp(path, "/") == 0)
@@ -1189,8 +1190,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
                 free(tmp);
                 continue;
             }
-        }
-        else if ((dir->d_type == DT_LNK) || (dir->d_type != DT_DIR)) {
+        } else if ((dir->d_type == DT_LNK) || (dir->d_type != DT_DIR)) {
             free(tmp);
             continue;
         }

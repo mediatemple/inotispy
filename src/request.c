@@ -158,7 +158,7 @@ char *request_get_path(const const Request * req)
     /* Clean up path by removing trailing slashes,
      * if they exists, unless the path is '/'.
      */
-    if ((strlen(path) > 0) && (strcmp(path,"/") != 0)) {
+    if ((strlen(path) > 0) && (strcmp(path, "/") != 0)) {
         for (i = (strlen(path) - 1); path[i] == '/'; path[i] = '\0', i--);
     }
 
