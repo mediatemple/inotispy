@@ -49,6 +49,7 @@ if [ -f '/lib/lsb/init-functions' ]; then
   init_stop() {
     log_daemon_msg "Stopping ${NAME}";
     start-stop-daemon --stop --quiet --retry 5 --pidfile "${PIDFILE}" --name "${NAME}";
+    rm -f "${PIDFILE}"
     log_end_msg $?;
   }
 
