@@ -1,0 +1,120 @@
+#! /bin/sh
+# Start/stop the inotispy daemon.
+#
+### Redhat bits...
+# chkconfig:   2345 85 15 
+# description: inotispy is a daemon that configures inotify watches and \
+#              queues up captured events via ZeroMQ allowing other programs \
+#              to monitor these queues easily without having to worry about \
+#              the complexities of recursively watch directory trees via \
+#              inotify directly.
+# processname: inotispy
+# config:      /etc/inotispy.conf
+# pidfile:     /var/run/inotispy.pid
+#
+### Debian bits...
+### BEGIN INIT INFO
+# Provides:          inotispy
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $network $local_fs $remote_fs
+# Should-Start:      
+# Should-Stop:       
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: ZeroMQ based inotify daemon
+# Description:       inotispy is a daemon that configures inotify watches and 
+#                    queues up captured events via ZeroMQ allowing other programs
+#                    to monitor these queues easily without having to worry about
+#                    the complexities of recursively watch directory trees via
+#                    inotify directly.
+### END INIT INFO
+
+NAME='inotispy';
+PROGRAM='/usr/sbin/inotispy';
+PIDFILE='/var/run/inotispy.pid';
+
+LD_LIBRARY_PATH='/usr/lib';
+export LD_LIBRARY_PATH;
+
+if [ -f '/lib/lsb/init-functions' ]; then
+  [ -r "/etc/default/${NAME}" ] && . "/etc/default/${NAME}";
+  . '/lib/lsb/init-functions'
+
+  init_start() {
+    log_daemon_msg "Starting ${NAME}";
+    start-stop-daemon --start --quiet --background --pidfile "${PIDFILE}" --make-pidfile --name "${NAME}" --startas "${PROGRAM}" -- $LSBNAMES $EXTRA_OPTS;
+    log_end_msg $?;
+  }
+
+  init_stop() {
+    log_daemon_msg "Stopping ${NAME}";
+    start-stop-daemon --stop --quiet --retry 5 --pidfile "${PIDFILE}" --name "${NAME}";
+    log_end_msg $?;
+  }
+
+  init_status() {
+    log_action_begin_msg "Checking ${NAME}";
+    if pidofproc -p "${PIDFILE}" >/dev/null; then
+      log_action_end_msg 0 "running";
+      exit 0;
+    elif [ -e "${PIDFILE}" ]; then
+      log_action_end_msg 1 "failed to start";
+      exit 1;
+    else
+      log_action_end_msg 0 "not running";
+      exit 3;
+    fi;
+  }
+
+  init_default() {
+    log_action_msg "Usage: /etc/init.d/${NAME} {start|stop|status|restart}"
+    exit 2;
+  }
+elif [ -f '/etc/rc.d/init.d/functions' ]; then
+  . '/etc/rc.d/init.d/functions'
+  [ -r "/etc/sysconfig/${NAME}" ] && . "/etc/default/${NAME}";
+
+  init_start() {
+    echo "Not yet implemented";
+  }
+
+  init_stop() {
+    echo "Not yet implemented";
+  }
+
+  init_status() {
+    echo "Not yet implemented";
+  }
+
+  init_default() {
+    echo "Not yet implemented";
+  }
+fi;
+
+test -x "${PROGRAM}"  || exit 0;
+
+case "$1" in
+  start)
+    init_start;
+  ;;
+
+  stop)
+    init_stop;
+  ;;
+
+  restart)
+    init_stop;
+    init_start;
+  ;;
+
+  status)
+    init_status;
+  ;;
+
+  *)
+    init_default;
+  ;;
+esac;
+
+exit 0;
+

@@ -25,4 +25,5 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-SUBDIRS = src bin etc doc examples init.d
+initddir = /etc/init.d
+initd_SCRIPTS = inotispy
