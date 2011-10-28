@@ -1,0 +1,54 @@
+%define _topdir	 	%(echo $PWD)/rpm
+%define name		@PACKAGE_NAME@
+%define release		1
+%define version 	@PACKAGE_VERSION@
+%define buildroot %{_topdir}/%{name}-%{version}-root
+
+BuildArch:		noarch
+BuildRoot:	 	%{buildroot}
+Summary: 		Efficient inotify daemon
+License: 		BSD/MIT
+Name: 			%{name}
+Version: 		%{version}
+Release: 		1%{?dist}
+Source: 		%{name}-%{version}.tar.gz
+Prefix: 		/opt/mt
+Group: 			Linux/Utilities
+
+Requires:               libpthread
+Requires:               json-c
+Requires:               zeromq
+Requires:               glib2
+BuildRequires:          json-c-devel
+BuildRequires:          zeromq-devel
+BuildRequires:          glib2-devel
+
+%description
+Inotispy is an efficient, network-based inotify daemon.
+
+Comments and questions should be sent to <james@jamesconerly.com>.
+
+%prep
+%setup -q
+
+%build
+if [ ! -f configure ];then
+    ./autogen.sh
+fi
+
+./configure --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} \
+    --mandir=%{_mandir} --includedir=%{_includedir} \
+    --bindir=%{_bindir} 
+
+make
+
+%install
+make install prefix=$RPM_BUILD_ROOT/opt/mt
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root)
+/opt/mt/bin
+# %config /opt/mt/etc
