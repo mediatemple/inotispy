@@ -42,7 +42,7 @@
 struct inotispy_config {
 
     /* zmq.h */
-    int port;
+    char *zmq_uri;
 
     /* log.h */
     int log_level;

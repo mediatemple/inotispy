@@ -50,7 +50,7 @@ int init_config(gboolean silent)
 
     /* Create config struct and assign default values. */
     CONFIG = g_slice_new(struct inotispy_config);
-    CONFIG->port = ZMQ_PORT;
+    CONFIG->zmq_uri = ZMQ_URI;
     CONFIG->log_file = LOG_FILE;
     CONFIG->log_level = LOG_LEVEL_NOTICE;
     CONFIG->log_syslog = FALSE;
@@ -73,14 +73,22 @@ int init_config(gboolean silent)
         return 1;
     }
 
-    /* port */
-    int_rv = g_key_file_get_integer(kf, CONF_GROUP, "port", &error);
+    /* zmq_uri */
+    str_rv = g_key_file_get_string(kf, CONF_GROUP, "zmq_uri", &error);
     if (error != NULL) {
-        fprintf(stderr, "Failed to read config value for 'port': %s\n",
+        fprintf(stderr, "Failed to read config value for 'zmq_uri': %s\n",
                 error->message);
         error = NULL;
     } else {
-        CONFIG->port = int_rv;
+        int_rv = mk_string(&CONFIG->zmq_uri, "%s", str_rv);
+        if (int_rv == -1) {
+            fprintf(stderr,
+                    "** Failed to allocate memory for user supplied 0MQ URI %s: %s %s **",
+                    str_rv, "using default 0MQ URI", ZMQ_URI);
+            CONFIG->zmq_uri = ZMQ_URI;
+        }
+
+        g_free(str_rv);
     }
 
     /* log_file */
@@ -173,7 +181,7 @@ int init_config(gboolean silent)
 
     if (!CONFIG->silent) {
         fprintf(stderr, "Using configuration values:\n");
-        fprintf(stderr, " - port               : %d\n", CONFIG->port);
+        fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
         fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
         fprintf(stderr, " - log_level          : %s (%d)\n",
                 level_str(CONFIG->log_level), CONFIG->log_level);

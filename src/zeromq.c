@@ -50,20 +50,10 @@ void *zmq_setup(void)
 {
     int rv, bind_rv;
     void *zmq_context;
-    char *zmq_uri;
-
-    rv = mk_string(&zmq_uri, "%s:%d", ZMQ_ADDR, CONFIG->port);
-    if (rv == -1) {
-        log_error("Failed to allocate memory for the ZeroMQ URI: %s",
-                  "zmq.c:zmq_setup()");
-        return NULL;
-    }
 
     zmq_context = zmq_init(ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
-    bind_rv = zmq_bind(zmq_listener, zmq_uri);
-
-    free(zmq_uri);
+    bind_rv = zmq_bind(zmq_listener, CONFIG->zmq_uri);
 
     if (bind_rv != 0) {
         log_error("Failed to bind ZeroMQ socket: '%s'", strerror(errno));
