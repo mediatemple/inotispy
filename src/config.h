@@ -37,7 +37,8 @@
 
 #define CONF_GROUP "global"
 #define APPLICATION_NAME "inotispy"
-#define INOTISPY_CONFIG_FILE "/etc/inotispy.conf"
+#define INOTISPY_CONFIG_DIR @sysconfdir@
+#define INOTISPY_CONFIG_FILE "inotispy.conf"
 
 struct inotispy_config {
 

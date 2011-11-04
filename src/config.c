@@ -40,8 +40,9 @@
  */
 int init_config(gboolean silent)
 {
-    int int_rv;
+    int int_rv, free_conf;
     char *str_rv;
+    char *config_file;
     gboolean bool_rv;
     GError *error;
     GKeyFile *kf;
@@ -58,12 +59,26 @@ int init_config(gboolean silent)
     CONFIG->silent = FALSE;
 
     /* Attempt to read in config file. */
+    free_conf = 1;
+    int_rv = mk_string(&config_file, "%s/%s",
+                       INOTISPY_CONFIG_DIR, INOTISPY_CONFIG_FILE);
+    if (int_rv == -1) {
+        fprintf(stderr,
+                "** Failed to allocate memory for config file path: %s/%s **",
+                INOTISPY_CONFIG_DIR, INOTISPY_CONFIG_FILE);
+        config_file = "/etc/inotispy.conf";
+        free_conf = 0;
+    }
+
     kf = g_key_file_new();
     if (!g_key_file_load_from_file
-        (kf, INOTISPY_CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
+        (kf, config_file, G_KEY_FILE_NONE, &error)) {
         fprintf(stderr, "Failed to load config file %s: %s.\n%s",
-                INOTISPY_CONFIG_FILE, error->message,
+                config_file, error->message,
                 " -> Using default config values.\n");
+
+        if (free_conf)
+            free(config_file);
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
@@ -72,6 +87,9 @@ int init_config(gboolean silent)
          */
         return 1;
     }
+
+    if (free_conf)
+        free(config_file);
 
     /* zmq_uri */
     str_rv = g_key_file_get_string(kf, CONF_GROUP, "zmq_uri", &error);
