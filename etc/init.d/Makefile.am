@@ -25,5 +25,5 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-initddir = /etc/init.d
-initd_SCRIPTS = inotispy
+initddir = $(sysconfdir)/init.d
+dist_initd_SCRIPTS = inotispy

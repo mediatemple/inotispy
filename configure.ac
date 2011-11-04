@@ -25,7 +25,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-AC_PREREQ([2.67])
+AC_PREREQ([2.59])
 
 AC_INIT([inotispy], [1.0.1], [james@jamesconerly.com])
 AC_CONFIG_SRCDIR([src/main.c])
@@ -33,8 +33,16 @@ AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
 
 AC_DEFINE(_GNU_SOURCE)
 
+if test "$prefix" = "NONE"; then
+    prefix=""
+fi
+
+eval "eval INOTISPY_SYSCONFDIR=$sysconfdir"
+AC_DEFINE_UNQUOTED([INOTISPY_PREFIX], ["$prefix"])
+AC_DEFINE_UNQUOTED([INOTISPY_SYSCONFDIR], ["$INOTISPY_SYSCONFDIR"])
+
 # Checks for programs.
-AC_PROG_CC_C99
+AC_PROG_CC
 
 # Checks for packages via pkg-config
 PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.22 json libzmq)
@@ -48,4 +56,7 @@ AX_PTHREAD([],AC_MSG_ERROR([Must have POSIX threads]))
 LIBS="$PTHREAD_LIBS $LIBS"
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
-AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile examples/Makefile [init.d/Makefile])
+AC_CONFIG_FILES([
+  REDHAT.spec
+])
+AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile examples/Makefile [etc/init.d/Makefile])

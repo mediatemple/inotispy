@@ -12,7 +12,6 @@ Name: 			%{name}
 Version: 		%{version}
 Release: 		1%{?dist}
 Source: 		%{name}-%{version}.tar.gz
-Prefix: 		/opt/mt
 Group: 			Linux/Utilities
 
 Requires:               libpthread
@@ -36,19 +35,20 @@ if [ ! -f configure ];then
     ./autogen.sh
 fi
 
-./configure --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} \
-    --mandir=%{_mandir} --includedir=%{_includedir} \
-    --bindir=%{_bindir} 
-
+./configure --prefix=$RPM_BUILD_ROOT
 make
 
 %install
-make install prefix=$RPM_BUILD_ROOT/opt/mt
+make install 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-/opt/mt/bin
-# %config /opt/mt/etc
+/bin
+/sbin
+/share
+
+%config
+/etc

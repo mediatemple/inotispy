@@ -40,9 +40,9 @@
  */
 int init_config(gboolean silent)
 {
-    int int_rv, free_conf;
+    int int_rv;
     char *str_rv;
-    char *config_file;
+    char *conf_file;
     gboolean bool_rv;
     GError *error;
     GKeyFile *kf;
@@ -59,26 +59,22 @@ int init_config(gboolean silent)
     CONFIG->silent = FALSE;
 
     /* Attempt to read in config file. */
-    free_conf = 1;
-    int_rv = mk_string(&config_file, "%s/%s",
-                       INOTISPY_CONFIG_DIR, INOTISPY_CONFIG_FILE);
+    int_rv = mk_string(&conf_file, "%s/%s",
+                       INOTISPY_SYSCONFDIR, INOTISPY_CONFIG_FILE);
     if (int_rv == -1) {
         fprintf(stderr,
-                "** Failed to allocate memory for config file path: %s/%s **",
-                INOTISPY_CONFIG_DIR, INOTISPY_CONFIG_FILE);
-        config_file = "/etc/inotispy.conf";
-        free_conf = 0;
+                "** Failed to allocate memory for config file: %s/%s **",
+                INOTISPY_SYSCONFDIR, INOTISPY_CONFIG_FILE);
+        return 1;
     }
 
     kf = g_key_file_new();
     if (!g_key_file_load_from_file
-        (kf, config_file, G_KEY_FILE_NONE, &error)) {
+        (kf, conf_file, G_KEY_FILE_NONE, &error)) {
         fprintf(stderr, "Failed to load config file %s: %s.\n%s",
-                config_file, error->message,
+                conf_file, error->message,
                 " -> Using default config values.\n");
-
-        if (free_conf)
-            free(config_file);
+        free(conf_file);
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
@@ -87,9 +83,6 @@ int init_config(gboolean silent)
          */
         return 1;
     }
-
-    if (free_conf)
-        free(config_file);
 
     /* zmq_uri */
     str_rv = g_key_file_get_string(kf, CONF_GROUP, "zmq_uri", &error);
@@ -198,7 +191,7 @@ int init_config(gboolean silent)
     }
 
     if (!CONFIG->silent) {
-        fprintf(stderr, "Using configuration values:\n");
+        fprintf(stderr, "Using configuration values from %s:\n", conf_file);
         fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
         fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
         fprintf(stderr, " - log_level          : %s (%d)\n",
@@ -211,5 +204,6 @@ int init_config(gboolean silent)
                 (CONFIG->silent ? "true" : "false"));
     }
 
+    free(conf_file);
     return 0;
 }
