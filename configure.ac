@@ -37,6 +37,25 @@ if test "$prefix" = "NONE"; then
     prefix=""
 fi
 
+
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo "Data root dir is '$datarootdir'"
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+
 if test "$datarootdir" = ""; then
     datarootdir="share"
 fi
