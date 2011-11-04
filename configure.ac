@@ -37,6 +37,10 @@ if test "$prefix" = "NONE"; then
     prefix=""
 fi
 
+if test "$datarootdir" = ""; then
+    datarootdir="share"
+fi
+
 eval "eval INOTISPY_SYSCONFDIR=$sysconfdir"
 AC_DEFINE_UNQUOTED([INOTISPY_PREFIX], ["$prefix"])
 AC_DEFINE_UNQUOTED([INOTISPY_SYSCONFDIR], ["$INOTISPY_SYSCONFDIR"])

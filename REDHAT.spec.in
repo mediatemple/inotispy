@@ -4,7 +4,6 @@
 %define version 	@PACKAGE_VERSION@
 %define buildroot %{_topdir}/%{name}-%{version}-root
 
-BuildArch:		noarch
 BuildRoot:	 	%{buildroot}
 Summary: 		Efficient inotify daemon
 License: 		BSD/MIT
@@ -50,5 +49,4 @@ rm -rf $RPM_BUILD_ROOT
 /sbin
 /share
 
-%config
-/etc
+%config /etc
