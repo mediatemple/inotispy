@@ -37,32 +37,11 @@ if test "$prefix" = "NONE"; then
     prefix=""
 fi
 
-
-echo
-echo
-echo
-echo
-echo
-echo
-echo
-echo
-echo "Data root dir is '$datarootdir'"
-echo
-echo
-echo
-echo
-echo
-echo
-echo
-echo
-
-if test "$datarootdir" = ""; then
-    datarootdir="share"
-fi
-
 eval "eval INOTISPY_SYSCONFDIR=$sysconfdir"
 AC_DEFINE_UNQUOTED([INOTISPY_PREFIX], ["$prefix"])
 AC_DEFINE_UNQUOTED([INOTISPY_SYSCONFDIR], ["$INOTISPY_SYSCONFDIR"])
+
+AM_CONDITIONAL(HAS_DATAROOTDIR, [test ! "$datarootdir" = ""]) 
 
 # Checks for programs.
 AC_PROG_CC

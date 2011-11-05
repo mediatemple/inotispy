@@ -25,7 +25,13 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-cexampledir = $(datarootdir)/doc/@PACKAGE@/examples
+if HAS_DATAROOTDIR
+    DATA_ROOT = $(datarootdir)
+else
+    DATA_ROOT = $(prefix)/share
+endif
+
+cexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples
 dist_cexample_DATA = c/get_roots.c \
     c/get_events.c \
     c/get_queue_size.c \
@@ -34,7 +40,7 @@ dist_cexample_DATA = c/get_roots.c \
     c/Makefile \
     c/README
 
-perlexampledir = $(datarootdir)/doc/@PACKAGE@/examples
+perlexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples
 dist_perlexample_DATA = perl/get_roots.pl \
     perl/get_events.pl \
     perl/get_queue_size.pl \
