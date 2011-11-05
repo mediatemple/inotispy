@@ -31,5 +31,5 @@ else
     MAN_DIR = $(mandir)
 endif
 
-mandir = $(MAN_DIR)
-dist_man_MANS = inotispy.8 inotispyctl.8
+mansdir = $(MAN_DIR)
+dist_mans_MANS = inotispy.8 inotispyctl.8
