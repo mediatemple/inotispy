@@ -34,11 +34,11 @@ if [ ! -f configure ];then
     ./autogen.sh
 fi
 
-./configure --prefix=$RPM_BUILD_ROOT
+./configure 
 make
 
 %install
-make install 
+make prefix=$RPM_BUILD_ROOT install 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -46,6 +46,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 /bin
+/man
 /sbin
 /share
 
