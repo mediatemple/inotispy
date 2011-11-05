@@ -25,4 +25,11 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+if HAS_DATAROOTDIR
+    MAN_DIR = $(mandir)/share
+else
+    MAN_DIR = $(mandir)
+endif
+
+mandir = $(MAN_DIR)
 dist_man_MANS = inotispy.8 inotispyctl.8
