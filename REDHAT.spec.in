@@ -13,7 +13,6 @@ Release: 		1%{?dist}
 Source: 		%{name}-%{version}.tar.gz
 Group: 			Linux/Utilities
 
-Requires:               libpthread
 Requires:               json-c
 Requires:               zeromq
 Requires:               glib2
