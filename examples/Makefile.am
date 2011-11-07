@@ -31,7 +31,7 @@ else
     DATA_ROOT = $(prefix)/share
 endif
 
-cexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples
+cexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples/c
 dist_cexample_DATA = c/get_roots.c \
     c/get_events.c \
     c/get_queue_size.c \
@@ -40,7 +40,7 @@ dist_cexample_DATA = c/get_roots.c \
     c/Makefile \
     c/README
 
-perlexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples
+perlexampledir = $(DATA_ROOT)/doc/@PACKAGE@/examples/perl
 dist_perlexample_DATA = perl/get_roots.pl \
     perl/get_events.pl \
     perl/get_queue_size.pl \

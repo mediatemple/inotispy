@@ -26,5 +26,3 @@
 # SUCH DAMAGE.
 
 dist_sysconf_DATA = inotispy.conf
-
-SUBDIRS = init.d

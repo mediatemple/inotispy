@@ -27,7 +27,7 @@
 
 AC_PREREQ([2.59])
 
-AC_INIT([inotispy], [1.0.2], [james@jamesconerly.com])
+AC_INIT([inotispy], [1.0.3], [james@jamesconerly.com])
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
 
@@ -61,4 +61,4 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 AC_CONFIG_FILES([
   REDHAT.spec
 ])
-AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile examples/Makefile [etc/init.d/Makefile])
+AC_OUTPUT(Makefile src/Makefile bin/Makefile doc/Makefile etc/Makefile examples/Makefile [init.d/Makefile])
