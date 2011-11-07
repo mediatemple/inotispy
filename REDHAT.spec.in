@@ -48,4 +48,5 @@ rm -rf $RPM_BUILD_ROOT
 /sbin
 /share
 
-%config /etc
+%config %dir %attr(-,root,root) /etc/inotispy.conf
+%config %dir %attr(-,root,root) /etc/init.d/inotispy
