@@ -43,23 +43,23 @@ make prefix=$RPM_BUILD_ROOT install
 rm -rf $RPM_BUILD_ROOT
 
 if [ -d /man ]; then
-    %files
-    %defattr(-,root,root)
-    /bin
-    /sbin
-    /share
-    /man
+%files
+%defattr(-,root,root)
+/bin
+/sbin
+/share
+/man
 
-    %config %dir %attr(-,root,root) /etc/inotispy.conf
-    %config %dir %attr(-,root,root) /etc/init.d/inotispy
+%config %dir %attr(-,root,root) /etc/inotispy.conf
+%config %dir %attr(-,root,root) /etc/init.d/inotispy
 else
-    %files
-    %defattr(-,root,root)
-    /bin
-    /sbin
-    /share
+%files
+%defattr(-,root,root)
+/bin
+/sbin
+/share
 
-    %config %dir %attr(-,root,root) /etc/inotispy.conf
-    %config %dir %attr(-,root,root) /etc/init.d/inotispy
+%config %dir %attr(-,root,root) /etc/inotispy.conf
+%config %dir %attr(-,root,root) /etc/init.d/inotispy
 fi
 
