@@ -39,9 +39,13 @@ make
 %install
 make prefix=$RPM_BUILD_ROOT install 
 
+if [ ! -d "$RPM_BUILD_ROOT/usr" ]; then
+    mkdir $RPM_BUILD_ROOT/usr
+fi
 if [ -d "$RPM_BUILD_ROOT/man" ]; then
     mv $RPM_BUILD_ROOT/man $RPM_BUILD_ROOT/share/
 fi
+mv $RPM_BUILD_ROOT/share $RPM_BUILD_ROOT/usr/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -50,7 +54,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 /bin
 /sbin
-/share
+/usr
 
 %config %dir %attr(-,root,root) /etc/inotispy.conf
 %config %dir %attr(-,root,root) /etc/init.d/inotispy
