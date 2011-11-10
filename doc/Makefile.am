@@ -26,10 +26,7 @@
 # SUCH DAMAGE.
 
 if HAS_DATAROOTDIR
-    MAN_DIR = $(mandir)/share
-else
-    MAN_DIR = $(mandir)
+    mandir = "$(mandir)/share"
 endif
 
-mansdir = $(MAN_DIR)
-dist_mans_MANS = inotispy.8 inotispyctl.8
+dist_man_MANS = inotispy.8 inotispyctl.8
