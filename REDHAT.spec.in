@@ -29,7 +29,7 @@ Comments and questions should be sent to <james@jamesconerly.com>.
 %setup -q
 
 %build
-if [ ! -f configure ];then
+if [ ! -f configure ]; then
     ./autogen.sh
 fi
 
@@ -42,12 +42,24 @@ make prefix=$RPM_BUILD_ROOT install
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files
-%defattr(-,root,root)
-/bin
-/sbin
-/share
-%{_mandir}/*/*
+if [ -d man ]; then
+    %files
+    %defattr(-,root,root)
+    /bin
+    /sbin
+    /share
+    /man
 
-%config %dir %attr(-,root,root) /etc/inotispy.conf
-%config %dir %attr(-,root,root) /etc/init.d/inotispy
+    %config %dir %attr(-,root,root) /etc/inotispy.conf
+    %config %dir %attr(-,root,root) /etc/init.d/inotispy
+else
+%files
+    %defattr(-,root,root)
+    /bin
+    /sbin
+    /share
+
+    %config %dir %attr(-,root,root) /etc/inotispy.conf
+    %config %dir %attr(-,root,root) /etc/init.d/inotispy
+fi
+
