@@ -25,8 +25,8 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-if HAS_DATAROOTDIR
-    mandir = "$(mandir)/share"
-endif
+#if HAS_DATAROOTDIR
+#    mandir = "$(mandir)/share"
+#endif
 
 dist_man_MANS = inotispy.8 inotispyctl.8
