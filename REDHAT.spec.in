@@ -39,8 +39,8 @@ make
 %install
 make prefix=$RPM_BUILD_ROOT install 
 
-if [ -d ./man ]; then
-    mv ./man ./share/
+if [ -d /man ]; then
+    mv /man /share/
 fi
 
 %clean
