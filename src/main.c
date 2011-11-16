@@ -56,9 +56,9 @@ int main(int argc, char **argv)
 
     static struct option long_opts[] = {
         {"silent", no_argument, 0, 's'},
-        {"help" , no_argument, 0, 'h'},
+        {"help", no_argument, 0, 'h'},
         {"config", required_argument, 0, 'c'},
-        { 0, 0, 0, 0 }
+        {0, 0, 0, 0}
     };
 
     zmq_pollitem_t items[2];
@@ -81,29 +81,31 @@ int main(int argc, char **argv)
     config_file = NULL;
     option_index = 0;
 
-    while ((c = getopt_long(argc, argv, "shc:", long_opts, &option_index)) != -1) {
+    while ((c =
+            getopt_long(argc, argv, "shc:", long_opts,
+                        &option_index)) != -1) {
         switch (c) {
-            case 's':
-                silent = 1;
-                break;
-            case 'h':
-                help = 1;
-                break;
-            case 'c':
-                config_file = optarg;
-                break;
-            case '?':
-                if (optopt == 'c')
-                    fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-                else if (isprint (optopt))
-                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-                else
-                    fprintf (stderr,
-                             "Unknown option character `\\x%x'.\n",
-                             optopt);
-                return 1;
-            default:
-                abort ();
+        case 's':
+            silent = 1;
+            break;
+        case 'h':
+            help = 1;
+            break;
+        case 'c':
+            config_file = optarg;
+            break;
+        case '?':
+            if (optopt == 'c')
+                fprintf(stderr, "Option -%c requires an argument.\n",
+                        optopt);
+            else if (isprint(optopt))
+                fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+            else
+                fprintf(stderr,
+                        "Unknown option character `\\x%x'.\n", optopt);
+            return 1;
+        default:
+            abort();
         }
     }
 

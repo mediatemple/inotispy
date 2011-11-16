@@ -208,6 +208,17 @@ static void EVENT_watch(const Request * req)
         return;
     }
 
+    /* Check to see if we're already watching this path. */
+    pthread_mutex_lock(&zmq_mutex);
+    if (inotify_is_root(path)) {
+        log_warn("Path '%s' is already being watched.");
+        reply_send_error(ERROR_INOTIFY_ROOT_ALREADY_WATCHED);
+        free(path);
+        pthread_mutex_unlock(&zmq_mutex);
+        return;
+    }
+    pthread_mutex_unlock(&zmq_mutex);
+
     log_debug("Watching new root at path '%s'", path);
 
     /* Check for user defined configuration overrides. */
@@ -237,6 +248,43 @@ static void EVENT_watch(const Request * req)
 
     free(path);
     reply_send_success();
+}
+
+static void EVENT_subscribe(const Request * req)
+{
+    int rv, sid;
+    char *path, *reply;
+    Root *root;
+
+    path = request_get_path(req);
+    if (path == NULL) {
+        log_warn("JSON parsed successfully but no 'path' field found");
+        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+        return;
+    }
+
+    /* Check to make sure that we're already watching this path. */
+    pthread_mutex_lock(&zmq_mutex);
+    root = inotify_is_root(path);
+    if (!root) {
+        log_warn("Path '%s' is not currently being watched.", path);
+        reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+        pthread_mutex_unlock(&zmq_mutex);
+        return;
+    }
+    pthread_mutex_unlock(&zmq_mutex);
+
+    sid = 1234;                 /* TODO call to actually subscribe to a root */
+    rv = mk_string(&reply, "{\"data\":%d}", sid);
+    if (rv == -1) {
+        log_error("Failed to allocate memory for SUCCESS reply: %s",
+                  "zmq.c:EVENT_subscribe");
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
+
+    reply_send_message(reply);
+    free(reply);
 }
 
 static void EVENT_unwatch(const Request * req)
@@ -349,6 +397,71 @@ static void EVENT_get_queue_size(const Request * req)
     pthread_mutex_unlock(&zmq_mutex);
 }
 
+static void EVENT_pause(const Request * req)
+{
+    int rv;
+    char *path;
+    Event **events;
+
+    path = request_get_path(req);
+
+    if (path == NULL) {
+        log_warn("JSON parsed successfully but no 'path' field found");
+        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+        return;
+    }
+
+    if (inotify_is_root(path) == NULL) {
+        log_warn("Path '%s' is not a currently watch root", path);
+        reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+        return;
+    }
+
+    /* First pause the queue... */
+    rv = inotify_pause_tree(path);
+    if (rv != 0) {
+        log_warn("Failed to pause tree at path '%s'", path);
+        reply_send_error(rv);
+        return;
+    }
+
+    /* ... then flush all it's events. */
+    events = inotify_get_events(path, 0);
+    inotify_free_events(events);
+
+    reply_send_success();
+}
+
+static void EVENT_unpause(const Request * req)
+{
+    int rv;
+    char *path;
+
+    path = request_get_path(req);
+
+    if (path == NULL) {
+        log_warn("JSON parsed successfully but no 'path' field found");
+        reply_send_error(ERROR_JSON_KEY_NOT_FOUND);
+        return;
+    }
+
+    if (inotify_is_root(path) == NULL) {
+        log_warn("Path '%s' is not a currently watch root", path);
+        reply_send_error(ERROR_INOTIFY_ROOT_NOT_WATCHED);
+        return;
+    }
+
+    /* Unpause the queue. */
+    rv = inotify_unpause_tree(path);
+    if (rv != 0) {
+        log_warn("Failed to pause tree at path '%s'", path);
+        reply_send_error(rv);
+        return;
+    }
+
+    reply_send_success();
+}
+
 static void EVENT_get_events(const Request * req)
 {
     int i, count;
@@ -455,6 +568,12 @@ static void zmq_dispatch_event(Request * req)
 
     if (strcmp(call, "watch") == 0) {
         EVENT_watch(req);
+    } else if (strcmp(call, "pause") == 0) {
+        EVENT_pause(req);
+    } else if (strcmp(call, "unpause") == 0) {
+        EVENT_unpause(req);
+    } else if (strcmp(call, "subscribe") == 0) {
+        EVENT_subscribe(req);
     } else if (strcmp(call, "unwatch") == 0) {
         EVENT_unwatch(req);
     } else if (strcmp(call, "get_events") == 0) {

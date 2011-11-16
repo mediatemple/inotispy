@@ -278,6 +278,55 @@ Unwatch a currently watched directory tree.
 .fi
 .in
 .P
+.SS pause
+Pause a currently watched directory tree from queuing events.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR - Absolute path of the root you want to pause.
+.P
+\fIReturn Value\fR
+.br
+\fBsuccess\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.in +4n
+.nf
+{
+    "call" : "pause",
+    "path" : "/foo/bar"
+}
+.fi
+.in
+.P
+\fBNOTE\fR: Pausing a tree also flushes all the events that are
+      currently queued up. If the events are important to
+      you make sure you consume them before making a call
+      to \fIpause\fR. 
+.P
+.SS unpause
+Unpause a currently watched directory so that it resumes queuing events.
+.P
+\fIRequired Arguments\fR
+.br
+\fBpath\fR - Absolute path of the root you want to unpause.
+.P
+\fIReturn Value\fR
+.br
+\fBsuccess\fR or \fBerror\fR
+.P
+\fIExample\fR
+.P
+.in +4n
+.nf
+{
+    "call" : "unpause",
+    "path" : "/foo/bar"
+}
+.fi
+.in
+.P
 .SS get_roots
 Get the list of currently watched roots (directory trees).
 .P

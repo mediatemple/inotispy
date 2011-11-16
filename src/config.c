@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void print_config (char *conf_file);
+void print_config(char *conf_file);
 
 /* This function attempts to parse the config file /etc/inotispy.conf.
  * It is important to note that Inotispy *WILL* run with a missing or
@@ -76,8 +76,7 @@ int init_config(int silent, char *config_file)
     }
 
     kf = g_key_file_new();
-    if (!g_key_file_load_from_file
-        (kf, conf_file, G_KEY_FILE_NONE, &error)) {
+    if (!g_key_file_load_from_file(kf, conf_file, G_KEY_FILE_NONE, &error)) {
         fprintf(stderr, "\n** Failed to load config file %s: %s. **\n\n",
                 conf_file, error->message);
         print_config("DEFAULTS LIST");
@@ -204,7 +203,7 @@ int init_config(int silent, char *config_file)
     return 0;
 }
 
-void print_config (char *conf_file)
+void print_config(char *conf_file)
 {
     fprintf(stderr, "Using configuration values from %s:\n", conf_file);
     fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
@@ -218,4 +217,3 @@ void print_config (char *conf_file)
     fprintf(stderr, " - silent mode        : %s\n",
             (CONFIG->silent ? "true" : "false"));
 }
-

@@ -60,8 +60,8 @@ typedef struct inotify_root {
     uint32_t mask;
     int max_events;
     GQueue *queue;
-    int busy;
     int destroy;
+    int pause;
     int persist;                /* Future feature */
 } Root;
 
@@ -167,6 +167,10 @@ int inotify_watch_tree(char *path, int mask, int max_events);
 
 /* Recursively UN-watch a directory tree. */
 int inotify_unwatch_tree(char *path);
+
+/* Pause and unpause a tree from queuing inotify events. */
+int inotify_pause_tree(char *path);
+int inotify_unpause_tree(char *path);
 
 /* Get (and free) a list of all the currently watched roots. */
 char **inotify_get_roots(void);

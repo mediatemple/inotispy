@@ -269,6 +269,14 @@ void inotify_handle_event(void)
                 continue;
             }
 
+            if (root->pause) {
+                log_trace("Root is currently paused. Skipping event");
+                i += INOTIFY_EVENT_SIZE + event->len;
+                free(path);
+                pthread_mutex_unlock(&inotify_mutex);
+                continue;
+            }
+
             if (root->destroy != 0) {
                 log_trace("Root is being destroyed. Skipping event");
                 i += INOTIFY_EVENT_SIZE + event->len;
@@ -879,6 +887,50 @@ static void *_destroy_root(void *thread_data)
     pthread_mutex_unlock(&inotify_mutex);
 }
 
+int inotify_pause_tree(char *path)
+{
+    Root *root;
+
+    pthread_mutex_lock(&inotify_mutex);
+
+    root = inotify_is_root(path);
+    if (root == NULL) {
+        log_warn
+            ("Cannot pause path '%s' since it is not a watched root'",
+             path);
+        pthread_mutex_unlock(&inotify_mutex);
+        return ERROR_INOTIFY_ROOT_NOT_WATCHED;
+    }
+
+    root->pause = 1;
+
+    pthread_mutex_unlock(&inotify_mutex);
+
+    return 0;
+}
+
+int inotify_unpause_tree(char *path)
+{
+    Root *root;
+
+    pthread_mutex_lock(&inotify_mutex);
+
+    root = inotify_is_root(path);
+    if (root == NULL) {
+        log_warn
+            ("Cannot unpause path '%s' since it is not a watched root'",
+             path);
+        pthread_mutex_unlock(&inotify_mutex);
+        return ERROR_INOTIFY_ROOT_NOT_WATCHED;
+    }
+
+    root->pause = 0;
+
+    pthread_mutex_unlock(&inotify_mutex);
+
+    return 0;
+}
+
 int inotify_unwatch_tree(char *path)
 {
     int last;
@@ -1086,9 +1138,7 @@ static void *_do_watch_tree(void *thread_data)
         return (void *) 1;
     }
 
-    data->root->busy = 1;
     _do_watch_tree_rec(data->path, data->root);
-    data->root->busy = 0;
 
     free(data->path);
     free(data);
@@ -1237,7 +1287,7 @@ static Root *make_root(const char *path, int mask, int max_events)
     root->queue = g_queue_new();
     root->max_events = max_events;
     root->destroy = 0;
-    root->busy = 0;
+    root->pause = 0;
     root->persist = 0;          /* TODO: Future feature */
 
     g_queue_init(root->queue);

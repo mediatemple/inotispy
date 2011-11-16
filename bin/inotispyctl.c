@@ -357,6 +357,48 @@ void unwatch(char *path)
     printf("Root %s is no longer being watched\n", path);
 }
 
+void pause(char *path)
+{
+    int rv;
+    char *message;
+
+    rv = mk_string(&message, "{\"call\":\"pause\",\"path\":\"%s\"}",
+                   path);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "pause()");
+        exit(1);
+    }
+
+    send_request(message);
+    free(message);
+
+    get_reply();
+    printf("Root %s is now paused\n", path);
+}
+
+void unpause(char *path)
+{
+    int rv;
+    char *message;
+
+    rv = mk_string(&message, "{\"call\":\"unpause\",\"path\":\"%s\"}",
+                   path);
+
+    if (rv == -1) {
+        printf("Failed to allocate memory for JSON request in function %s",
+               "unpause()");
+        exit(1);
+    }
+
+    send_request(message);
+    free(message);
+
+    get_reply();
+    printf("Root %s is now unpaused\n", path);
+}
+
 void list_roots(int queue)
 {
     int i, len;
@@ -477,6 +519,18 @@ int main(int argc, char **argv)
             print_help();
         }
         unwatch(argv[dir_idx]);
+    } else if (strcmp(command, "pause") == 0) {
+        if (argc != (dir_idx + 1)) {
+            printf("ERROR: Command pause requires a target dir\n");
+            print_help();
+        }
+        pause(argv[dir_idx]);
+    } else if (strcmp(command, "unpause") == 0) {
+        if (argc != (dir_idx + 1)) {
+            printf("ERROR: Command unpause requires a target dir\n");
+            print_help();
+        }
+        unpause(argv[dir_idx]);
     } else {
         printf("ERROR: Unknown command: %s\n", command);
         print_help();
@@ -508,6 +562,10 @@ void print_help(void)
         (" - watch <dir>               Watch a new root at directory <dir>.\n");
     printf
         (" - unwatch <dir>             Unwatch a root with directory <dir>.\n");
+    printf
+        (" - pause <dir>               Pause a root from queuing events.\n");
+    printf
+        (" - unpause <dir>             Unpause a root so it resumes queuing events.\n"); 
     printf
         (" - queue_size <dir>          Get the queue size for a specific root.\n");
     printf
