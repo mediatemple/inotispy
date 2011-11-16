@@ -32,6 +32,8 @@
 #include <stdio.h>
 #include <string.h>
 
+void print_config (char *conf_file);
+
 /* This function attempts to parse the config file /etc/inotispy.conf.
  * It is important to note that Inotispy *WILL* run with a missing or
  * broken configuration file. All the important default values exist
@@ -76,9 +78,9 @@ int init_config(int silent, char *config_file)
     kf = g_key_file_new();
     if (!g_key_file_load_from_file
         (kf, conf_file, G_KEY_FILE_NONE, &error)) {
-        fprintf(stderr, "Failed to load config file %s: %s.\n%s",
-                conf_file, error->message,
-                " -> Using default config values.\n");
+        fprintf(stderr, "\n** Failed to load config file %s: %s. **\n\n",
+                conf_file, error->message);
+        print_config("DEFAULTS LIST");
         free(conf_file);
 
         /* As stated above Inotify is designed to run with or without
@@ -195,20 +197,25 @@ int init_config(int silent, char *config_file)
         }
     }
 
-    if (!CONFIG->silent) {
-        fprintf(stderr, "Using configuration values from %s:\n", conf_file);
-        fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
-        fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
-        fprintf(stderr, " - log_level          : %s (%d)\n",
-                level_str(CONFIG->log_level), CONFIG->log_level);
-        fprintf(stderr, " - log_syslog         : %s\n",
-                (CONFIG->log_syslog ? "true" : "false"));
-        fprintf(stderr, " - max_inotify_events : %d\n",
-                CONFIG->max_inotify_events);
-        fprintf(stderr, " - silent mode        : %s\n",
-                (CONFIG->silent ? "true" : "false"));
-    }
+    if (!CONFIG->silent)
+        print_config(conf_file);
 
     free(conf_file);
     return 0;
 }
+
+void print_config (char *conf_file)
+{
+    fprintf(stderr, "Using configuration values from %s:\n", conf_file);
+    fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
+    fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
+    fprintf(stderr, " - log_level          : %s (%d)\n",
+            level_str(CONFIG->log_level), CONFIG->log_level);
+    fprintf(stderr, " - log_syslog         : %s\n",
+            (CONFIG->log_syslog ? "true" : "false"));
+    fprintf(stderr, " - max_inotify_events : %d\n",
+            CONFIG->max_inotify_events);
+    fprintf(stderr, " - silent mode        : %s\n",
+            (CONFIG->silent ? "true" : "false"));
+}
+
