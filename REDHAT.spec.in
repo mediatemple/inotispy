@@ -37,6 +37,7 @@ fi
 make
 
 %install
+rm -rf $RPM_BUILD_ROOT
 make prefix=$RPM_BUILD_ROOT install 
 
 if [ ! -d "$RPM_BUILD_ROOT/usr" ]; then
