@@ -38,7 +38,7 @@
  * within the source tree and the config file feature is a simple way
  * to give users a small amount of control over how Inotispy behaves.
  */
-int init_config(gboolean silent)
+int init_config(int silent, char *config_file)
 {
     int int_rv;
     char *str_rv;
@@ -59,8 +59,13 @@ int init_config(gboolean silent)
     CONFIG->silent = FALSE;
 
     /* Attempt to read in config file. */
-    int_rv = mk_string(&conf_file, "%s/%s",
-                       INOTISPY_SYSCONFDIR, INOTISPY_CONFIG_FILE);
+    if (config_file) {
+        int_rv = mk_string(&conf_file, "%s", config_file);
+    } else {
+        int_rv = mk_string(&conf_file, "%s/%s",
+                           INOTISPY_SYSCONFDIR, INOTISPY_CONFIG_FILE);
+    }
+
     if (int_rv == -1) {
         fprintf(stderr,
                 "** Failed to allocate memory for config file: %s/%s **",

@@ -67,6 +67,6 @@ struct inotispy_config *CONFIG;
  *  - 0 (zero) on success.
  *  - 1 on failure.
  */
-int init_config(gboolean silent);
+int init_config(int silent, char *config_file);
 
 #endif /*_INOTISPY_CONFIG_H_*/

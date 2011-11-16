@@ -39,15 +39,27 @@
 #include <stdlib.h>             /* exit() */
 #include <unistd.h>             /* alarm() */
 #include <sys/utsname.h>        /* uname() */
+#include <getopt.h>
+#include <unistd.h>
 
 void print_help_and_exit(void);
 void sig_handler(int sig);
 
 int main(int argc, char **argv)
 {
-    int rv, inotify_fd;
+    int c, rv, inotify_fd;
     void *zmq_receiver;
     struct utsname u_name;
+    int option_index;
+    int silent, help;
+    char *config_file;
+
+    static struct option long_opts[] = {
+        {"silent", no_argument, 0, 's'},
+        {"help" , no_argument, 0, 'h'},
+        {"config", required_argument, 0, 'c'},
+        { 0, 0, 0, 0 }
+    };
 
     zmq_pollitem_t items[2];
 
@@ -63,21 +75,48 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    /* A few command line args to handle. */
-    if (argc == 2 &&
-        (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        print_help_and_exit();
+    /* Handle command line args. */
+    silent = 0;
+    help = 0;
+    config_file = NULL;
+    option_index = 0;
+
+    while ((c = getopt_long(argc, argv, "shc:", long_opts, &option_index)) != -1) {
+        switch (c) {
+            case 's':
+                silent = 1;
+                break;
+            case 'h':
+                help = 1;
+                break;
+            case 'c':
+                config_file = optarg;
+                break;
+            case '?':
+                if (optopt == 'c')
+                    fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                else if (isprint (optopt))
+                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                else
+                    fprintf (stderr,
+                             "Unknown option character `\\x%x'.\n",
+                             optopt);
+                return 1;
+            default:
+                abort ();
+        }
     }
 
-    if (argc == 2 &&
-        (strcmp(argv[1], "-s") == 0 || strcmp(argv[1], "--silent") == 0))
-        init_config(TRUE);      /* Silent mode ON */
-    else
-        init_config(FALSE);     /* Silent mode OFF */
+    if (help)
+        print_help_and_exit();
+
+    /* Initialize our configuration. */
+    init_config(silent, config_file);
 
     if (!CONFIG->silent)
         fprintf(stderr, "Running Inotispy...\n");
 
+    /* Logging. */
     rv = init_logger();
     if (rv != 0)
         return EXIT_FAILURE;
@@ -154,9 +193,11 @@ void sig_handler(int sig)
 
 void print_help_and_exit(void)
 {
-    printf("Usage: inotispy [--silent]\n");
+    printf("Usage: inotispy [options]\n");
     printf("\n");
+    printf("  -h, --help    Print this help and exit.\n");
     printf("  -s, --silent  Turn off printing to stderr.\n");
+    printf("  -c, --config  Specify the location of the config file.\n");
     printf("\n");
     printf
         ("Inotispy is an efficient file system change notification daemon based\n");
