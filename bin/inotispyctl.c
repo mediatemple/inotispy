@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>   /* usleep() */
 #include <string.h>
 #include <stdarg.h>
 #include <json/json.h>
@@ -108,7 +109,7 @@ void handle_error(char *json)
     exit(1);
 }
 
-void send_request(char *message)
+void send_request(char *message, int flag)
 {
     int rv;
     zmq_msg_t request;
@@ -116,7 +117,7 @@ void send_request(char *message)
     zmq_msg_init_size(&request, strlen(message));
     strncpy(zmq_msg_data(&request), message, strlen(message));
 
-    rv = zmq_send(socket, &request, 0);
+    rv = zmq_send(socket, &request, flag);
     zmq_msg_close(&request);
     if (rv != 0) {
         printf("Failed to send message to server: %s\n",
@@ -165,7 +166,7 @@ int get_queue_size(char *path)
         exit(1);
     }
 
-    send_request(request);
+    send_request(request, 0);
     free(request);
 
     reply = get_reply();
@@ -220,7 +221,7 @@ char *get_events_raw(char *path, int count)
         exit(1);
     }
 
-    send_request(request);
+    send_request(request, 0);
     free(request);
 
     return get_reply();
@@ -329,7 +330,7 @@ void watch(char *path)
         exit(1);
     }
 
-    send_request(message);
+    send_request(message, 0);
     free(message);
 
     get_reply();
@@ -350,14 +351,14 @@ void unwatch(char *path)
         exit(1);
     }
 
-    send_request(message);
+    send_request(message, 0);
     free(message);
 
     get_reply();
     printf("Root %s is no longer being watched\n", path);
 }
 
-void pause(char *path)
+void pause_root(char *path)
 {
     int rv;
     char *message;
@@ -371,14 +372,14 @@ void pause(char *path)
         exit(1);
     }
 
-    send_request(message);
+    send_request(message, 0);
     free(message);
 
     get_reply();
     printf("Root %s is now paused\n", path);
 }
 
-void unpause(char *path)
+void unpause_root(char *path)
 {
     int rv;
     char *message;
@@ -392,7 +393,7 @@ void unpause(char *path)
         exit(1);
     }
 
-    send_request(message);
+    send_request(message, 0);
     free(message);
 
     get_reply();
@@ -405,7 +406,7 @@ void list_roots(int queue)
     char *reply, *path;
     json_object *jobj, *roots, *root;
 
-    send_request("{\"call\":\"get_roots\"}");
+    send_request("{\"call\":\"get_roots\"}", 0);
     reply = get_reply();
     jobj = parse_json(reply);
     free(reply);
@@ -434,10 +435,42 @@ void list_roots(int queue)
     }
 }
 
+void zmq_ping(void)
+{
+    int rv, i, pong, size;
+    zmq_msg_t reply;
+    zmq_msg_init(&reply);
+
+    printf("ping... ");
+    send_request("{\"call\":\"ping\"}", 0);
+
+    for (i = 0, pong = 0; i < 10; i++) {
+        rv = zmq_recv(socket, &reply, ZMQ_NOBLOCK);
+        size = zmq_msg_size(&reply);
+
+        if (size) {
+            pong = 1;
+            break;
+        }
+        usleep(100000); /* Sleep for 1/10th of a second. */
+    }
+
+    zmq_msg_close(&reply);
+
+    if (pong) {
+        printf("pong! Inotispy is up and running.\n");
+    } else {
+        printf("nothing. Check to make sure Inotispy is running.\n");
+        exit(1);
+    } 
+}
+
 int main(int argc, char **argv)
 {
     int rv, connect_rv, dir_idx, cmd_idx, port;
     char *command, *zmq_uri;
+
+    setbuf(stdout,NULL);
 
     if (argc < 2) {
         printf
@@ -484,7 +517,9 @@ int main(int argc, char **argv)
 
     /* Dispatcher */
     command = argv[cmd_idx];
-    if (strcmp(command, "list_roots") == 0) {
+    if (strcmp(command, "ping") == 0) {
+        zmq_ping();
+    } else if (strcmp(command, "list_roots") == 0) {
         list_roots(0);
     } else if (strcmp(command, "list_queues") == 0) {
         list_roots(1);
@@ -524,13 +559,13 @@ int main(int argc, char **argv)
             printf("ERROR: Command pause requires a target dir\n");
             print_help();
         }
-        pause(argv[dir_idx]);
+        pause_root(argv[dir_idx]);
     } else if (strcmp(command, "unpause") == 0) {
         if (argc != (dir_idx + 1)) {
             printf("ERROR: Command unpause requires a target dir\n");
             print_help();
         }
-        unpause(argv[dir_idx]);
+        unpause_root(argv[dir_idx]);
     } else {
         printf("ERROR: Unknown command: %s\n", command);
         print_help();
