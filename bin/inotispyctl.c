@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>   /* usleep() */
+#include <unistd.h>             /* usleep() */
 #include <string.h>
 #include <stdarg.h>
 #include <json/json.h>
@@ -363,8 +363,7 @@ void pause_root(char *path)
     int rv;
     char *message;
 
-    rv = mk_string(&message, "{\"call\":\"pause\",\"path\":\"%s\"}",
-                   path);
+    rv = mk_string(&message, "{\"call\":\"pause\",\"path\":\"%s\"}", path);
 
     if (rv == -1) {
         printf("Failed to allocate memory for JSON request in function %s",
@@ -452,7 +451,7 @@ void zmq_ping(void)
             pong = 1;
             break;
         }
-        usleep(100000); /* Sleep for 1/10th of a second. */
+        usleep(100000);         /* Sleep for 1/10th of a second. */
     }
 
     zmq_msg_close(&reply);
@@ -462,7 +461,7 @@ void zmq_ping(void)
     } else {
         printf("nothing. Check to make sure Inotispy is running.\n");
         exit(1);
-    } 
+    }
 }
 
 int main(int argc, char **argv)
@@ -470,7 +469,7 @@ int main(int argc, char **argv)
     int rv, connect_rv, dir_idx, cmd_idx, port;
     char *command, *zmq_uri;
 
-    setbuf(stdout,NULL);
+    setbuf(stdout, NULL);
 
     if (argc < 2) {
         printf
@@ -600,7 +599,7 @@ void print_help(void)
     printf
         (" - pause <dir>               Pause a root from queuing events.\n");
     printf
-        (" - unpause <dir>             Unpause a root so it resumes queuing events.\n"); 
+        (" - unpause <dir>             Unpause a root so it resumes queuing events.\n");
     printf
         (" - queue_size <dir>          Get the queue size for a specific root.\n");
     printf

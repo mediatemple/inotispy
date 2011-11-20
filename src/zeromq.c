@@ -568,8 +568,7 @@ static void zmq_dispatch_event(Request * req)
 
     if (strcmp(call, "ping") == 0) {
         reply_send_message("pong");
-    }
-    else if (strcmp(call, "watch") == 0) {
+    } else if (strcmp(call, "watch") == 0) {
         EVENT_watch(req);
     } else if (strcmp(call, "pause") == 0) {
         EVENT_pause(req);
