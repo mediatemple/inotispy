@@ -1119,7 +1119,7 @@ static int do_watch_tree(const char *path, Root * root)
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    rv = pthread_create(&t, NULL, _do_watch_tree, (void *) data);
+    rv = pthread_create(&t, &attr, _do_watch_tree, (void *) data);
     if (rv) {
         log_error("Failed to create new thread for watch on '%s': %d",
                   path, rv);
