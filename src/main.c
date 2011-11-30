@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     init_config(silent, config_file);
 
     if (!CONFIG->silent)
-        fprintf(stderr, "Running Inotispy...\n");
+        fprintf(stderr, "Running Inotispy with pid %d...\n", getpid());
 
     /* Logging. */
     rv = init_logger();

@@ -348,6 +348,8 @@ void inotify_handle_event(void)
                         g_hash_table_lookup(inotify_path_to_watch,
                                             abs_path);
 
+                    inotify_rm_watch(inotify_fd, delete->wd);
+
                     if (delete == NULL) {
                         log_warn("Failed to look up watcher for path %s",
                                  abs_path);
@@ -792,6 +794,7 @@ static int destroy_root(Root * root)
                   root->path);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
+    pthread_detach(t);
 
     return 0;
 }
@@ -885,6 +888,8 @@ static void *_destroy_root(void *thread_data)
     g_list_free(keys);
 
     pthread_mutex_unlock(&inotify_mutex);
+
+    pthread_exit(NULL);
 }
 
 int inotify_pause_tree(char *path)
@@ -1111,6 +1116,7 @@ static int do_watch_tree(const char *path, Root * root)
         free(data);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
+    pthread_detach(t);
 
     return 0;
 }
@@ -1142,6 +1148,9 @@ static void *_do_watch_tree(void *thread_data)
 
     free(data->path);
     free(data);
+
+    pthread_exit(NULL);
+
     return (void *) 0;
 }
 
