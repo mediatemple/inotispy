@@ -779,6 +779,7 @@ static int destroy_root(Root * root)
 {
     int rv;
     pthread_t t;
+    pthread_attr_t attr;
 
     if (root == NULL) {
         log_warn("Attempting to destroy an unwatched root");
@@ -788,13 +789,18 @@ static int destroy_root(Root * root)
     root->destroy = 1;
     usleep(1000);
 
-    rv = pthread_create(&t, NULL, _destroy_root, (void *) root);
+    /* Initialize thread attribute to automatically detach */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    rv = pthread_create(&t, &attr, _destroy_root, (void *) root);
     if (rv) {
         log_error("Failed to create new thread for destroying root '%s'",
                   root->path);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
-    pthread_detach(t);
+
+    pthread_attr_destroy(&attr);
 
     return 0;
 }
@@ -1084,6 +1090,7 @@ static int do_watch_tree(const char *path, Root * root)
 {
     int rv;
     pthread_t t;
+    pthread_attr_t attr;
     T_Data *data;
 
     if ((root == NULL) || (root->destroy != 0)) {
@@ -1108,6 +1115,10 @@ static int do_watch_tree(const char *path, Root * root)
 
     data->root = root;
 
+    /* Initialize thread attribute to automatically detach */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
     rv = pthread_create(&t, NULL, _do_watch_tree, (void *) data);
     if (rv) {
         log_error("Failed to create new thread for watch on '%s': %d",
@@ -1116,7 +1127,8 @@ static int do_watch_tree(const char *path, Root * root)
         free(data);
         return ERROR_FAILED_TO_CREATE_NEW_THREAD;
     }
-    pthread_detach(t);
+
+    pthread_attr_destroy(&attr);
 
     return 0;
 }
