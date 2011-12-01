@@ -15,9 +15,13 @@ EOF
 ./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
 ISPY_PID="$(pgrep inotispy)"
 
-rm -rf testxml
-mkdir testxml
-prove -v t/ 2>&1 | tee - | /opt/mt/bin/tap2junit.pl > testxml/results.xml
+if [ -x /opt/mt/bin/tap2junit.pl ]; then
+    rm -rf testxml
+    mkdir testxml
+    prove -v t/ 2>&1 | tee /dev/stderr | /opt/mt/bin/tap2junit.pl > testxml/results.xml
+else
+    prove -v t/
+fi
 
 'kill' -TERM $ISPY_PID # don't use shell builtin
 wait $ISPY_PID &>/dev/null
