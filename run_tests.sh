@@ -5,27 +5,33 @@ if [ "$(pgrep inotispy)" ]; then
     exit 1
 fi
 
+TMP_DIR="$(mktemp -d)"
 TMP_CFG="$(mktemp)"
 
+# otherwise, inotispy will try to write to /var/log
 cat <<EOF > $TMP_CFG
 [global]
-  log_file = inotispy.$(date +%s).log
+  log_file = $TMP_DIR/inotispy.$(date +%s).log
 EOF
 
-./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
-ISPY_PID="$(pgrep inotispy)"
-
 if [ -x /opt/mt/bin/tap2junit.pl ]; then
+    # assume we're running on build server, this is janky
+    ./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
     rm -rf testxml
     mkdir testxml
     prove -v t/ 2>&1 | tee /dev/stderr | /opt/mt/bin/tap2junit.pl > testxml/results.xml
+    ISPY_PID="$(pgrep inotispy)"
+    sudo 'kill' -TERM $ISPY_PID # don't use shell builtin
+    wait $ISPY_PID &>/dev/null
 else
+    sudo ./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
     prove -v t/
+    ISPY_PID="$(pgrep inotispy)"
+    sudo 'kill' -TERM $ISPY_PID # don't use shell builtin
+    wait $ISPY_PID &>/dev/null
 fi
 
-'kill' -TERM $ISPY_PID # don't use shell builtin
-wait $ISPY_PID &>/dev/null
-
 rm -f $TMP_CFG
+rm -rf $TMP_DIR
 
 exit 0
