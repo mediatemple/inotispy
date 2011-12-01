@@ -212,7 +212,7 @@ void print_help_and_exit(void)
     printf
         ("For more information on running, configuring, managing and using Inotispy\n");
     printf
-        ("please refer to the documentation found at http://www.inotispy.org\n\n");
+        ("please refer to the manpage documentation included with this distribution.\n\n");
 
     exit(EXIT_SUCCESS);
 }
