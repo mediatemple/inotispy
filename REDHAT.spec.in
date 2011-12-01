@@ -19,6 +19,8 @@ Requires:               glib2
 BuildRequires:          json-c-devel
 BuildRequires:          zeromq-devel
 BuildRequires:          glib2-devel
+BuildRequires:          perl-Test-Most
+BuildRequires:          perl-Net-Inotispy
 
 %description
 Inotispy is an efficient, network-based inotify daemon.

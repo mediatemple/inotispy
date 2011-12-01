@@ -26,3 +26,10 @@
 # SUCH DAMAGE.
 
 SUBDIRS = src bin etc doc examples init.d
+
+TESTS = run_tests.sh
+
+.PHONY: test $(TESTS)
+
+test: src/inotispy
+	-$(TESTS)
