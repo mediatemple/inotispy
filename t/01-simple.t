@@ -4,7 +4,7 @@ use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 use Net::Inotispy;
 use Net::Inotispy::Constants;
-use Test::Most;
+use Test::Most tests => 8;
 
 my $ispy = Net::Inotispy->new("tcp://127.0.0.1:5559");
 
