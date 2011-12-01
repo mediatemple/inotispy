@@ -123,10 +123,8 @@ int main(int argc, char **argv)
     if (rv != 0)
         return EXIT_FAILURE;
 
-    /* Signal handling for segmentation faults and alarms. */
-    //signal(SIGINT, sig_handler);
-    //signal(SIGALRM, sig_handler);
-    //signal(SIGSEGV, sig_handler);
+    /* Signal handling for graceful dying. */
+    signal(SIGINT, sig_handler);
 
     log_notice("Initializing daemon");
 
@@ -148,7 +146,6 @@ int main(int argc, char **argv)
     items[1].events = ZMQ_POLLIN;
 
     log_debug("Entering event loop...");
-    //alarm(1);
 
     while (1) {
 
@@ -175,11 +172,13 @@ void sig_handler(int sig)
 {
     switch (sig) {
     case SIGINT:
+        printf("Interrupt received. Dying gracefully...\n");
         log_notice("Inotispy receieved an interrupt. %s",
                    "Dumping roots and exiting");
-        inotify_dump_roots();
+        /* inotify_dump_roots(); */
         exit(sig);
         break;
+    /*
     case SIGSEGV:
         log_error("Inotispy encounterd a segmentation fault. %s",
                   "Dumping roots and exiting");
@@ -190,6 +189,7 @@ void sig_handler(int sig)
         inotify_dump_roots();
         alarm(1);
         break;
+    */
     }
 }
 
