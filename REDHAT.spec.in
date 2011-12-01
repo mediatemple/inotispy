@@ -19,6 +19,7 @@ Requires:               glib2
 BuildRequires:          json-c-devel
 BuildRequires:          zeromq-devel
 BuildRequires:          glib2-devel
+BuildRequires:          perl-TAP-Harness-JUnit
 BuildRequires:          perl-Test-Most
 BuildRequires:          perl-Net-Inotispy
 
