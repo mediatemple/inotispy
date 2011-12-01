@@ -16,8 +16,7 @@ EOF
 ISPY_PID="$(pgrep inotispy)"
 
 mkdir testxml
-prove -v t/ | /opt/mt/bin/tap2junit.pl > testxml/results.xml
-RC=$?
+prove t/ | tee - | /opt/mt/bin/tap2junit.pl > testxml/results.xml
 
 'kill' -TERM $ISPY_PID # don't use shell builtin
 wait $ISPY_PID &>/dev/null
