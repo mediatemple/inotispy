@@ -32,4 +32,4 @@ TESTS = run_tests.sh
 .PHONY: test $(TESTS)
 
 test: src/inotispy
-	-$(TESTS)
+	$(TESTS)

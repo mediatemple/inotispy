@@ -1,4 +1,4 @@
-#!/bin/sh -ux
+#!/bin/sh -x
 
 if [ "$(pgrep inotispy)" ]; then
     echo "ERROR: inotispy is already running. Not running tests." >&2
@@ -15,7 +15,8 @@ EOF
 ./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
 ISPY_PID="$(pgrep inotispy)"
 
-prove -v t/
+mkdir testxml
+prove -v t/ | /opt/mt/bin/tap2junit.pl > testxml/results.xml
 RC=$?
 
 'kill' -TERM $ISPY_PID # don't use shell builtin
@@ -23,4 +24,4 @@ wait $ISPY_PID &>/dev/null
 
 rm -f $TMP_CFG
 
-exit $RC
+exit 0

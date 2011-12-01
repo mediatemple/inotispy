@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 
-use Data::Dumper;
 use File::Basename;
 use File::Temp qw/ tempfile tempdir /;
 use Net::Inotispy;
@@ -40,8 +39,6 @@ cmp_deeply(
 my ($fh, $filename) = tempfile( DIR => $dirname );
 close $fh;
 $reply = $ispy->get_events( { path => $dirname, count => 0 } );
-
-print "\n---\n" .  Dumper($reply) . "\n---\n";
 
 cmp_deeply(
 	   $reply,
