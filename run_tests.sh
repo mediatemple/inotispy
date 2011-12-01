@@ -21,7 +21,7 @@ if [ -x /opt/mt/bin/tap2junit.pl ]; then
     mkdir testxml
     prove -v t/ 2>&1 | tee /dev/stderr | /opt/mt/bin/tap2junit.pl > testxml/results.xml
     ISPY_PID="$(pgrep inotispy)"
-    sudo 'kill' -TERM $ISPY_PID # don't use shell builtin
+    'kill' -TERM $ISPY_PID # don't use shell builtin
     wait $ISPY_PID &>/dev/null
 else
     sudo ./src/inotispy --silent --config $TMP_CFG >/dev/null 2>&1 &
