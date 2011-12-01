@@ -27,7 +27,7 @@
 
 SUBDIRS = src bin etc doc examples init.d
 
-TESTS = run_tests.sh
+TESTS = ./run_tests.sh
 
 .PHONY: test $(TESTS)
 
