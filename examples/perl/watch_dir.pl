@@ -44,7 +44,6 @@ $sock->connect('tcp://127.0.0.1:5559');
 $sock->send_as( json => {
     call => 'watch',
     path => $path,
-    persist => 1,
 });
 
 # Alternatively, if you want to set the different inotify alerts
