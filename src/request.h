@@ -63,6 +63,7 @@ char *request_get_key_str(const Request * request, const char *key);
 int request_get_count(const Request * req);
 int request_get_max_events(const Request * req);
 int request_get_mask(const Request * req);
+int request_get_persist(const Request * req);
 char *request_get_call(const Request * req);
 char *request_get_path(const Request * req);
 int request_is_verbose(const Request * req);

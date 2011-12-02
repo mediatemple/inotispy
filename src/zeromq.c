@@ -180,7 +180,7 @@ void zmq_handle_event(void)
 
 static void EVENT_watch(const Request * req)
 {
-    int rv, mask, max_events;
+    int rv, mask, max_events, persist;
     char *path;
 
     /* Grab the path from our request, or bail if the user
@@ -219,27 +219,31 @@ static void EVENT_watch(const Request * req)
     }
     pthread_mutex_unlock(&zmq_mutex);
 
-    log_debug("Watching new root at path '%s'", path);
+    log_notice("Watching new root at path '%s'", path);
 
     /* Check for user defined configuration overrides. */
     mask = request_get_mask(req);
     if (mask == 0) {
         mask = INOTIFY_DEFAULT_MASK;
-        log_trace("Using default inotify mask: %lu", mask);
+        log_debug("Using default inotify mask: %lu", mask);
     } else {
-        log_trace("Using user defined inotify mask: %lu", mask);
+        log_debug("Using user defined inotify mask: %lu", mask);
     }
+
+    persist = request_get_persist(req);
+    if (persist)
+        log_debug("New root '%s' is set to persist", path);
 
     max_events = request_get_max_events(req);
     if (max_events == 0) {
         max_events = CONFIG->max_inotify_events;
-        log_trace("Using default max events %d", max_events);
+        log_debug("Using default max events %d", max_events);
     } else {
-        log_trace("Using user defined max events %d", max_events);
+        log_debug("Using user defined max events %d", max_events);
     }
 
     /* Watch our new root. */
-    rv = inotify_watch_tree(path, mask, max_events);
+    rv = inotify_watch_tree(path, mask, max_events, persist);
     if (rv != 0) {
         reply_send_error(rv);
         free(path);

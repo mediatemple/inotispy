@@ -67,7 +67,8 @@ typedef struct thread_data {
 
 /* Prototypes for private functions. */
 static Root *inotify_path_to_root(const char *path);
-static Root *make_root(const char *path, int mask, int max_events);
+static Root *make_root(const char *path, int mask, int max_events,
+                       int persist);
 static Watch *make_watch(int wd, const char *path);
 static char *inotify_is_parent(const char *path);
 static int inotify_enqueue(const Root * root, const IN_Event * event,
@@ -121,11 +122,37 @@ int inotify_setup(void)
         return 0;
     }
 
-    rv = mkdir(INOTIFY_ROOT_DUMP_DIR, 0644);
-    if ((rv == -1) && (errno != EEXIST)) {
-        log_error("Failed to create dump directory: %d: %s",
-                  errno, strerror(errno));
-        return 0;
+    DIR *d = opendir(INOTIFY_ROOT_DUMP_DIR);
+    if (d == NULL) {
+        closedir(d);
+        log_debug
+            ("Persistant root dump directory does not exist. Creating it...");
+        rv = mkdir(INOTIFY_ROOT_DUMP_DIR, 0644);
+        if ((rv == -1) && (errno != EEXIST)) {
+            log_error
+                ("Failed to create persistant root dump directory: %d: %s",
+                 errno, strerror(errno));
+        }
+    } else {
+        closedir(d);
+        log_debug
+            ("Reading persistant root dump file and re-watching roots");
+
+        FILE *dump = fopen(INOTIFY_ROOT_DUMP_FILE, "r");
+        if (dump == NULL) {
+            log_warn("Failed to open presistant root dump file '%s': %s",
+                     INOTIFY_ROOT_DUMP_FILE, strerror(errno));
+        }
+        else {
+            char line[1024];
+
+            while (fgets(line, sizeof line, dump) != NULL) {
+                if (line[strlen(line)-1] == '\n')
+                    line[strlen(line)-1] = '\0';
+            }
+
+            /* TODO Parse CSV fields here. */
+        }
     }
 
     return inotify_fd;
@@ -302,7 +329,7 @@ void inotify_handle_event(void)
                 continue;
             }
 
-            log_debug("Got event for '%s'", abs_path);
+            log_trace("Got event for '%s'", abs_path);
 
             if (event->mask & IN_ISDIR) {
 
@@ -519,42 +546,34 @@ void inotify_free_roots(char **roots)
 void inotify_dump_roots(void)
 {
     int i, rv;
-    char **roots;
     FILE *fp;
+    GList *roots;
+    Root *root;
     char *dump_file;
 
-    roots = inotify_get_roots();
-    if (roots == NULL) {
-        log_error("Failed to allocate memory getting inotify roots: %s",
-                  "inotify.c:inotify_dump_roots");
-        return;
-    }
+    pthread_mutex_lock(&inotify_mutex);
 
-    rv = mk_string(&dump_file, "%s/%s", INOTIFY_ROOT_DUMP_DIR,
-                   "roots.dump");
-    if (rv == -1) {
-        log_error
-            ("Failed to allocate memory while creating the root dump file: %s",
-             "inotify.c:inotify_dump_roots()");
-        inotify_free_roots(roots);
-        return;
-    }
-
-    fp = fopen(dump_file, "w");
+    fp = fopen(INOTIFY_ROOT_DUMP_FILE, "w");
     if (fp == NULL) {
         log_error("Failed to open root dump file %s for writing: %s",
                   dump_file, strerror(errno));
         free(dump_file);
-        inotify_free_roots(roots);
+        pthread_mutex_unlock(&inotify_mutex);
         return;
     }
 
-    for (i = 0; roots[i]; i++)
-        fprintf(fp, "%s\n", roots[i]);
+    roots = g_hash_table_get_values(inotify_roots);
+
+    for (; roots != NULL; roots = roots->next) {
+        root = roots->data;
+        if (root->persist)
+            fprintf(fp, "%s,%d,%d\n", root->path, root->mask,
+                    root->max_events);
+    }
 
     fclose(fp);
     free(dump_file);
-    inotify_free_roots(roots);
+    pthread_mutex_unlock(&inotify_mutex);
 }
 
 /* Take the data structure that holds events and free all
@@ -895,6 +914,7 @@ static void *_destroy_root(void *thread_data)
 
     pthread_mutex_unlock(&inotify_mutex);
 
+    inotify_dump_roots();
     pthread_exit(NULL);
 }
 
@@ -973,7 +993,7 @@ int inotify_unwatch_tree(char *path)
  * for each directory in the tree, as well as adding entries in the
  * meta data mappings.
  */
-int inotify_watch_tree(char *path, int mask, int max_events)
+int inotify_watch_tree(char *path, int mask, int max_events, int persist)
 {
     int rv, last;
 
@@ -1039,8 +1059,6 @@ int inotify_watch_tree(char *path, int mask, int max_events)
         pthread_mutex_unlock(&inotify_mutex);
     }
 
-    log_notice("Watching new tree at root '%s'", path);
-
     /* Check to make sure root is a valid, and open-able, directory. */
     {
         DIR *d = opendir(path);
@@ -1059,7 +1077,7 @@ int inotify_watch_tree(char *path, int mask, int max_events)
 
     pthread_mutex_lock(&inotify_mutex);
 
-    new_root = make_root(path, mask, max_events);
+    new_root = make_root(path, mask, max_events, persist);
     if (new_root == NULL) {
         log_error
             ("Failed to create new root for path %s: memory allocation error",
@@ -1072,6 +1090,8 @@ int inotify_watch_tree(char *path, int mask, int max_events)
     ++inotify_num_watched_roots;
 
     pthread_mutex_unlock(&inotify_mutex);
+
+    inotify_dump_roots();
 
     /* Finally we need to recursively setup inotify
      * watches for our new root.
@@ -1194,7 +1214,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         return;
     }
 
-    log_debug("Watching wd:%d path:%s", wd, path);
+    log_trace("Watching wd:%d path:%s", wd, path);
 
     watch = make_watch(wd, path);
     if (watch == NULL) {
@@ -1285,7 +1305,8 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 }
 
 /* Create a new root meta data structure. */
-static Root *make_root(const char *path, int mask, int max_events)
+static Root *make_root(const char *path, int mask, int max_events,
+                       int persist)
 {
     int rv;
     Root *root;
@@ -1309,7 +1330,7 @@ static Root *make_root(const char *path, int mask, int max_events)
     root->max_events = max_events;
     root->destroy = 0;
     root->pause = 0;
-    root->persist = 0;          /* TODO: Future feature */
+    root->persist = persist;    /* TODO: Future feature */
 
     g_queue_init(root->queue);
 

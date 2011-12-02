@@ -35,6 +35,7 @@
 #include <sys/inotify.h>
 
 #define INOTIFY_ROOT_DUMP_DIR  "/var/run/inotispy"
+#define INOTIFY_ROOT_DUMP_FILE "/var/run/inotispy/roots.dump"
 #define INOTIFY_EVENT_SIZE     ( sizeof (struct inotify_event) )
 #define INOTIFY_EVENT_BUF_LEN  ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
 #define INOTIFY_MAX_EVENTS     65536    /* This number is arbatrary */
@@ -163,7 +164,7 @@ Root *inotify_is_root(const char *path);
 void inotify_handle_event(void);
 
 /* Recursively watch a directory tree */
-int inotify_watch_tree(char *path, int mask, int max_events);
+int inotify_watch_tree(char *path, int mask, int max_events, int persist);
 
 /* Recursively UN-watch a directory tree. */
 int inotify_unwatch_tree(char *path);

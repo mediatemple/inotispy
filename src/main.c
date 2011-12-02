@@ -42,6 +42,9 @@
 #include <getopt.h>
 #include <unistd.h>
 
+/* This is the timer for dumping the persistant roots. */
+#define ALARM_TIMEOUT 10
+
 void print_help_and_exit(void);
 void sig_handler(int sig);
 
@@ -125,11 +128,15 @@ int main(int argc, char **argv)
 
     /* Signal handling for graceful dying. */
     signal(SIGINT, sig_handler);
+    signal(SIGSEGV, sig_handler);
+    signal(SIGALRM, sig_handler);
 
     log_notice("Initializing daemon");
 
     inotify_fd = inotify_setup();
     assert(inotify_fd > 0);
+
+exit(1); //XXX
 
     zmq_receiver = zmq_setup();
     if (zmq_receiver == NULL) {
@@ -146,6 +153,8 @@ int main(int argc, char **argv)
     items[1].events = ZMQ_POLLIN;
 
     log_debug("Entering event loop...");
+
+    alarm(ALARM_TIMEOUT);
 
     while (1) {
 
@@ -164,32 +173,28 @@ int main(int argc, char **argv)
             zmq_handle_event();
         }
     }
-
-    return EXIT_SUCCESS;
 }
 
 void sig_handler(int sig)
 {
     switch (sig) {
     case SIGINT:
-        printf("Interrupt received. Dying gracefully...\n");
+        if (!CONFIG->silent)
+            printf("Interrupt received. Dying gracefully...\n");
+
         log_notice("Inotispy receieved an interrupt. %s",
                    "Dumping roots and exiting");
-        /* inotify_dump_roots(); */
+        inotify_dump_roots();
         exit(sig);
         break;
-    /*
     case SIGSEGV:
-        log_error("Inotispy encounterd a segmentation fault. %s",
-                  "Dumping roots and exiting");
-        inotify_dump_roots();
+        log_error("Inotispy encounterd a segmentation fault. Exiting...");
         exit(sig);
         break;
     case SIGALRM:
         inotify_dump_roots();
-        alarm(1);
+        alarm(ALARM_TIMEOUT);
         break;
-    */
     }
 }
 

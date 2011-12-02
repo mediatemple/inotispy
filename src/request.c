@@ -109,7 +109,7 @@ char *request_get_key_str(const Request * req, const char *key)
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-        log_debug("Failed to find key '%s' in JSON: %s", key, req->json);
+        log_trace("Failed to find key '%s' in JSON: %s", key, req->json);
         return NULL;
     } else if (!json_object_is_type(val, json_type_string)) {
         log_debug("Found key '%s', but it is not a of type 'string'", key);
@@ -132,7 +132,7 @@ int request_get_key_int(const Request * req, const char *key)
     val = json_object_object_get(req->parser, key);
 
     if (val == NULL) {
-        log_debug("Failed to find key '%s' in JSON: %s", key, req->json);
+        log_trace("Failed to find key '%s' in JSON: %s", key, req->json);
         return -1;
     } else if (!json_object_is_type(val, json_type_int)) {
         log_debug("Found key '%s', but it is not a of type 'int'", key);
@@ -192,6 +192,18 @@ int request_get_max_events(const Request * req)
     }
 
     return max_events;
+}
+
+int request_get_persist(const Request * req)
+{
+    int persist;
+
+    persist = request_get_key_int(req, "persist");
+
+    if (persist == -1)
+        return 0;
+
+    return 1;
 }
 
 int request_get_mask(const Request * req)
