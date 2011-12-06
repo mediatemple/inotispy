@@ -1331,7 +1331,7 @@ static Root *make_root(const char *path, int mask, int max_events,
     root->destroy = 0;
     root->pause = 0;
     root->rewatch = rewatch;
-    root->persist = ;    /* TODO: Future feature */
+    root->persist = 0;    /* TODO: Future feature */
 
     g_queue_init(root->queue);
 
