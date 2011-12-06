@@ -42,7 +42,7 @@
 #include <getopt.h>
 #include <unistd.h>
 
-/* This is the timer for dumping the persistant roots. */
+/* This is the timer for dumping the rewatch roots. */
 #define ALARM_TIMEOUT 10
 
 void print_help_and_exit(void);

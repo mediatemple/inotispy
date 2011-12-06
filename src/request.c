@@ -194,13 +194,13 @@ int request_get_max_events(const Request * req)
     return max_events;
 }
 
-int request_get_persist(const Request * req)
+int request_get_rewatch(const Request * req)
 {
-    int persist;
+    int rewatch;
 
-    persist = request_get_key_int(req, "persist");
+    rewatch = request_get_key_int(req, "rewatch");
 
-    if (persist == -1)
+    if (rewatch == -1)
         return 0;
 
     return 1;

@@ -63,6 +63,7 @@ typedef struct inotify_root {
     GQueue *queue;
     int destroy;
     int pause;
+    int rewatch;
     int persist;                /* Future feature */
 } Root;
 
@@ -164,7 +165,7 @@ Root *inotify_is_root(const char *path);
 void inotify_handle_event(void);
 
 /* Recursively watch a directory tree */
-int inotify_watch_tree(char *path, int mask, int max_events, int persist);
+int inotify_watch_tree(char *path, int mask, int max_events, int rewatch);
 
 /* Recursively UN-watch a directory tree. */
 int inotify_unwatch_tree(char *path);

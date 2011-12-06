@@ -180,7 +180,7 @@ void zmq_handle_event(void)
 
 static void EVENT_watch(const Request * req)
 {
-    int rv, mask, max_events, persist;
+    int rv, mask, max_events, rewatch;
     char *path;
 
     /* Grab the path from our request, or bail if the user
@@ -230,9 +230,9 @@ static void EVENT_watch(const Request * req)
         log_debug("Using user defined inotify mask: %lu", mask);
     }
 
-    persist = request_get_persist(req);
-    if (persist)
-        log_debug("New root '%s' is set to persist", path);
+    rewatch = request_get_rewatch(req);
+    if (rewatch)
+        log_debug("New root '%s' is set to be re-watched on startup", path);
 
     max_events = request_get_max_events(req);
     if (max_events == 0) {
@@ -243,7 +243,7 @@ static void EVENT_watch(const Request * req)
     }
 
     /* Watch our new root. */
-    rv = inotify_watch_tree(path, mask, max_events, persist);
+    rv = inotify_watch_tree(path, mask, max_events, rewatch);
     if (rv != 0) {
         reply_send_error(rv);
         free(path);

@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2011-*, (mt) MediaTemple <mediatemple.net>
  * All rights reserved.
  * 
@@ -68,7 +68,7 @@ typedef struct thread_data {
 /* Prototypes for private functions. */
 static Root *inotify_path_to_root(const char *path);
 static Root *make_root(const char *path, int mask, int max_events,
-                       int persist);
+                       int rewatch);
 static Watch *make_watch(int wd, const char *path);
 static char *inotify_is_parent(const char *path);
 static int inotify_enqueue(const Root * root, const IN_Event * event,
@@ -126,17 +126,17 @@ int inotify_setup(void)
     if (d == NULL) {
         closedir(d);
         log_debug
-            ("Persistant root dump directory does not exist. Creating it...");
+            ("Root dump directory does not exist. Creating it...");
         rv = mkdir(INOTIFY_ROOT_DUMP_DIR, 0644);
         if ((rv == -1) && (errno != EEXIST)) {
             log_error
-                ("Failed to create persistant root dump directory: %d: %s",
+                ("Failed to create root dump directory: %d: %s",
                  errno, strerror(errno));
         }
     } else {
         closedir(d);
         log_debug
-            ("Reading persistant root dump file and re-watching roots");
+            ("Reading root dump file and re-watching roots");
 
         FILE *dump = fopen(INOTIFY_ROOT_DUMP_FILE, "r");
         if (dump == NULL) {
@@ -566,7 +566,7 @@ void inotify_dump_roots(void)
 
     for (; roots != NULL; roots = roots->next) {
         root = roots->data;
-        if (root->persist)
+        if (root->rewatch)
             fprintf(fp, "%s,%d,%d\n", root->path, root->mask,
                     root->max_events);
     }
@@ -993,7 +993,7 @@ int inotify_unwatch_tree(char *path)
  * for each directory in the tree, as well as adding entries in the
  * meta data mappings.
  */
-int inotify_watch_tree(char *path, int mask, int max_events, int persist)
+int inotify_watch_tree(char *path, int mask, int max_events, int rewatch)
 {
     int rv, last;
 
@@ -1077,7 +1077,7 @@ int inotify_watch_tree(char *path, int mask, int max_events, int persist)
 
     pthread_mutex_lock(&inotify_mutex);
 
-    new_root = make_root(path, mask, max_events, persist);
+    new_root = make_root(path, mask, max_events, rewatch);
     if (new_root == NULL) {
         log_error
             ("Failed to create new root for path %s: memory allocation error",
@@ -1306,7 +1306,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
 /* Create a new root meta data structure. */
 static Root *make_root(const char *path, int mask, int max_events,
-                       int persist)
+                       int rewatch)
 {
     int rv;
     Root *root;
@@ -1330,7 +1330,8 @@ static Root *make_root(const char *path, int mask, int max_events,
     root->max_events = max_events;
     root->destroy = 0;
     root->pause = 0;
-    root->persist = persist;    /* TODO: Future feature */
+    root->rewatch = rewatch;
+    root->persist = ;    /* TODO: Future feature */
 
     g_queue_init(root->queue);
 
