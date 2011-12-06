@@ -1,30 +1,30 @@
  /*
- * Copyright (c) 2011-*, (mt) MediaTemple <mediatemple.net>
- * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CON-
- * SEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+  * Copyright (c) 2011-*, (mt) MediaTemple <mediatemple.net>
+  * All rights reserved.
+  * 
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+  * are met:
+  * 
+  *  - Redistributions of source code must retain the above copyright
+  *    notice, this list of conditions and the following disclaimer.
+  *  - Redistributions in binary form must reproduce the above copyright
+  *    notice, this list of conditions and the following disclaimer in
+  *    the documentation and/or other materials provided with the
+  *    distribution.
+  * 
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+  * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CON-
+  * SEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+  * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  * SUCH DAMAGE.
+  */
 
 #include "log.h"
 #include "reply.h"
@@ -125,8 +125,7 @@ int inotify_setup(void)
     DIR *d = opendir(INOTIFY_ROOT_DUMP_DIR);
     if (d == NULL) {
         closedir(d);
-        log_debug
-            ("Root dump directory does not exist. Creating it...");
+        log_debug("Root dump directory does not exist. Creating it...");
         rv = mkdir(INOTIFY_ROOT_DUMP_DIR, 0644);
         if ((rv == -1) && (errno != EEXIST)) {
             log_error
@@ -135,23 +134,36 @@ int inotify_setup(void)
         }
     } else {
         closedir(d);
-        log_debug
-            ("Reading root dump file and re-watching roots");
+        log_debug("Reading root dump file and re-watching roots");
 
         FILE *dump = fopen(INOTIFY_ROOT_DUMP_FILE, "r");
         if (dump == NULL) {
             log_warn("Failed to open presistant root dump file '%s': %s",
                      INOTIFY_ROOT_DUMP_FILE, strerror(errno));
-        }
-        else {
+        } else {
+            int mask, max_events;
+            char *path;
             char line[1024];
+            char delim[] = ",";
 
             while (fgets(line, sizeof line, dump) != NULL) {
-                if (line[strlen(line)-1] == '\n')
-                    line[strlen(line)-1] = '\0';
-            }
+                if (line[strlen(line) - 1] == '\n')
+                    line[strlen(line) - 1] = '\0';
 
-            /* TODO Parse CSV fields here. */
+                path = strtok(line, delim);
+                mask = atoi(strtok(NULL, delim));
+                max_events = atoi(strtok(NULL, delim));
+
+                if (!(path && mask && max_events)) {
+                    log_error("Invalid entry in dump file '%s': %s",
+                              INOTIFY_ROOT_DUMP_FILE,
+                              "entry must contain a path, mask, and max_events");
+                    continue;
+                }
+
+                log_notice("Rewatching tree at root '%s'", path);
+                inotify_watch_tree(path, mask, max_events, 1);
+            }
         }
     }
 
@@ -1331,7 +1343,7 @@ static Root *make_root(const char *path, int mask, int max_events,
     root->destroy = 0;
     root->pause = 0;
     root->rewatch = rewatch;
-    root->persist = 0;    /* TODO: Future feature */
+    root->persist = 0;          /* TODO: Future feature */
 
     g_queue_init(root->queue);
 

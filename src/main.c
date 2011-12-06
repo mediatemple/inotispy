@@ -136,8 +136,6 @@ int main(int argc, char **argv)
     inotify_fd = inotify_setup();
     assert(inotify_fd > 0);
 
-exit(1); //XXX
-
     zmq_receiver = zmq_setup();
     if (zmq_receiver == NULL) {
         fprintf(stderr,

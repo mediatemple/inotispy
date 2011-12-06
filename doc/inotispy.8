@@ -195,6 +195,15 @@ Watch a new directory tree.
 .br
 \fBmax_events\fR - Max number of Inotify events to queue for
              this root. The default is 65536.
+.br
+\fBrewatch\fR    - Tell Inotispy to automatically re-watch this path
+             on startup if Inotispy goes down for any reason.
+
+             The default is 0 (zero), for \fIdo not\fR rewatch.
+
+             If you use this feature Inotispy will keep rewatching
+             this path on startup until you explicitly make a call
+             to unwatch it.
 .P
 \fIReturn Value\fR
 .br
@@ -208,7 +217,8 @@ Watch a new directory tree.
     "call" : "watch",
     "path" : "/foo/bar",
     "mask": 1024,
-    "max_events" : 1000
+    "max_events" : 1000,
+    "rewatch": 1,
 }
 .fi
 .in
@@ -395,8 +405,8 @@ Retrieve Inotify events from a given root's queue.
 .fi
 .in
 .P
-\fB*\fR Using a value of 0 (zero) will retrieve \fIall\fR events from
-that root's queue.
+\fB*\fR Using a \fIcount\fR value of 0 (zero) will retrieve \fBall\fR events
+from that root's queue.
 .P
 .SH EXAMPLES
 For examples on writing a client to talk to Inotispy please, take a look at the
