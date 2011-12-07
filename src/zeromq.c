@@ -211,7 +211,7 @@ static void EVENT_watch(const Request * req)
     /* Check to see if we're already watching this path. */
     pthread_mutex_lock(&zmq_mutex);
     if (inotify_is_root(path)) {
-        log_warn("Path '%s' is already being watched.");
+        log_warn("Path '%s' is already being watched.", path);
         reply_send_error(ERROR_INOTIFY_ROOT_ALREADY_WATCHED);
         free(path);
         pthread_mutex_unlock(&zmq_mutex);

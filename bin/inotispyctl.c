@@ -28,12 +28,15 @@
 
 #include <zmq.h>
 #include <ctype.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>             /* usleep() */
 #include <string.h>
 #include <stdarg.h>
 #include <json/json.h>
+
+#define ZMQ_URI "tcp://127.0.0.1:5559"
 
 void *socket, *context;
 
@@ -466,10 +469,17 @@ void zmq_ping(void)
 
 int main(int argc, char **argv)
 {
-    int rv, connect_rv, dir_idx, cmd_idx, port;
+    int c, rv, connect_rv, dir_idx;
+    int option_index;
     char *command, *zmq_uri;
 
     setbuf(stdout, NULL);
+
+    static struct option long_opts[] = {
+        {"help", no_argument, 0, 'h'},
+        {"zmq_uri", required_argument, 0, 'u'},
+        {0, 0, 0, 0}
+    };
 
     if (argc < 2) {
         printf
@@ -477,36 +487,43 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
-        print_help();
+    option_index = 0;
+    zmq_uri = NULL;
 
-    /* Check to see if the user passed in a different port. */
-    if (strcmp(argv[1], "-p") == 0 || strcmp(argv[1], "--port") == 0) {
-        if (argc < 4)
+    while ((c =
+            getopt_long(argc, argv, "hu:", long_opts,
+                        &option_index)) != -1) {
+        switch (c) {
+        case 'h':
             print_help();
-
-        port = atoi(argv[2]);
-        cmd_idx = 3;
-        dir_idx = 4;
-    } else {
-        port = 5559;
-        cmd_idx = 1;
-        dir_idx = 2;
+            break;
+        case 'u':
+            zmq_uri = optarg;
+            break;
+        case '?':
+            if (optopt == 'u') {
+                print_help();
+            }
+            return 1;
+        default:
+            abort();
+        }
     }
 
-    /* 0MQ connection */
-    rv = mk_string(&zmq_uri, "tcp://127.0.0.1:%d", port);
-
-    if (rv == -1) {
+    if (argv[optind] == NULL) {
         printf
-            ("Failed to allocate memory for ZeroMQ URI in function main()");
+            ("No command speficied. Run `inotispyctl --help` for more info.\n");
         exit(1);
     }
 
+    if (zmq_uri == NULL)
+        zmq_uri = ZMQ_URI;
+
+    /* 0MQ connection */
     context = zmq_init(1);
     socket = zmq_socket(context, ZMQ_REQ);
     connect_rv = zmq_connect(socket, zmq_uri);
-    free(zmq_uri);
+    // free(zmq_uri);
 
     if (connect_rv != 0) {
         printf("Failed to connect ZeroMQ socket: %s\n",
@@ -515,7 +532,8 @@ int main(int argc, char **argv)
     }
 
     /* Dispatcher */
-    command = argv[cmd_idx];
+    command = argv[optind];
+    dir_idx = optind + 1;
     if (strcmp(command, "ping") == 0) {
         zmq_ping();
     } else if (strcmp(command, "list_roots") == 0) {
@@ -523,44 +541,44 @@ int main(int argc, char **argv)
     } else if (strcmp(command, "list_queues") == 0) {
         list_roots(1);
     } else if (strcmp(command, "get_events") == 0) {
-        if (argc != (dir_idx + 2)) {
+        if (argv[dir_idx] == NULL || argv[dir_idx+1] == NULL) {
             printf
                 ("ERROR: Command get_events requires a target dir and a count\n");
             print_help();
         }
         list_events(argv[dir_idx], argv[dir_idx + 1]);
     } else if (strcmp(command, "queue_size") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command queue_size requires a target dir\n");
             print_help();
         }
         list_queue_size(argv[dir_idx]);
     } else if (strcmp(command, "flush_queue") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command flush_queue requires a target dir\n");
             print_help();
         }
         flush_queue(argv[dir_idx]);
     } else if (strcmp(command, "watch") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command watch requires a target dir\n");
             print_help();
         }
         watch(argv[dir_idx]);
     } else if (strcmp(command, "unwatch") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command unwatch requires a target dir\n");
             print_help();
         }
         unwatch(argv[dir_idx]);
     } else if (strcmp(command, "pause") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command pause requires a target dir\n");
             print_help();
         }
         pause_root(argv[dir_idx]);
     } else if (strcmp(command, "unpause") == 0) {
-        if (argc != (dir_idx + 1)) {
+        if (argv[dir_idx] == NULL) {
             printf("ERROR: Command unpause requires a target dir\n");
             print_help();
         }
@@ -584,7 +602,8 @@ void print_help(void)
     printf("Options:\n");
     printf(" -h, --help                  Print this help menu\n");
     printf
-        (" -p, --port <num>            Use a port other than the default 5559\n");
+        (" -u, --zmq_uri <uri>         Use a zmq_uri othar than the default,\n");
+    printf("                             which is tcp://127.0.0.1:5559\n");
     printf("\n");
     printf("Commands:\n");
     printf
