@@ -202,7 +202,8 @@ void print_help_and_exit(void)
     printf("\n");
     printf("  -h, --help           Print this help and exit.\n");
     printf("  -s, --silent         Turn off printing to stderr.\n");
-    printf("  -c, --config=CONFIG  Specify the location of the config file.\n");
+    printf
+        ("  -c, --config=CONFIG  Specify the location of the config file.\n");
     printf("\n");
     printf
         ("Inotispy is an efficient file system change notification daemon based\n");

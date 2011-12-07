@@ -232,7 +232,8 @@ static void EVENT_watch(const Request * req)
 
     rewatch = request_get_rewatch(req);
     if (rewatch)
-        log_debug("New root '%s' is set to be re-watched on startup", path);
+        log_debug("New root '%s' is set to be re-watched on startup",
+                  path);
 
     max_events = request_get_max_events(req);
     if (max_events == 0) {

@@ -541,7 +541,7 @@ int main(int argc, char **argv)
     } else if (strcmp(command, "list_queues") == 0) {
         list_roots(1);
     } else if (strcmp(command, "get_events") == 0) {
-        if (argv[dir_idx] == NULL || argv[dir_idx+1] == NULL) {
+        if (argv[dir_idx] == NULL || argv[dir_idx + 1] == NULL) {
             printf
                 ("ERROR: Command get_events requires a target dir and a count\n");
             print_help();
