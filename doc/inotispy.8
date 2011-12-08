@@ -52,7 +52,9 @@ Print the help menu.
 .RE
 \fB\-c\fR, \fB\-\-config\fR
 .RS 4
-Specify the location of a non-defualt configuration file.
+Specify the location of a non-defualt configuration file. The default will
+typically be \fI/etc/inotispy.conf\fR, unless you changed it's location at
+configure time.
 .RE
 \fB\-s\fR, \fB\-\-silent\fR
 .RS 4
@@ -60,6 +62,19 @@ Run silently and only messages will be appended to the log file. Inotispy
 prints very little information to \fBstderr\fR and only does so at start up.
 So this feature isn't very useful unless it's important that it runs with
 nothing printed to the terminal.
+.RE
+\fB\-d\fR, \fB\-\-daemon\fR
+.RS 4
+Run Inotispy in daemon mode. This will run Inoitspy as a background processes
+and completely detach it from the terminal. Typically, if you want to run
+Inotispy as a daemon (a service) you'll stop and start it using the init.d
+script that ships with the distribution.
+.RE
+\fB\-p\fR, \fB\-\-pidfile\fR
+.RS 4
+When you run Inotispy as a daemon it keeps a pid file on disk to prevent
+multiple execution. The default location is \fI/var/run/inotispy/inotispy.pid\fR,
+however if you don't like this location you may change it using this option.
 .RE
 .SH INOTISPY OVERVIEW
 The \fBInotispy\fR daemon provides a service oriented interface for watching
