@@ -35,7 +35,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-static void print_config(void);
 static time_t get_mtime(char *file);
 static void _set_log_level(GKeyFile * keyfile);
 
@@ -88,7 +87,7 @@ int init_config(int silent, char *config_file)
         fprintf(stderr, "\n** Failed to load config file %s: %s. **\n\n",
                 conf_file, error->message);
         CONFIG->path = NULL;
-        print_config();
+        print_config(NULL);
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
@@ -188,7 +187,7 @@ int init_config(int silent, char *config_file)
     }
 
     if (!CONFIG->silent)
-        print_config();
+        print_config(NULL);
 
     g_key_file_free(keyfile);
 
@@ -275,18 +274,34 @@ static time_t get_mtime(char *file)
     return statbuf.st_mtime;
 }
 
-static void print_config(void)
+void print_config(char *file)
 {
-    fprintf(stderr, "Using configuration values from %s:\n",
+    FILE *fp;
+
+    if (file == NULL) {
+        fp = stderr;
+    } else {
+        fp = fopen(file, "w");
+        if (fp == NULL) {
+            fprintf(stderr, "Failed to open config dump file '%s': %s\n",
+                    file, strerror(errno));
+            return;
+        }
+    }
+
+    fprintf(fp, "Using configuration values from %s:\n",
             (CONFIG->path ? CONFIG->path : "DEFAULTS LIST"));
-    fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
-    fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
-    fprintf(stderr, " - log_level          : %s (%d)\n",
+    fprintf(fp, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
+    fprintf(fp, " - log_file           : %s\n", CONFIG->log_file);
+    fprintf(fp, " - log_level          : %s (%d)\n",
             level_str(CONFIG->log_level), CONFIG->log_level);
-    fprintf(stderr, " - log_syslog         : %s\n",
+    fprintf(fp, " - log_syslog         : %s\n",
             (CONFIG->log_syslog ? "true" : "false"));
-    fprintf(stderr, " - max_inotify_events : %d\n",
+    fprintf(fp, " - max_inotify_events : %d\n",
             CONFIG->max_inotify_events);
-    fprintf(stderr, " - silent mode        : %s\n",
+    fprintf(fp, " - silent mode        : %s\n",
             (CONFIG->silent ? "true" : "false"));
+
+    if (file != NULL)
+        fclose(fp);
 }

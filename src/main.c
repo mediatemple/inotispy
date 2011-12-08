@@ -194,6 +194,7 @@ int main(int argc, char **argv)
     log_debug("Entering event loop...");
 
     alarm_timer = time(NULL);
+    alarm_handler();
 
     while (1) {
 
@@ -278,6 +279,21 @@ static void check_pid(void)
     exit(1);
 }
 
+static int clear_config(void)
+{
+    int rv;
+
+    rv = unlink(CONF_DUMP_FILE);
+    if (rv == -1) {
+        if (daemon_mode)
+            fprintf(stderr, "Failed to unlink config dump file %s: %s\n",
+                    CONF_DUMP_FILE, strerror(errno));
+        return 1;
+    }
+
+    return 0;
+}
+
 static int clear_pid(void)
 {
     int rv;
@@ -319,6 +335,7 @@ static void sig_handler(int sig)
                    "Dumping roots and exiting");
         inotify_dump_roots();
         clear_pid();
+        clear_config();
         exit(sig);
         break;
     case SIGSEGV:
@@ -335,7 +352,10 @@ static void alarm_handler(void)
 {
     pthread_mutex_lock(&main_mutex);
 
+    /* Dump rewatch roots. */
     inotify_dump_roots();
+
+    /* Handle updates to config file. */
     if (config_has_an_update()) {
         if (reload_config() != 0) {
             log_warn("Failed to reload newly updated configuration file");
@@ -345,6 +365,9 @@ static void alarm_handler(void)
                 ("Configuration file had an update and was reloaded");
         }
     }
+
+    /* Dump current configuration. */
+    print_config(CONF_DUMP_FILE);
 
     pthread_mutex_unlock(&main_mutex);
 }

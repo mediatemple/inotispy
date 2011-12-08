@@ -38,6 +38,7 @@
 #define CONF_GROUP "global"
 #define APPLICATION_NAME "inotispy"
 #define INOTISPY_CONFIG_FILE "inotispy.conf"
+#define CONF_DUMP_FILE "/var/run/inotispy/config.dump"
 
 struct inotispy_config {
 
@@ -80,5 +81,10 @@ int config_has_an_update(void);
 
 /* Reload some of the configuration. */
 int reload_config(void);
+
+/* Print a dump of the config to a specific location.
+ * If the location is NULL then it dumps to stderr.
+ */
+void print_config(char *file);
 
 #endif /*_INOTISPY_CONFIG_H_*/
