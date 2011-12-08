@@ -63,4 +63,4 @@ rm -rf $RPM_BUILD_ROOT
 /usr
 
 %config %dir %attr(-,root,root) /etc/inotispy.conf
-#%config %dir %attr(-,root,root) /etc/init.d/inotispy
+%config %dir %attr(-,root,root) /etc/init.d/inotispy
