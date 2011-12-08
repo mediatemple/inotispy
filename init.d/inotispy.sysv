@@ -57,6 +57,14 @@ rh_status() {
     return $RETVAL
 }
 
+reload() {
+    echo -n $"Reloading Inotispy configs: "
+    killproc $pidopts $DAEMON -HUP
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+
 case "$1" in
     start)
         start
@@ -64,14 +72,17 @@ case "$1" in
     stop)
         stop
         ;;
-    restart|reload)
+    restart)
         restart
+        ;;
+    reload)
+        reload
         ;;
     status)
         rh_status
         ;;
     *)
-        echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+        echo $"Usage: $0 {start|stop|status|restart|reload}"
         exit 1
 esac
 

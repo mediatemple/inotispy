@@ -57,11 +57,15 @@ static char *pid_file;
 #define ALARM_TIMEOUT 10
 static time_t alarm_timer;
 
+/* Are we a daemon? */
+static int daemon_mode;
+
 static void print_help_and_exit(void);
 static void alarm_handler(void);
 static void sig_handler(int sig);
-static void write_pid(char *pidfile);
-static void check_pid(char *pidfile);
+static void write_pid();
+static void check_pid();
+static int clear_pid();
 
 int main(int argc, char **argv)
 {
@@ -69,7 +73,7 @@ int main(int argc, char **argv)
     void *zmq_receiver;
     struct utsname u_name;
     int option_index;
-    int daemon_mode, silent, help;
+    int silent, help;
     char *config_file;
 
     static struct option long_opts[] = {
@@ -141,7 +145,7 @@ int main(int argc, char **argv)
         print_help_and_exit();
 
     if (daemon_mode) {
-        check_pid(pid_file);
+        check_pid();
 
         silent = 1;
         if (daemon(0, 0) == -1) {
@@ -149,7 +153,7 @@ int main(int argc, char **argv)
                     strerror(errno));
             exit(1);
         }
-        write_pid(pid_file);
+        write_pid();
     }
 
     /* Initialize our configuration. */
@@ -165,6 +169,7 @@ int main(int argc, char **argv)
 
     /* Signal handling for graceful dying. */
     signal(SIGINT, sig_handler);
+    signal(SIGHUP, sig_handler);
     signal(SIGSEGV, sig_handler);
 
     log_notice("Initializing daemon");
@@ -214,7 +219,7 @@ int main(int argc, char **argv)
     }
 }
 
-static void check_pid(char *pidfile)
+static void check_pid(void)
 {
     DIR *d;
     FILE *fp;
@@ -225,13 +230,14 @@ static void check_pid(char *pidfile)
     /* Check to see if the pid file exists and if it has
      * a value in it.
      */
-    fp = fopen(pidfile, "r");
+    fp = fopen(pid_file, "r");
     if (fp == NULL)
         return;
 
     if (fgets(line, sizeof line, fp) == NULL) {
         if (!CONFIG->silent)
-            fprintf(stderr, "Found pid file %s but it was empty", pidfile);
+            fprintf(stderr, "Found pid file %s but it was empty",
+                    pid_file);
         fclose(fp);
         return;
     }
@@ -259,12 +265,10 @@ static void check_pid(char *pidfile)
     if (d == NULL) {
         fprintf(stderr,
                 "Found stale pid file. Cleaning up and running Inotispy\n");
-        rv = unlink(pidfile);
-        if (rv == -1) {
-            fprintf(stderr, "Failed to unlink stale pid file %s: %s\n",
-                    pidfile, strerror(errno));
+
+        if (clear_pid() != 0)
             exit(1);
-        }
+
         return;
     }
 
@@ -274,14 +278,29 @@ static void check_pid(char *pidfile)
     exit(1);
 }
 
-static void write_pid(char *pidfile)
+static int clear_pid(void)
+{
+    int rv;
+
+    rv = unlink(pid_file);
+    if (rv == -1) {
+        if (daemon_mode)
+            fprintf(stderr, "Failed to unlink stale pid file %s: %s\n",
+                    pid_file, strerror(errno));
+        return 1;
+    }
+
+    return 0;
+}
+
+static void write_pid(void)
 {
     FILE *fp;
 
-    fp = fopen(pidfile, "w");
+    fp = fopen(pid_file, "w");
     if (fp == NULL) {
         fprintf(stderr, "Failed to open pid file %s for writing: %s\n",
-                pidfile, strerror(errno));
+                pid_file, strerror(errno));
         exit(1);
     }
 
@@ -299,11 +318,15 @@ static void sig_handler(int sig)
         log_notice("Inotispy receieved an interrupt. %s",
                    "Dumping roots and exiting");
         inotify_dump_roots();
+        clear_pid();
         exit(sig);
         break;
     case SIGSEGV:
         log_error("Inotispy encounterd a segmentation fault. Exiting...");
         exit(sig);
+        break;
+    case SIGHUP:
+        alarm_handler();
         break;
     }
 }

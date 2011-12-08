@@ -43,6 +43,7 @@ struct inotispy_config {
 
     char *path;
     time_t mtime;
+    int daemon;
 
     /* zmq.h */
     char *zmq_uri;

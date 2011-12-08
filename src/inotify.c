@@ -172,9 +172,10 @@ int inotify_setup(void)
 
 void inotify_handle_event(void)
 {
-    int i = 0;
-    int num_in_events;
+    int i = 0, rv, num_in_events;
     char buffer[INOTIFY_EVENT_BUF_LEN];
+    char *path, *abs_path;
+    Root *root;
     IN_Event *event;
 
     event = NULL;
@@ -197,8 +198,9 @@ void inotify_handle_event(void)
 
         event = (struct inotify_event *) &buffer[i];
 
-        if ((event == NULL) || (event->name == NULL)) {
-            i += INOTIFY_EVENT_SIZE + event->len;
+        /* Skip bogus events. */
+        if ((event == NULL) || (event->len == 0)) {
+            i += INOTIFY_EVENT_SIZE;
             continue;
         }
 
@@ -215,8 +217,9 @@ void inotify_handle_event(void)
         }
 
         /* IN_CLOSE_NOWRITE events occur on a directory when inotify
-         * sets up a watch on it. We don't care about these events
-         * and never want to queue them.
+         * sets up a watch on it. They also occur when someone does
+         * a tab complete within a watched tree. We don't care about
+         * these events and never want to queue them, so we skip.
          */
         if ((event->mask & IN_ISDIR) && (event->mask & IN_CLOSE_NOWRITE)) {
             log_trace("Skipping inotify IN_CLOSE_NOWRITE event on wd %d",
@@ -236,195 +239,176 @@ void inotify_handle_event(void)
             continue;
         }
 
-        /* No name events or bogus events  get skipped. */
-        if ((event == NULL) || (event->name == NULL)
-            || (strlen(event->name) < 1)
-            || (event->name[0] == 0) || (!isalnum(event->name[0]))) {
-            log_trace("Skipping bogus inotify event");
-            i += INOTIFY_EVENT_SIZE + event->len;
-            continue;
-        }
-
         log_trace("Got inotify event on %s '%s' for wd %d",
                   ((event->mask & IN_ISDIR) ? "directory" : "file"),
                   event->name, event->wd);
 
-        if (event->len) {
+        pthread_mutex_lock(&inotify_mutex);
 
-            int rv;
-            Root *root;
-            char *path;
-            char *abs_path;
+        /* Since inotify only reports the name of the file
+         * or directory under notification we need to lookup
+         * it's parent path in our watch descriptor hash map.
+         */
+        Watch *watch = g_hash_table_lookup(inotify_wd_to_watch,
+                                           GINT_TO_POINTER(event->wd)
+            );
 
-            pthread_mutex_lock(&inotify_mutex);
-
-            /* Since inotify only reports the name of the file
-             * or directory under notification we need to lookup
-             * it's parent path in our watch descriptor hash map.
-             */
-            Watch *watch = g_hash_table_lookup(inotify_wd_to_watch,
-                                               GINT_TO_POINTER(event->wd)
-                );
-
-            /* Move onto the next event if we can't find its watcher.
-             *
-             * XXX: This should only happen if something goes
-             *      *seriously* wrong. What this means is that
-             *      Inotispy is getting inotify event notifications
-             *      for directories it doesn't know it's watching.
-             */
-            if (watch == NULL) {
-                log_warn
-                    ("Failed to look up watcher for wd %d in inotify_handle_event",
-                     event->wd);
-                i += INOTIFY_EVENT_SIZE + event->len;
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-
-            /* Look up the root meta data. */
-            int path_len = strlen(watch->path);
-            path = malloc(path_len + 1);
-            if (path == NULL) {
-                log_error
-                    ("Failed to allocate memory while copying watch path '%s': %s",
-                     watch->path, "inotify.c:inotify_handle_event()");
-                i += INOTIFY_EVENT_SIZE + event->len;
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-
-            memcpy(path, watch->path, path_len);
-            path[path_len] = '\0';
-
-            root = inotify_path_to_root(path);
-
-            if (root == NULL) {
-                log_debug("Failed to look up meta data for root '%s'",
-                          path);
-                i += INOTIFY_EVENT_SIZE + event->len;
-                free(path);
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-
-            if (root->pause) {
-                log_trace("Root is currently paused. Skipping event");
-                i += INOTIFY_EVENT_SIZE + event->len;
-                free(path);
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-
-            if (root->destroy != 0) {
-                log_trace("Root is being destroyed. Skipping event");
-                i += INOTIFY_EVENT_SIZE + event->len;
-                free(path);
-                pthread_mutex_unlock(&inotify_mutex);
-                continue;
-            }
-
+        /* Move onto the next event if we can't find its watcher.
+         *
+         * XXX: This should only happen if something goes
+         *      *seriously* wrong. What this means is that
+         *      Inotispy is getting inotify event notifications
+         *      for directories it doesn't know it's watching.
+         */
+        if (watch == NULL) {
+            log_warn
+                ("Failed to look up watcher for wd %d in inotify_handle_event",
+                 event->wd);
+            i += INOTIFY_EVENT_SIZE + event->len;
             pthread_mutex_unlock(&inotify_mutex);
-
-            /* Construct the absolute path for this event. */
-            if (strcmp(path, "/") == 0)
-                rv = mk_string(&abs_path, "/%s", path, event->name);
-            else
-                rv = mk_string(&abs_path, "%s/%s", path, event->name);
-
-            if (rv == -1) {
-                log_error
-                    ("Failed to allocate memory while creating absolute event path: %s",
-                     "inotify.c:inotify_handle_event()");
-                i += INOTIFY_EVENT_SIZE + event->len;
-                free(path);
-                continue;
-            }
-
-            log_trace("Got event for '%s'", abs_path);
-
-            if (event->mask & IN_ISDIR) {
-
-                /* Here we have new directory creation, which means that
-                 * beyond just queuing the event(s) we also need to perform
-                 * a recursive watch on the new tree and make sure those
-                 * watches are tied to the appropriate root path.
-                 */
-                if ((event->mask & IN_CREATE)
-                    || (event->mask & IN_MOVED_TO)) {
-                    log_debug("New directory '%s' found", abs_path);
-                    usleep(1000);
-
-                    rv = do_watch_tree(abs_path, root);
-                    if (rv != 0) {
-                        log_error("Failed to watch root at dir '%s': %s",
-                                  abs_path, error_to_string(rv));
-                        i += INOTIFY_EVENT_SIZE + event->len;
-                        free(path);
-                        free(abs_path);
-                        continue;
-                    }
-                }
-
-                /* Here we have directory deletion. So we need to tell
-                 * inotify to stop watching this directory for us, as
-                 * well as remove the mapping we have stored in our
-                 * watch descriptor meta maps.
-                 */
-                else if ((event->mask & IN_DELETE)
-                         || (event->mask & IN_MOVED_FROM)) {
-                    log_debug("Existing directory '%s' has been removed",
-                              abs_path);
-
-                    /* TODO: How can we determine if the actual root itself
-                     *       is being deleted since the root itself is not
-                     *       watched by anything?
-                     */
-
-                    pthread_mutex_lock(&inotify_mutex);
-
-                    Watch *delete =
-                        g_hash_table_lookup(inotify_path_to_watch,
-                                            abs_path);
-
-                    inotify_rm_watch(inotify_fd, delete->wd);
-
-                    if (delete == NULL) {
-                        log_warn("Failed to look up watcher for path %s",
-                                 abs_path);
-                        i += INOTIFY_EVENT_SIZE + event->len;
-                        free(path);
-                        free(abs_path);
-                        pthread_mutex_unlock(&inotify_mutex);
-                        continue;
-                    }
-
-                    /* Clean up meta data mappings and tell inotify
-                     * to stop watching the deleted dir.
-                     */
-                    int wd = delete->wd;
-
-                    g_hash_table_remove(inotify_wd_to_watch,
-                                        GINT_TO_POINTER(wd));
-                    g_hash_table_remove(inotify_path_to_watch, abs_path);
-                    free(delete->path);
-                    free(delete);
-
-                    pthread_mutex_unlock(&inotify_mutex);
-                }
-            }
-
-            /* Queue event */
-            if (event->mask & root->mask) {
-                rv = inotify_enqueue(root, event, path);
-                if (rv != 0)
-                    log_warn("Failed to queue event for wd:%d path:%s: %s",
-                             event->wd, path, error_to_string(rv));
-            }
-
-            free(path);
-            free(abs_path);
+            continue;
         }
+
+        /* Look up the root meta data. */
+        int path_len = strlen(watch->path);
+        path = malloc(path_len + 1);
+        if (path == NULL) {
+            log_error
+                ("Failed to allocate memory while copying watch path '%s': %s",
+                 watch->path, "inotify.c:inotify_handle_event()");
+            i += INOTIFY_EVENT_SIZE + event->len;
+            pthread_mutex_unlock(&inotify_mutex);
+            continue;
+        }
+
+        memcpy(path, watch->path, path_len);
+        path[path_len] = '\0';
+
+        root = inotify_path_to_root(path);
+
+        if (root == NULL) {
+            log_debug("Failed to look up meta data for root '%s'", path);
+            i += INOTIFY_EVENT_SIZE + event->len;
+            free(path);
+            pthread_mutex_unlock(&inotify_mutex);
+            continue;
+        }
+
+        if (root->pause) {
+            log_trace("Root is currently paused. Skipping event");
+            i += INOTIFY_EVENT_SIZE + event->len;
+            free(path);
+            pthread_mutex_unlock(&inotify_mutex);
+            continue;
+        }
+
+        if (root->destroy != 0) {
+            log_trace("Root is being destroyed. Skipping event");
+            i += INOTIFY_EVENT_SIZE + event->len;
+            free(path);
+            pthread_mutex_unlock(&inotify_mutex);
+            continue;
+        }
+
+        pthread_mutex_unlock(&inotify_mutex);
+
+        /* Construct the absolute path for this event. */
+        if (strcmp(path, "/") == 0)
+            rv = mk_string(&abs_path, "/%s", path, event->name);
+        else
+            rv = mk_string(&abs_path, "%s/%s", path, event->name);
+
+        if (rv == -1) {
+            log_error
+                ("Failed to allocate memory while creating absolute event path: %s",
+                 "inotify.c:inotify_handle_event()");
+            i += INOTIFY_EVENT_SIZE + event->len;
+            free(path);
+            continue;
+        }
+
+        log_trace("Got event for '%s'", abs_path);
+
+        if (event->mask & IN_ISDIR) {
+
+            /* Here we have new directory creation, which means that
+             * beyond just queuing the event(s) we also need to perform
+             * a recursive watch on the new tree and make sure those
+             * watches are tied to the appropriate root path.
+             */
+            if ((event->mask & IN_CREATE)
+                || (event->mask & IN_MOVED_TO)) {
+                log_debug("New directory '%s' found", abs_path);
+                usleep(1000);
+
+                rv = do_watch_tree(abs_path, root);
+                if (rv != 0) {
+                    log_error("Failed to watch root at dir '%s': %s",
+                              abs_path, error_to_string(rv));
+                    i += INOTIFY_EVENT_SIZE + event->len;
+                    free(path);
+                    free(abs_path);
+                    continue;
+                }
+            }
+
+            /* Here we have directory deletion. So we need to tell
+             * inotify to stop watching this directory for us, as
+             * well as remove the mapping we have stored in our
+             * watch descriptor meta maps.
+             */
+            else if ((event->mask & IN_DELETE)
+                     || (event->mask & IN_MOVED_FROM)) {
+                log_debug("Existing directory '%s' has been removed",
+                          abs_path);
+
+                /* TODO: How can we determine if the actual root itself
+                 *       is being deleted since the root itself is not
+                 *       watched by anything?
+                 */
+
+                pthread_mutex_lock(&inotify_mutex);
+
+                Watch *delete = g_hash_table_lookup(inotify_path_to_watch,
+                                                    abs_path);
+
+                inotify_rm_watch(inotify_fd, delete->wd);
+
+                if (delete == NULL) {
+                    log_warn("Failed to look up watcher for path %s",
+                             abs_path);
+                    i += INOTIFY_EVENT_SIZE + event->len;
+                    free(path);
+                    free(abs_path);
+                    pthread_mutex_unlock(&inotify_mutex);
+                    continue;
+                }
+
+                /* Clean up meta data mappings and tell inotify
+                 * to stop watching the deleted dir.
+                 */
+                int wd = delete->wd;
+
+                g_hash_table_remove(inotify_wd_to_watch,
+                                    GINT_TO_POINTER(wd));
+                g_hash_table_remove(inotify_path_to_watch, abs_path);
+                free(delete->path);
+                free(delete);
+
+                pthread_mutex_unlock(&inotify_mutex);
+            }
+        }
+
+        /* Queue event */
+        if (event->mask & root->mask) {
+            rv = inotify_enqueue(root, event, path);
+            if (rv != 0)
+                log_warn("Failed to queue event for wd:%d path:%s: %s",
+                         event->wd, path, error_to_string(rv));
+        }
+
+        free(path);
+        free(abs_path);
 
         i += INOTIFY_EVENT_SIZE + event->len;
     }
