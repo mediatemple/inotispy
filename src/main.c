@@ -47,6 +47,17 @@
 
 static pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* Command line options. */
+static struct option long_opts[] = {
+    {"version", no_argument, 0, 'v'},
+    {"daemon", no_argument, 0, 'd'},
+    {"pidfile", required_argument, 0, 'p'},
+    {"silent", no_argument, 0, 's'},
+    {"help", no_argument, 0, 'h'},
+    {"config", required_argument, 0, 'c'},
+    {0, 0, 0, 0}
+};
+
 /* Default location for our processes pid file. */
 #define DEFAULT_PID_FILE "/var/run/inotispy/inotispy.pid"
 static char *pid_file;
@@ -60,12 +71,14 @@ static time_t alarm_timer;
 /* Are we a daemon? */
 static int daemon_mode;
 
+/* Funcion decls. */
 static void print_help_and_exit(void);
 static void alarm_handler(void);
 static void sig_handler(int sig);
 static void write_pid();
 static void check_pid();
 static int clear_pid();
+static void print_version(void);
 
 int main(int argc, char **argv)
 {
@@ -75,15 +88,6 @@ int main(int argc, char **argv)
     int option_index;
     int silent, help;
     char *config_file;
-
-    static struct option long_opts[] = {
-        {"daemon", no_argument, 0, 'd'},
-        {"pidfile", required_argument, 0, 'p'},
-        {"silent", no_argument, 0, 's'},
-        {"help", no_argument, 0, 'h'},
-        {"config", required_argument, 0, 'c'},
-        {0, 0, 0, 0}
-    };
 
     zmq_pollitem_t items[2];
 
@@ -108,9 +112,12 @@ int main(int argc, char **argv)
     option_index = 0;
 
     while ((c =
-            getopt_long(argc, argv, "dshc:p:", long_opts,
+            getopt_long(argc, argv, "vdshc:p:", long_opts,
                         &option_index)) != -1) {
         switch (c) {
+        case 'v':
+            print_version();
+            break;
         case 'd':
             daemon_mode = 1;
             break;
@@ -370,6 +377,12 @@ static void alarm_handler(void)
     print_config(CONF_DUMP_FILE);
 
     pthread_mutex_unlock(&main_mutex);
+}
+
+static void print_version(void)
+{
+    printf("Inotispy v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
+    exit(0);
 }
 
 static void print_help_and_exit(void)

@@ -372,8 +372,6 @@ void inotify_handle_event(void)
                 Watch *delete = g_hash_table_lookup(inotify_path_to_watch,
                                                     abs_path);
 
-                inotify_rm_watch(inotify_fd, delete->wd);
-
                 if (delete == NULL) {
                     log_warn("Failed to look up watcher for path %s",
                              abs_path);
@@ -383,6 +381,8 @@ void inotify_handle_event(void)
                     pthread_mutex_unlock(&inotify_mutex);
                     continue;
                 }
+
+                inotify_rm_watch(inotify_fd, delete->wd);
 
                 /* Clean up meta data mappings and tell inotify
                  * to stop watching the deleted dir.

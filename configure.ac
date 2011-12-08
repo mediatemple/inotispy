@@ -25,9 +25,15 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+
+AC_INIT([inotispy], [1.1.11], [james@jamesconerly.com])
 AC_PREREQ([2.59])
 
-AC_INIT([inotispy], [1.1.10], [james@jamesconerly.com])
+INOTISPY_VERSION=1.1.11
+AC_SUBST(INOTISPY_VERSION)
+AC_MSG_NOTICE([Configuring inotispy $INOTISPY_VERSION])
+AC_DEFINE_UNQUOTED([INOTISPY_VERSION], ["$INOTISPY_VERSION"], [inotispy release version])
+
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
 
