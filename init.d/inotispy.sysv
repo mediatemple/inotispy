@@ -1,0 +1,69 @@
+#! /bin/sh
+#
+# chkconfig: - 55 45
+# description: Inotispy init script
+# processname: inotispy
+# config: /etc/sysconfig/inotispy
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Check that networking is up.
+if [ "$NETWORKING" = "no" ]; then
+    echo "Network is down... can't start inotispy"
+    exit 0
+fi
+
+PATH=/usr/bin:/sbin:/bin:/usr/sbin
+export PATH
+
+[ -f /etc/sysconfig/inotispy ] && . /etc/sysconfig/inotispy
+lockfile=/var/lock/subsys/inotispy
+pidfile=/var/run/inotispy/inotispy.pid
+OPTS="--silent"
+DAEMON=inotispy
+RETVAL=0
+
+if status | grep -q -- '-p' 2>/dev/null; then
+    daemonopts="--pidfile $pidfile"
+    pidopts="-p $pidfile"
+fi
+
+start() {
+    echo -n $"Starting Inotispy: "
+    daemon $daemonopts $DAEMON ${OPTS}
+    RETVAL=$?
+    echo
+        [ $RETVAL = 0 ] && touch ${lockfile}
+        return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping Inotispy: "
+    killproc $pidopts $DAEMON
+    RETVAL=$?
+    echo
+    [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"
+        exit 1
+esac
+
+exit $?

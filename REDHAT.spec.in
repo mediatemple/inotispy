@@ -50,6 +50,9 @@ if [ -d "$RPM_BUILD_ROOT/man" ]; then
 fi
 mv $RPM_BUILD_ROOT/share $RPM_BUILD_ROOT/usr/
 
+# Init script
+install -Dp -m0755 init.d/inotispy.sysv %{buildroot}%{_initrddir}/inotispy
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -60,4 +63,4 @@ rm -rf $RPM_BUILD_ROOT
 /usr
 
 %config %dir %attr(-,root,root) /etc/inotispy.conf
-%config %dir %attr(-,root,root) /etc/init.d/inotispy
+#%config %dir %attr(-,root,root) /etc/init.d/inotispy

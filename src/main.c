@@ -170,17 +170,17 @@ int main(int argc, char **argv)
             continue;
         }
 
+        if (time(NULL) - alarm_timer > ALARM_TIMEOUT) {
+            alarm_handler();
+            alarm_timer = time(NULL);
+        }
+
         if (items[0].revents & ZMQ_POLLIN) {
             inotify_handle_event();
         }
 
         if (items[1].revents & ZMQ_POLLIN) {
             zmq_handle_event();
-        }
-
-        if (time(NULL) - alarm_timer > ALARM_TIMEOUT) {
-            alarm_handler();
-            alarm_timer = time(NULL);
         }
     }
 }
