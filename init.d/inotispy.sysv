@@ -31,12 +31,22 @@ if status | grep -q -- '-p' 2>/dev/null; then
 fi
 
 start() {
+    if [ -e "$pidfile" ]; then
+        PID=`cat $pidfile`
+        if [ -d "/proc/$PID" ]; then
+            echo "inotispy (pid  $PID) is running..."
+            return 1
+        else
+            echo "Found stale pid file. Cleaning it up..."
+            rm -f $pidfile
+        fi
+    fi
     echo -n $"Starting Inotispy: "
     daemon $daemonopts $DAEMON ${OPTS}
     RETVAL=$?
     echo
-        [ $RETVAL = 0 ] && touch ${lockfile}
-        return $RETVAL
+    [ $RETVAL = 0 ] && touch ${lockfile}
+    return $RETVAL
 }
 
 stop() {
