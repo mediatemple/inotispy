@@ -26,4 +26,4 @@
 # SUCH DAMAGE.
 
 initddir = $(sysconfdir)/init.d
-dist_initd_SCRIPTS = inotispy
+dist_initd_SCRIPTS = inotispy inotispy.sysv
