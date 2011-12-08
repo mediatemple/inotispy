@@ -31,8 +31,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-void print_config(char *conf_file);
+static void print_config(void);
+static time_t get_mtime(char *file);
+static void _set_log_level(GKeyFile * keyfile);
 
 /* This function attempts to parse the config file /etc/inotispy.conf.
  * It is important to note that Inotispy *WILL* run with a missing or
@@ -47,7 +52,7 @@ int init_config(int silent, char *config_file)
     char *conf_file;
     gboolean bool_rv;
     GError *error;
-    GKeyFile *kf;
+    GKeyFile *keyfile;
 
     error = NULL;
 
@@ -60,7 +65,7 @@ int init_config(int silent, char *config_file)
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
     CONFIG->silent = FALSE;
 
-    /* Attempt to read in config file. */
+    /* Prepare the full path to our config file. */
     if (config_file) {
         int_rv = mk_string(&conf_file, "%s", config_file);
     } else {
@@ -75,12 +80,15 @@ int init_config(int silent, char *config_file)
         return 1;
     }
 
-    kf = g_key_file_new();
-    if (!g_key_file_load_from_file(kf, conf_file, G_KEY_FILE_NONE, &error)) {
+    /* Attempt to read in config file. */
+    keyfile = g_key_file_new();
+    if (!g_key_file_load_from_file
+        (keyfile, conf_file, G_KEY_FILE_NONE, &error)) {
+
         fprintf(stderr, "\n** Failed to load config file %s: %s. **\n\n",
                 conf_file, error->message);
-        print_config("DEFAULTS LIST");
-        free(conf_file);
+        CONFIG->path = NULL;
+        print_config();
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
@@ -88,10 +96,13 @@ int init_config(int silent, char *config_file)
          * will run using the default config values.
          */
         return 1;
+    } else {
+        CONFIG->path = conf_file;
+        CONFIG->mtime = get_mtime(CONFIG->path);
     }
 
     /* zmq_uri */
-    str_rv = g_key_file_get_string(kf, CONF_GROUP, "zmq_uri", &error);
+    str_rv = g_key_file_get_string(keyfile, CONF_GROUP, "zmq_uri", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'zmq_uri': %s\n",
                 error->message);
@@ -109,7 +120,8 @@ int init_config(int silent, char *config_file)
     }
 
     /* log_file */
-    str_rv = g_key_file_get_string(kf, CONF_GROUP, "log_file", &error);
+    str_rv =
+        g_key_file_get_string(keyfile, CONF_GROUP, "log_file", &error);
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
                 error->message);
@@ -126,8 +138,72 @@ int init_config(int silent, char *config_file)
         g_free(str_rv);
     }
 
-    /* log_level */
-    str_rv = g_key_file_get_string(kf, CONF_GROUP, "log_level", &error);
+
+    _set_log_level(keyfile);
+
+    /* log_syslog */
+    bool_rv =
+        g_key_file_get_boolean(keyfile, CONF_GROUP, "log_syslog", &error);
+    if (error != NULL) {
+        fprintf(stderr,
+                "Failed to read config value for 'log_syslog': %s\n",
+                error->message);
+        error = NULL;
+    } else {
+        CONFIG->log_syslog = bool_rv;
+    }
+
+    /* max_inotify_events */
+    int_rv =
+        g_key_file_get_integer(keyfile, CONF_GROUP,
+                               "max_inotify_events", &error);
+    if (error != NULL) {
+        fprintf(stderr,
+                "Failed to read config value for 'max_inotify_events': %s\n",
+                error->message);
+        error = NULL;
+    } else {
+        CONFIG->max_inotify_events = int_rv;
+    }
+
+    /* Silent mode.
+     *
+     * The command line argument '-s' takes precidence over what's in the
+     * config file. So if that flag was set then it doesn't matter what
+     * value was set in the config file.
+     */
+    if (silent) {
+        CONFIG->silent = TRUE;
+    } else {
+        bool_rv =
+            g_key_file_get_boolean(keyfile, CONF_GROUP, "silent", &error);
+        if (error != NULL) {
+            fprintf(stderr,
+                    "Failed to read config value for 'silent': %s\n",
+                    error->message);
+            error = NULL;
+        } else {
+            CONFIG->silent = bool_rv;
+        }
+    }
+
+    if (!CONFIG->silent)
+        print_config();
+
+    g_key_file_free(keyfile);
+
+    return 0;
+}
+
+static void _set_log_level(GKeyFile * keyfile)
+{
+    char *str_rv;
+    GError *error;
+
+    error = NULL;
+
+    str_rv =
+        g_key_file_get_string(keyfile, CONF_GROUP, "log_level", &error);
     if (error != NULL) {
         fprintf(stderr,
                 "Failed to read config value for 'log_level': %s\n",
@@ -151,61 +227,58 @@ int init_config(int silent, char *config_file)
 
         g_free(str_rv);
     }
+}
 
-    /* log_syslog */
-    bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "log_syslog", &error);
-    if (error != NULL) {
-        fprintf(stderr,
-                "Failed to read config value for 'log_syslog': %s\n",
-                error->message);
-        error = NULL;
-    } else {
-        CONFIG->log_syslog = bool_rv;
+/* Currenly this will only attempt to reaload the log_level
+ * value from the configuration. Some of the other's are
+ * either tricky or unnecessary. But changing logging levels
+ * in real time is a valueable feature.
+ */
+int reload_config(void)
+{
+    GKeyFile *keyfile;
+    GError *error;
+
+    CONFIG->mtime = get_mtime(CONFIG->path);
+
+    /* Attempt to read in config file. */
+    keyfile = g_key_file_new();
+    if (!g_key_file_load_from_file
+        (keyfile, CONFIG->path, G_KEY_FILE_NONE, &error)) {
+
+        return 1;
     }
 
-    /* max_inotify_events */
-    int_rv =
-        g_key_file_get_integer(kf, CONF_GROUP,
-                               "max_inotify_events", &error);
-    if (error != NULL) {
-        fprintf(stderr,
-                "Failed to read config value for 'max_inotify_events': %s\n",
-                error->message);
-        error = NULL;
-    } else {
-        CONFIG->max_inotify_events = int_rv;
-    }
+    _set_log_level(keyfile);
 
-    /* Silent mode.
-     *
-     * The command line argument '-s' takes precidence over what's in the
-     * config file. So if that flag was set then it doesn't matter what
-     * value was set in the config file.
-     */
-    if (silent) {
-        CONFIG->silent = TRUE;
-    } else {
-        bool_rv = g_key_file_get_boolean(kf, CONF_GROUP, "silent", &error);
-        if (error != NULL) {
-            fprintf(stderr,
-                    "Failed to read config value for 'silent': %s\n",
-                    error->message);
-            error = NULL;
-        } else {
-            CONFIG->silent = bool_rv;
-        }
-    }
-
-    if (!CONFIG->silent)
-        print_config(conf_file);
-
-    free(conf_file);
     return 0;
 }
 
-void print_config(char *conf_file)
+int config_has_an_update(void)
 {
-    fprintf(stderr, "Using configuration values from %s:\n", conf_file);
+    if (CONFIG->mtime == 0)
+        return 0;
+
+    return (get_mtime(CONFIG->path) > CONFIG->mtime) ? 1 : 0;
+}
+
+static time_t get_mtime(char *file)
+{
+    struct stat statbuf;
+
+    if (stat(file, &statbuf) < 0) {
+        fprintf(stderr, "Failed to stat file '%s': %s\n", file,
+                strerror(errno));
+        return 0;
+    }
+
+    return statbuf.st_mtime;
+}
+
+static void print_config(void)
+{
+    fprintf(stderr, "Using configuration values from %s:\n",
+            (CONFIG->path ? CONFIG->path : "DEFAULTS LIST"));
     fprintf(stderr, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
     fprintf(stderr, " - log_file           : %s\n", CONFIG->log_file);
     fprintf(stderr, " - log_level          : %s (%d)\n",

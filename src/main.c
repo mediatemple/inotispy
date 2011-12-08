@@ -42,7 +42,9 @@
 #include <getopt.h>
 #include <unistd.h>
 
-/* This is the timer for dumping the rewatch roots. */
+/* This is the timer for dumping the rewatch roots, as well as
+ * for checking to see if the configuration has been updated.
+ */
 #define ALARM_TIMEOUT 10
 
 void print_help_and_exit(void);
@@ -191,6 +193,16 @@ void sig_handler(int sig)
         break;
     case SIGALRM:
         inotify_dump_roots();
+        if (config_has_an_update()) {
+            if (reload_config() != 0) {
+                log_warn
+                    ("Failed to reload newly updated configuration file");
+            } else {
+                set_log_level(CONFIG->log_level);
+                log_notice
+                    ("Configuration file had an update and was reloaded");
+            }
+        }
         alarm(ALARM_TIMEOUT);
         break;
     }

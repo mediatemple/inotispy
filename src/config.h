@@ -41,6 +41,9 @@
 
 struct inotispy_config {
 
+    char *path;
+    time_t mtime;
+
     /* zmq.h */
     char *zmq_uri;
 
@@ -68,5 +71,13 @@ struct inotispy_config *CONFIG;
  *  - 1 on failure.
  */
 int init_config(int silent, char *config_file);
+
+/* Check to see if the configuration file has been modified
+ * since we last loaded it.
+ */
+int config_has_an_update(void);
+
+/* Reload some of the configuration. */
+int reload_config(void);
 
 #endif /*_INOTISPY_CONFIG_H_*/
