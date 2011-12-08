@@ -43,6 +43,7 @@ stop() {
     echo -n $"Stopping Inotispy: "
     killproc $pidopts $DAEMON
     RETVAL=$?
+    rm -f $confdumpfile
     echo
     [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
 }
