@@ -31,24 +31,29 @@
 #include "config.h"
 #include "inotify.h"
 
+#include <time.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>             /* exit() */
-#include <unistd.h>             /* alarm() */
 #include <sys/utsname.h>        /* uname() */
 #include <getopt.h>
 #include <unistd.h>
+#include <pthread.h>
+
+static pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* This is the timer for dumping the rewatch roots, as well as
  * for checking to see if the configuration has been updated.
  */
 #define ALARM_TIMEOUT 10
+static time_t alarm_timer;
 
-void print_help_and_exit(void);
-void sig_handler(int sig);
+static void print_help_and_exit(void);
+static void alarm_handler(void);
+static void sig_handler(int sig);
 
 int main(int argc, char **argv)
 {
@@ -154,7 +159,7 @@ int main(int argc, char **argv)
 
     log_debug("Entering event loop...");
 
-    alarm(ALARM_TIMEOUT);
+    alarm_timer = time(NULL);
 
     while (1) {
 
@@ -172,10 +177,15 @@ int main(int argc, char **argv)
         if (items[1].revents & ZMQ_POLLIN) {
             zmq_handle_event();
         }
+
+        if (time(NULL) - alarm_timer > ALARM_TIMEOUT) {
+            alarm_handler();
+            alarm_timer = time(NULL);
+        }
     }
 }
 
-void sig_handler(int sig)
+static void sig_handler(int sig)
 {
     switch (sig) {
     case SIGINT:
@@ -191,24 +201,28 @@ void sig_handler(int sig)
         log_error("Inotispy encounterd a segmentation fault. Exiting...");
         exit(sig);
         break;
-    case SIGALRM:
-        inotify_dump_roots();
-        if (config_has_an_update()) {
-            if (reload_config() != 0) {
-                log_warn
-                    ("Failed to reload newly updated configuration file");
-            } else {
-                set_log_level(CONFIG->log_level);
-                log_notice
-                    ("Configuration file had an update and was reloaded");
-            }
-        }
-        alarm(ALARM_TIMEOUT);
-        break;
     }
 }
 
-void print_help_and_exit(void)
+static void alarm_handler(void)
+{
+    pthread_mutex_lock(&main_mutex);
+
+    inotify_dump_roots();
+    if (config_has_an_update()) {
+        if (reload_config() != 0) {
+            log_warn("Failed to reload newly updated configuration file");
+        } else {
+            set_log_level(CONFIG->log_level);
+            log_notice
+                ("Configuration file had an update and was reloaded");
+        }
+    }
+
+    pthread_mutex_unlock(&main_mutex);
+}
+
+static void print_help_and_exit(void)
 {
     printf("Usage: inotispy [options]\n");
     printf("\n");
