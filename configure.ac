@@ -27,7 +27,7 @@
 
 AC_PREREQ([2.59])
 
-AC_INIT([inotispy], [1.1.5], [james@jamesconerly.com])
+AC_INIT([inotispy], [1.1.6], [james@jamesconerly.com])
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
 

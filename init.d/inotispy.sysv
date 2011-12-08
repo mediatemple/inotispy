@@ -20,7 +20,7 @@ export PATH
 [ -f /etc/sysconfig/inotispy ] && . /etc/sysconfig/inotispy
 lockfile=/var/lock/subsys/inotispy
 pidfile=/var/run/inotispy/inotispy.pid
-OPTS="--silent"
+OPTS="--daemon"
 DAEMON=inotispy
 RETVAL=0
 
