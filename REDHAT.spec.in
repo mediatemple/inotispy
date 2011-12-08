@@ -51,7 +51,7 @@ fi
 mv $RPM_BUILD_ROOT/share $RPM_BUILD_ROOT/usr/
 
 # Init script
-install -Dp -m0755 init.d/inotispy.sysv %{buildroot}%{_initrddir}/inotispy
+mv init.d/inotispy.sysv /etc/init.d/inotispy
 
 %clean
 rm -rf $RPM_BUILD_ROOT
