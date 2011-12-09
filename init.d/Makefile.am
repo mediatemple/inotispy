@@ -25,5 +25,5 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-#initddir = $(sysconfdir)/init.d
+initddir = $(sysconfdir)/init.d
 dist_initd_SCRIPTS = inotispy.debian inotispy.sysv
