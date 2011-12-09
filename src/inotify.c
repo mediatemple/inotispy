@@ -1232,6 +1232,7 @@ static void _do_watch_tree_rec(const char *path, Root * root)
              wd, path);
         free(watch->path);
         free(watch);
+        pthread_mutex_unlock(&inotify_mutex);
         return;
     } else {
         g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
