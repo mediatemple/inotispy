@@ -1220,12 +1220,19 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         return;
     }
 
+    //if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
+    //    log_warn
+    //        ("Failed to add new watch wd:%d path:%s because it already exists",
+    //         wd, path);
+    //    free(watch->path);
+    //    free(watch);
     if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
         log_warn
-            ("Failed to add new watch wd:%d path:%s because it already exists",
+            ("Found a tree that's already being watched: wd:%d path:%s",
              wd, path);
         free(watch->path);
         free(watch);
+        return;
     } else {
         g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
                              watch);

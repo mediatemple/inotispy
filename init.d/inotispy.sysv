@@ -103,10 +103,10 @@ case "$1" in
     reload)
         reload
         ;;
-    status)
+    stat|status)
         rh_status
         ;;
-    config)
+    conf|config)
         config
         ;;
     *)
