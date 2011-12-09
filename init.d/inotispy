@@ -1,121 +1,140 @@
 #! /bin/sh
-# Start/stop the inotispy daemon.
-#
-### Redhat bits...
-# chkconfig:   2345 85 15 
-# description: inotispy is a daemon that configures inotify watches and \
-#              queues up captured events via ZeroMQ allowing other programs \
-#              to monitor these queues easily without having to worry about \
-#              the complexities of recursively watch directory trees via \
-#              inotify directly.
-# processname: inotispy
-# config:      /etc/inotispy.conf
-# pidfile:     /var/run/inotispy.pid
-#
-### Debian bits...
 ### BEGIN INIT INFO
 # Provides:          inotispy
-# Required-Start:    $network $local_fs $remote_fs
-# Required-Stop:     $network $local_fs $remote_fs
-# Should-Start:      
-# Should-Stop:       
+# Required-Start:    $network $local_fs $remote_fs $syslog 
+# Required-Stop:     $network $local_fs $remote_fs $syslog 
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: ZeroMQ based inotify daemon
-# Description:       inotispy is a daemon that configures inotify watches and 
-#                    queues up captured events via ZeroMQ allowing other programs
-#                    to monitor these queues easily without having to worry about
-#                    the complexities of recursively watch directory trees via
-#                    inotify directly.
+# Short-Description: efficient inotify daemon
+# Description: Inotispy is an efficient file system change notification daemon
+#              built on top of the Inotify kernel module. It recursively watches
+#              directory trees, queues file system events that occur within those
+#              trees, and delivers those events to client applications via ZeroMQ
+#              sockets.
 ### END INIT INFO
 
-NAME='inotispy';
-PROGRAM='/usr/sbin/inotispy';
-PIDFILE='/var/run/inotispy.pid';
+# Author: James Conerly <james.conerly@gmail.com>
 
-LD_LIBRARY_PATH='/usr/lib';
-export LD_LIBRARY_PATH;
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="inotispy daemon"
+NAME=inotispy
+DAEMON=/usr/sbin/$NAME
+DAEMON_ARGS="--daemon"
+PIDFILE=/var/run/inotispy/inotispy.pid
+CONFDUMPFILE=/var/run/inotispy/config.dump
+SCRIPTNAME=/etc/init.d/$NAME
 
-if [ -f '/lib/lsb/init-functions' ]; then
-  [ -r "/etc/default/${NAME}" ] && . "/etc/default/${NAME}";
-  . '/lib/lsb/init-functions'
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
 
-  init_start() {
-    log_daemon_msg "Starting ${NAME}";
-    start-stop-daemon --start --quiet --background --pidfile "${PIDFILE}" --make-pidfile --name "${NAME}" --startas "${PROGRAM}" -- $LSBNAMES $EXTRA_OPTS;
-    log_end_msg $?;
-  }
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
-  init_stop() {
-    log_daemon_msg "Stopping ${NAME}";
-    start-stop-daemon --stop --quiet --retry 5 --pidfile "${PIDFILE}" --name "${NAME}";
-    rm -f "${PIDFILE}"
-    log_end_msg $?;
-  }
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
 
-  init_status() {
-    log_action_begin_msg "Checking ${NAME}";
-    if pidofproc -p "${PIDFILE}" >/dev/null; then
-      log_action_end_msg 0 "running";
-      exit 0;
-    elif [ -e "${PIDFILE}" ]; then
-      log_action_end_msg 1 "failed to start";
-      exit 1;
-    else
-      log_action_end_msg 0 "not running";
-      exit 3;
-    fi;
-  }
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
 
-  init_default() {
-    log_action_msg "Usage: /etc/init.d/${NAME} {start|stop|status|restart}"
-    exit 2;
-  }
-elif [ -f '/etc/rc.d/init.d/functions' ]; then
-  . '/etc/rc.d/init.d/functions'
-  [ -r "/etc/sysconfig/${NAME}" ] && . "/etc/default/${NAME}";
+status_inotispy()
+{
+    if [ -e "$PIDFILE" ]; then
+        PID=`cat $PIDFILE`
+        if [ -d "/proc/$PID" ]; then
+            if [ ! "$1" ]; then
+                echo "$NAME (pid  $PID) is running"
+            fi
+            return 1
+        else
+            if [ ! "$1" ]; then
+                echo "$NAME is not running"
+            fi
+        fi
+    fi
+    if [ ! "$1" ]; then
+        echo "$NAME is not running"
+    fi
+    return 0
+}
 
-  init_start() {
-    echo "Not yet implemented";
-  }
+start_inotispy()
+{
+    start-stop-daemon --start --quiet --pidfile $PIDFILE \
+        --exec $DAEMON --test > /dev/null \
+        || return 1
 
-  init_stop() {
-    echo "Not yet implemented";
-  }
+    start-stop-daemon --start --quiet --pidfile $PIDFILE \
+        --exec $DAEMON -- $DAEMON_ARGS \
+        || return 2
+}
 
-  init_status() {
-    echo "Not yet implemented";
-  }
+stop_inotispy()
+{
+    start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
 
-  init_default() {
-    echo "Not yet implemented";
-  }
-fi;
+    RETVAL="$?"
+    [ "$RETVAL" = 2 ] && return 2
 
-test -x "${PROGRAM}"  || exit 0;
+    rm -f $PIDFILE
+    rm -f $CONFDUMPFILE
+
+    return "$RETVAL"
+}
+
+reload_inotispy()
+{
+    start-stop-daemon --stop --quiet --signal HUP --pidfile $PIDFILE
+}
+
+dump_config()
+{
+    if [ -e "$CONFDUMPFILE" ]; then
+        echo
+        cat $CONFDUMPFILE
+        echo
+        echo -n Running as pid:\  
+        cat $PIDFILE
+        echo
+        echo
+        return 0
+    fi
+}
 
 case "$1" in
-  start)
-    init_start;
-  ;;
-
-  stop)
-    init_stop;
-  ;;
-
-  restart)
-    init_stop;
-    init_start;
-  ;;
-
-  status)
-    init_status;
-  ;;
-
-  *)
-    init_default;
-  ;;
-esac;
+    start)
+        log_begin_msg "Starting $DESC"
+        start_inotispy
+        log_end_msg $?
+        ;;
+    stop)
+        log_begin_msg "Stopping $DESC"
+        stop_inotispy
+        log_end_msg $?
+        ;;
+    status|stat)
+        status_inotispy
+        ;;
+    restart)
+        log_begin_msg "Restarting $DESC"
+        stop_inotispy
+        sleep 1
+        start_inotispy
+        log_end_msg $?
+        ;;
+    reload)
+        log_begin_msg "Reloading $DESC"
+        reload_inotispy
+        log_end_msg $?
+        ;;
+    config|conf)
+        dump_config
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|reload|config}" >&2
+        exit 1
+        ;;
+esac
 
 exit 0;
-
