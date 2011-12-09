@@ -52,6 +52,7 @@ mv $RPM_BUILD_ROOT/share $RPM_BUILD_ROOT/usr/
 
 # Init script
 mv $RPM_BUILD_ROOT/etc/init.d/inotispy.sysv $RPM_BUILD_ROOT/etc/init.d/inotispy
+rm -f $RPM_BUILD_ROOT/etc/init.d/inotispy.*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
