@@ -119,8 +119,11 @@ static void log_msg(int level, const char *fmt, va_list ap)
         msg = "Failed to allocate memory for log message: log.c:log_msg()";
     }
 
-    fprintf(logger, "[%s] [%s] %s\n", time_str(), level_str(level), msg);
-    fflush(logger);
+    if (CONFIG->logging_enabled) {
+        fprintf(logger, "[%s] [%s] %s\n", time_str(), level_str(level),
+                msg);
+        fflush(logger);
+    }
 
     if (CONFIG->log_syslog) {
         syslog(level_to_syslog_priority(CONFIG->log_level), msg);

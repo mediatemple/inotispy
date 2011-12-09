@@ -26,6 +26,7 @@
  * SUCH DAMAGE.
  */
 
+#include "log.h"
 #include "config.h"
 #include "utils.h"
 
@@ -36,7 +37,9 @@
 #include <sys/types.h>
 
 static time_t get_mtime(char *file);
+static void _set_log_file(GKeyFile * keyfile);
 static void _set_log_level(GKeyFile * keyfile);
+static void _set_log_syslog(GKeyFile * keyfile);
 
 /* This function attempts to parse the config file /etc/inotispy.conf.
  * It is important to note that Inotispy *WILL* run with a missing or
@@ -63,6 +66,7 @@ int init_config(int silent, char *config_file)
     CONFIG->log_syslog = FALSE;
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
     CONFIG->silent = FALSE;
+    CONFIG->logging_enabled = TRUE;
 
     /* Prepare the full path to our config file. */
     if (config_file) {
@@ -118,39 +122,10 @@ int init_config(int silent, char *config_file)
         g_free(str_rv);
     }
 
-    /* log_file */
-    str_rv =
-        g_key_file_get_string(keyfile, CONF_GROUP, "log_file", &error);
-    if (error != NULL) {
-        fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
-                error->message);
-        error = NULL;
-    } else {
-        int_rv = mk_string(&CONFIG->log_file, "%s", str_rv);
-        if (int_rv == -1) {
-            fprintf(stderr,
-                    "** Failed to allocate memory for user supplied log file %s: %s %s **",
-                    str_rv, "using default log file", LOG_FILE);
-            CONFIG->log_file = LOG_FILE;
-        }
-
-        g_free(str_rv);
-    }
-
-
+    /* Logging config */
+    _set_log_file(keyfile);
     _set_log_level(keyfile);
-
-    /* log_syslog */
-    bool_rv =
-        g_key_file_get_boolean(keyfile, CONF_GROUP, "log_syslog", &error);
-    if (error != NULL) {
-        fprintf(stderr,
-                "Failed to read config value for 'log_syslog': %s\n",
-                error->message);
-        error = NULL;
-    } else {
-        CONFIG->log_syslog = bool_rv;
-    }
+    _set_log_syslog(keyfile);
 
     /* max_inotify_events */
     int_rv =
@@ -194,6 +169,57 @@ int init_config(int silent, char *config_file)
     return 0;
 }
 
+static void _set_log_syslog(GKeyFile * keyfile)
+{
+    gboolean bool_rv;
+    GError *error;
+
+    error = NULL;
+
+    bool_rv =
+        g_key_file_get_boolean(keyfile, CONF_GROUP, "log_syslog", &error);
+    if (error != NULL) {
+        fprintf(stderr,
+                "Failed to read config value for 'log_syslog': %s\n",
+                error->message);
+        error = NULL;
+    } else {
+        CONFIG->log_syslog = bool_rv;
+    }
+}
+
+static void _set_log_file(GKeyFile * keyfile)
+{
+    int int_rv;
+    char *str_rv;
+    GError *error;
+
+    error = NULL;
+
+    str_rv =
+        g_key_file_get_string(keyfile, CONF_GROUP, "log_file", &error);
+    if (error != NULL) {
+        fprintf(stderr, "Failed to read config value for 'log_file': %s\n",
+                error->message);
+        error = NULL;
+    } else {
+        if (strcmp(str_rv, "false") == 0) {
+            CONFIG->logging_enabled = FALSE;
+        } else {
+            CONFIG->logging_enabled = TRUE;
+            int_rv = mk_string(&CONFIG->log_file, "%s", str_rv);
+            if (int_rv == -1) {
+                fprintf(stderr,
+                        "** Failed to allocate memory for user supplied log file %s: %s %s **",
+                        str_rv, "using default log file", LOG_FILE);
+                CONFIG->log_file = LOG_FILE;
+            }
+
+            g_free(str_rv);
+        }
+    }
+}
+
 static void _set_log_level(GKeyFile * keyfile)
 {
     char *str_rv;
@@ -228,10 +254,11 @@ static void _set_log_level(GKeyFile * keyfile)
     }
 }
 
-/* Currenly this will only attempt to reaload the log_level
- * value from the configuration. Some of the other's are
- * either tricky or unnecessary. But changing logging levels
- * in real time is a valueable feature.
+/* Currenly this will only attempt to reaload some of the
+ * logging values from the configuration file. Reloading
+ * of (some of) the other values will be done in the future,
+ * but logging seemd to be the most important real-time
+ * tweak.
  */
 int reload_config(void)
 {
@@ -248,8 +275,12 @@ int reload_config(void)
         return 1;
     }
 
+    _set_log_file(keyfile);
     _set_log_level(keyfile);
+    _set_log_syslog(keyfile);
+    init_logger();
 
+    g_key_file_free(keyfile);
     return 0;
 }
 
@@ -292,7 +323,9 @@ void print_config(char *file)
     fprintf(fp, "Using configuration values from %s:\n",
             (CONFIG->path ? CONFIG->path : "DEFAULTS LIST"));
     fprintf(fp, " - zmq_uri            : %s\n", CONFIG->zmq_uri);
-    fprintf(fp, " - log_file           : %s\n", CONFIG->log_file);
+    fprintf(fp, " - log_file           : %s\n",
+            (CONFIG->logging_enabled ? CONFIG->log_file :
+             "Regular logging disabled"));
     fprintf(fp, " - log_level          : %s (%d)\n",
             level_str(CONFIG->log_level), CONFIG->log_level);
     fprintf(fp, " - log_syslog         : %s\n",

@@ -53,6 +53,7 @@ struct inotispy_config {
     int log_level;
     char *log_file;
     gboolean log_syslog;
+    int logging_enabled;
 
     /* inotify.h */
     int max_inotify_events;
