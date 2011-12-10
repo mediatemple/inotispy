@@ -18,6 +18,7 @@ PATH=/usr/bin:/sbin:/bin:/usr/sbin
 export PATH
 
 [ -f /etc/sysconfig/inotispy ] && . /etc/sysconfig/inotispy
+rundir=/var/run/inotispy
 lockfile=/var/lock/subsys/inotispy
 pidfile=/var/run/inotispy/inotispy.pid
 confdumpfile=/var/run/inotispy/config.dump
@@ -28,6 +29,10 @@ RETVAL=0
 if status | grep -q -- '-p' 2>/dev/null; then
     daemonopts="--pidfile $pidfile"
     pidopts="-p $pidfile"
+fi
+
+if [ ! -d "$rundir" ]; then
+    mkdir $rundir
 fi
 
 start() {
