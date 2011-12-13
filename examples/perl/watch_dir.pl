@@ -33,6 +33,7 @@ use warnings;
 use JSON;
 use Data::Dumper;
 use ZeroMQ qw(ZMQ_REQ);
+use Linux::Inotify2;
 
 my $path = shift ||
     die "Usage: $! <PATH>\n";
@@ -44,6 +45,8 @@ $sock->connect('tcp://127.0.0.1:5559');
 $sock->send_as( json => {
     call => 'watch',
     path => $path,
+    mask => IN_DELETE,
+    rewatch => 1,
 });
 
 # Alternatively, if you want to set the different inotify alerts

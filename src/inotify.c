@@ -357,9 +357,8 @@ void inotify_handle_event(void)
              * well as remove the mapping we have stored in our
              * watch descriptor meta maps.
              */
-            else if ((event->mask & IN_DELETE)
-                     || (event->mask & IN_MOVED_FROM)) {
-                log_debug("Existing directory '%s' has been removed",
+            else if ((event->mask & IN_DELETE) || (event->mask & IN_MOVED_FROM)) {
+                log_debug("Existing directory '%s' has been moved or removed",
                           abs_path);
 
                 /* TODO: How can we determine if the actual root itself
@@ -394,6 +393,60 @@ void inotify_handle_event(void)
                 g_hash_table_remove(inotify_path_to_watch, abs_path);
                 free(delete->path);
                 free(delete);
+
+                if (event->mask & IN_MOVED_FROM) {
+                    int rv;
+                    GList *keys;
+                    char *tmp, *sub_path, *ptr;
+                    Watch *sub_watch;
+
+                    log_debug("Existing directory '%s' has been moved. Unwatching it's sub dirs",
+                              abs_path);
+
+                    /* Destroy all the watches associated with this subroot. */
+                    keys = g_hash_table_get_keys(inotify_path_to_watch);
+                    rv = mk_string(&tmp, "%s/", abs_path);
+                    if (rv == -1) {
+                        log_error
+                            ("Failed to allocate memory for temporary path variable: %s",
+                             "inotify.c:inotify_handle_event()");
+                        g_list_free(keys);
+                        pthread_mutex_unlock(&inotify_mutex);
+                        return;
+                    }
+
+                    for (; keys != NULL; keys = keys->next) {
+                        sub_path = (char *) keys->data;
+
+                        if ((ptr = strstr(sub_path, tmp)) && ptr == sub_path) {
+                            sub_watch = g_hash_table_lookup(inotify_path_to_watch, sub_path);
+
+                            if (sub_watch == NULL) {
+                                log_warn
+                                    ("While unwatching sub dirs unable to look up watch for path %s",
+                                     sub_path);
+                            } else {
+                                log_debug("Unwatching sub path '%s'", sub_path);
+
+                                rv = inotify_rm_watch(inotify_fd, sub_watch->wd);
+                                if (rv != 0) {
+                                    log_warn("Failed to call inotify_rm_watch() on wd:%d: %s",
+                                             sub_watch->wd, strerror(errno));
+                                }
+                    
+                                g_hash_table_remove(inotify_wd_to_watch,
+                                                    GINT_TO_POINTER(sub_watch->wd));
+                                g_hash_table_remove(inotify_path_to_watch, sub_path);
+                    
+                                free(sub_watch->path);
+                                free(sub_watch);
+                            }
+                        }
+                    }
+
+                    free(tmp);
+                    g_list_free(keys);
+                }
 
                 pthread_mutex_unlock(&inotify_mutex);
             }
@@ -1220,12 +1273,6 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         return;
     }
 
-    //if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
-    //    log_warn
-    //        ("Failed to add new watch wd:%d path:%s because it already exists",
-    //         wd, path);
-    //    free(watch->path);
-    //    free(watch);
     if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
         log_warn
             ("Found a tree that's already being watched: wd:%d path:%s",
