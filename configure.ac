@@ -27,7 +27,7 @@
 
 
 AC_INIT([inotispy], [1.1.15], [james@jamesconerly.com])
-AC_PREREQ([2.59]
+AC_PREREQ([2.59])
 
 INOTISPY_VERSION=1.1.15
 AC_SUBST(INOTISPY_VERSION)
