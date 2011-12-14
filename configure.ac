@@ -26,10 +26,10 @@
 # SUCH DAMAGE.
 
 
-AC_INIT([inotispy], [1.1.15], [james@jamesconerly.com])
+AC_INIT([inotispy], [1.1.16], [james@jamesconerly.com])
 AC_PREREQ([2.59])
 
-INOTISPY_VERSION=1.1.15
+INOTISPY_VERSION=1.1.16
 AC_SUBST(INOTISPY_VERSION)
 AC_MSG_NOTICE([Configuring inotispy $INOTISPY_VERSION])
 AC_DEFINE_UNQUOTED([INOTISPY_VERSION], ["$INOTISPY_VERSION"], [inotispy release version])

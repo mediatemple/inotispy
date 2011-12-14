@@ -381,7 +381,7 @@ static void alarm_handler(void)
 
 static void print_version(void)
 {
-    printf("Inotispy v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
+    printf("inotispy v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
     exit(0);
 }
 

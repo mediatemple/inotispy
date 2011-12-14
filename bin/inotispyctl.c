@@ -40,7 +40,8 @@
 
 void *socket, *context;
 
-void print_help(void);
+static void print_help(void);
+static void print_version(void);
 
 int mk_string(char **ret, const char *fmt, ...)
 {
@@ -478,6 +479,7 @@ int main(int argc, char **argv)
     static struct option long_opts[] = {
         {"help", no_argument, 0, 'h'},
         {"zmq_uri", required_argument, 0, 'u'},
+        {"version", no_argument, 0, 'v'},
         {0, 0, 0, 0}
     };
 
@@ -494,6 +496,9 @@ int main(int argc, char **argv)
             getopt_long(argc, argv, "hu:", long_opts,
                         &option_index)) != -1) {
         switch (c) {
+        case 'v':
+            print_version();
+            break;
         case 'h':
             print_help();
             break;
@@ -594,7 +599,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void print_help(void)
+static void print_version(void)
+{
+    printf("inotispyctl v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
+    exit(0);
+}
+
+static void print_help(void)
 {
     printf("\n");
     printf("Usage: inotispyctl [option] <command> [command args]\n");
