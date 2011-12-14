@@ -477,9 +477,9 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);
 
     static struct option long_opts[] = {
+        {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {"zmq_uri", required_argument, 0, 'u'},
-        {"version", no_argument, 0, 'v'},
         {0, 0, 0, 0}
     };
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
     zmq_uri = NULL;
 
     while ((c =
-            getopt_long(argc, argv, "hu:", long_opts,
+            getopt_long(argc, argv, "vhu:", long_opts,
                         &option_index)) != -1) {
         switch (c) {
         case 'v':
