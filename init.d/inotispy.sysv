@@ -22,6 +22,7 @@ rundir=/var/run/inotispy
 lockfile=/var/lock/subsys/inotispy
 pidfile=/var/run/inotispy/inotispy.pid
 confdumpfile=/var/run/inotispy/config.dump
+rootdumpfile=/var/run/inotispy/roots.dump
 OPTS="--daemon"
 PROGRAM=inotispy
 RETVAL=0
@@ -95,6 +96,15 @@ config() {
     fi
 }
 
+flush()
+{
+    echo "Flushing Inotispy watches"
+    if [ -e "$rootdumpfile" ]; then
+        rm -f $rootdumpfile
+    fi
+    restart
+}
+
 case "$1" in
     start)
         start
@@ -114,8 +124,11 @@ case "$1" in
     conf|config)
         config
         ;;
+    flush)
+        flush
+        ;;
     *)
-        echo $"Usage: $0 {start|stop|status|restart|reload|config}"
+        echo $"Usage: $0 {start|stop|status|restart|reload|config|flush}"
         exit 1
 esac
 

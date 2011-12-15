@@ -22,6 +22,7 @@ DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS="--daemon"
 PIDFILE=/var/run/inotispy/inotispy.pid
 CONFDUMPFILE=/var/run/inotispy/config.dump
+ROOTDUMPFILE=/var/run/inotispy/roots.dump
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
@@ -102,6 +103,13 @@ dump_config()
     fi
 }
 
+flush()
+{
+    if [ -e "$ROOTDUMPFILE" ]; then
+        rm -f $ROOTDUMPFILE
+    fi
+}
+
 case "$1" in
     start)
         log_begin_msg "Starting $DESC"
@@ -131,8 +139,17 @@ case "$1" in
     config|conf)
         dump_config
         ;;
+    flush)
+        log_begin_msg "Flushing $DESC watches"
+        flush
+        log_begin_msg "Restarting $DESC"
+        stop_inotispy
+        sleep 1
+        start_inotispy
+        log_end_msg $?
+        ;;
     *)
-        echo "Usage: $0 {start|stop|status|restart|reload|config}" >&2
+        echo "Usage: $0 {start|stop|status|restart|reload|config|flush}" >&2
         exit 1
         ;;
 esac
