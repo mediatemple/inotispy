@@ -51,6 +51,7 @@ fi
 mv $RPM_BUILD_ROOT/share $RPM_BUILD_ROOT/usr/
 
 # Init script
+chmod a+x $RPM_BUILD_ROOT/etc/init.d/inotispy.*
 mv $RPM_BUILD_ROOT/etc/init.d/inotispy.sysv $RPM_BUILD_ROOT/etc/init.d/inotispy
 rm -f $RPM_BUILD_ROOT/etc/init.d/inotispy.*
 
