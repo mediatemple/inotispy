@@ -393,6 +393,9 @@ static void print_help_and_exit(void)
     printf("  -s, --silent         Turn off printing to stderr.\n");
     printf
         ("  -c, --config=CONFIG  Specify the location of the config file.\n");
+    printf("  -d, --daemon         Run Inotispy in daemon mode.\n");
+    printf("  -p, --pidfile=FILE   Select a non-default pid file.\n");
+    printf("  -v, --version        Print the version and exit.\n");
     printf("\n");
     printf
         ("Inotispy is an efficient file system change notification daemon based\n");
