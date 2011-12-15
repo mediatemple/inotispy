@@ -601,7 +601,8 @@ int main(int argc, char **argv)
 
 static void print_version(void)
 {
-    printf("inotispyctl v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
+    printf("inotispyctl v%s (c) 2012 (mt) MediaTemple\n",
+           INOTISPY_VERSION);
     exit(0);
 }
 
