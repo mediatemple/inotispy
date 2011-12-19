@@ -479,7 +479,7 @@ int main(int argc, char **argv)
     static struct option long_opts[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
-        {"zmq_uri", required_argument, 0, 'u'},
+        {"uri", required_argument, 0, 'u'},
         {0, 0, 0, 0}
     };
 
@@ -528,7 +528,6 @@ int main(int argc, char **argv)
     context = zmq_init(1);
     socket = zmq_socket(context, ZMQ_REQ);
     connect_rv = zmq_connect(socket, zmq_uri);
-    // free(zmq_uri);
 
     if (connect_rv != 0) {
         printf("Failed to connect ZeroMQ socket: %s\n",
@@ -614,8 +613,9 @@ static void print_help(void)
     printf("Options:\n");
     printf(" -h, --help                  Print this help menu\n");
     printf
-        (" -u, --zmq_uri <uri>         Use a zmq_uri othar than the default,\n");
-    printf("                             which is tcp://127.0.0.1:5559\n");
+        (" -u, --uri=URI               Use a zmq URI othar than the default,\n");
+    printf("                               which is tcp://127.0.0.1:5559\n");
+    printf(" -v, --version               Print the version and exit.\n");
     printf("\n");
     printf("Commands:\n");
     printf
