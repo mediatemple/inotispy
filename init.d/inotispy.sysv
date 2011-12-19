@@ -86,12 +86,17 @@ reload() {
 config() {
     if [ -e "$confdumpfile" ]; then
         echo
-        cat $confdumpfile
-        echo
         echo -n Running as pid:\  
         cat $pidfile
         echo
         echo
+        cat $confdumpfile
+        echo
+        if [ -e "$rootdumpfile" ]; then
+            echo Persistent roots from $rootdumpfile:
+            cat $rootdumpfile | awk '{print " - " $1}'
+            echo
+        fi
         return 0
     fi
 }
