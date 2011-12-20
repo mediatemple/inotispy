@@ -42,6 +42,7 @@ void *socket, *context;
 
 static void print_help(void);
 static void print_version(void);
+static void print_version_and_exit(void);
 
 int mk_string(char **ret, const char *fmt, ...)
 {
@@ -497,7 +498,7 @@ int main(int argc, char **argv)
                         &option_index)) != -1) {
         switch (c) {
         case 'v':
-            print_version();
+            print_version_and_exit();
             break;
         case 'h':
             print_help();
@@ -602,6 +603,11 @@ static void print_version(void)
 {
     printf("inotispyctl v%s (c) 2012 (mt) MediaTemple\n",
            INOTISPY_VERSION);
+}
+
+static void print_version_and_exit(void)
+{
+    print_version();
     exit(0);
 }
 
@@ -614,7 +620,8 @@ static void print_help(void)
     printf(" -h, --help                  Print this help menu\n");
     printf
         (" -u, --uri=URI               Use a zmq URI othar than the default,\n");
-    printf("                               which is tcp://127.0.0.1:5559\n");
+    printf
+        ("                               which is tcp://127.0.0.1:5559\n");
     printf(" -v, --version               Print the version and exit.\n");
     printf("\n");
     printf("Commands:\n");
@@ -622,7 +629,8 @@ static void print_help(void)
         (" - list_roots                List each currently watched root.\n");
     printf
         (" - list_queues               List each currently watched root\n");
-    printf("                             and it's current queue size.\n");
+    printf
+        ("                               and it's current queue size.\n");
     printf
         (" - watch <dir>               Watch a new root at directory <dir>.\n");
     printf
@@ -638,9 +646,19 @@ static void print_help(void)
     printf
         (" - get_events <dir> <count>  Get events for a specific root.\n");
     printf
-        ("                             A count of 0 (zero) will retrieve *all*\n");
+        ("                               A count of 0 (zero) will retrieve *all*\n");
     printf
-        ("                             the events currently in that root's queue.\n");
+        ("                               the events currently in that root's queue.\n");
+    printf("\n");
+    printf
+        ("Inotispyctl is a simple command line tool for using the inotispy(8)\n");
+    printf
+        ("daemon. It can be used as an administrative tool or to help getting\n");
+    printf("started with Inotispy.\n\n");
+    printf
+        ("For more information on using Inotispyctl please refer to the manpage\n");
+    printf("documentation included with this distribution.\n\n");
+    print_version();
     printf("\n");
 /*
     printf("For more information please visit http://www.inotispy.org\n");

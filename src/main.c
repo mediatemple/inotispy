@@ -79,6 +79,7 @@ static void write_pid();
 static void check_pid();
 static int clear_pid();
 static void print_version(void);
+static void print_version_and_exit(void);
 
 int main(int argc, char **argv)
 {
@@ -116,7 +117,7 @@ int main(int argc, char **argv)
                         &option_index)) != -1) {
         switch (c) {
         case 'v':
-            print_version();
+            print_version_and_exit();
             break;
         case 'd':
             daemon_mode = 1;
@@ -382,20 +383,25 @@ static void alarm_handler(void)
 static void print_version(void)
 {
     printf("inotispy v%s (c) 2012 (mt) MediaTemple\n", INOTISPY_VERSION);
+}
+
+static void print_version_and_exit(void)
+{
+    print_version();
     exit(0);
 }
 
 static void print_help_and_exit(void)
 {
-    printf("Usage: inotispy [options]\n");
-    printf("\n");
-    printf("  -h, --help           Print this help and exit.\n");
-    printf("  -s, --silent         Turn off printing to stderr.\n");
+    printf("\nUsage: inotispy [options]\n");
+    printf("\nOptions:\n");
+    printf(" -h, --help           Print this help and exit.\n");
+    printf(" -s, --silent         Turn off printing to stderr.\n");
     printf
-        ("  -c, --config=CONFIG  Specify the location of the config file.\n");
-    printf("  -d, --daemon         Run Inotispy in daemon mode.\n");
-    printf("  -p, --pidfile=FILE   Select a non-default pid file.\n");
-    printf("  -v, --version        Print the version and exit.\n");
+        (" -c, --config=CONFIG  Specify the location of the config file.\n");
+    printf(" -d, --daemon         Run Inotispy in daemon mode.\n");
+    printf(" -p, --pidfile=FILE   Select a non-default pid file.\n");
+    printf(" -v, --version        Print the version and exit.\n");
     printf("\n");
     printf
         ("Inotispy is an efficient file system change notification daemon based\n");
@@ -409,6 +415,8 @@ static void print_help_and_exit(void)
         ("For more information on running, configuring, managing and using Inotispy\n");
     printf
         ("please refer to the manpage documentation included with this distribution.\n\n");
+    print_version();
+    printf("\n");
 
     exit(EXIT_SUCCESS);
 }
