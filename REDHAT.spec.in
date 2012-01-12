@@ -55,14 +55,18 @@ chmod a+x $RPM_BUILD_ROOT/etc/init.d/inotispy.*
 mv $RPM_BUILD_ROOT/etc/init.d/inotispy.sysv $RPM_BUILD_ROOT/etc/init.d/inotispy
 rm -f $RPM_BUILD_ROOT/etc/init.d/inotispy.*
 
+# Prevent customers from reading and executing our code!
+find %{buildroot} -type f -exec chmod 0640 '{}' \;
+find %{buildroot} -type f \( -path '*/*bin/*' -or -path '*/init.d/*' \) -exec chmod 0750 '{}' \;
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%defattr(-,root,root)
+%defattr(-,root,engine)
 /bin
 /sbin
 /usr
 
-%config %dir %attr(-,root,root) /etc/inotispy.conf
-%config %dir %attr(-,root,root) /etc/init.d/inotispy
+%config %dir /etc/inotispy.conf
+%config %dir /etc/init.d/inotispy
