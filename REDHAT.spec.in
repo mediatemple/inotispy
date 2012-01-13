@@ -9,7 +9,7 @@ Summary: 		Efficient inotify daemon
 License: 		BSD/MIT
 Name: 			%{name}
 Version: 		%{version}
-Release: 		1%{?dist}
+Release: 		2%{?dist}
 Source: 		%{name}-%{version}.tar.gz
 Group: 			Linux/Utilities
 
