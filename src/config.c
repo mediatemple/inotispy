@@ -61,12 +61,19 @@ int init_config(int silent, char *config_file)
     /* Create config struct and assign default values. */
     CONFIG = g_slice_new(struct inotispy_config);
     CONFIG->zmq_uri = ZMQ_URI;
-    CONFIG->log_file = LOG_FILE;
     CONFIG->log_level = LOG_LEVEL_NOTICE;
     CONFIG->log_syslog = FALSE;
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
     CONFIG->silent = FALSE;
     CONFIG->logging_enabled = TRUE;
+
+    int_rv = mk_string(&CONFIG->log_file, "%s", LOG_FILE);
+    if (int_rv == -1) {
+        fprintf(stderr,
+                "** Failed to allocate memory for default log file %s",
+                LOG_FILE);
+        return 1;
+    }
 
     /* Prepare the full path to our config file. */
     if (config_file) {
@@ -208,6 +215,7 @@ static void _set_log_file(GKeyFile * keyfile)
         } else {
             CONFIG->logging_enabled = TRUE;
             free(CONFIG->log_file);
+
             int_rv = mk_string(&CONFIG->log_file, "%s", str_rv);
             if (int_rv == -1) {
                 fprintf(stderr,
