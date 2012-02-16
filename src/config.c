@@ -207,6 +207,7 @@ static void _set_log_file(GKeyFile * keyfile)
             CONFIG->logging_enabled = FALSE;
         } else {
             CONFIG->logging_enabled = TRUE;
+            free(CONFIG->log_file);
             int_rv = mk_string(&CONFIG->log_file, "%s", str_rv);
             if (int_rv == -1) {
                 fprintf(stderr,
