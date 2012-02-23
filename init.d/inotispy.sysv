@@ -44,6 +44,7 @@ start() {
             return 1
         else
             echo "Found stale pid file. Cleaning it up..."
+            killproc $PROGRAM
             rm -f $pidfile
         fi
     fi
@@ -57,7 +58,7 @@ start() {
 
 stop() {
     echo -n $"Stopping Inotispy: "
-    killproc $pidopts $PROGRAM
+    killproc $PROGRAM
     RETVAL=$?
     rm -f $confdumpfile
     echo
