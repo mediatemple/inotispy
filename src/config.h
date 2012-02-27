@@ -33,6 +33,7 @@
 #include "log.h"
 #include "inotify.h"
 
+#include <time.h>
 #include <glib.h>
 
 #define CONF_GROUP "global"
@@ -63,6 +64,12 @@ struct inotispy_config {
 };
 
 struct inotispy_config *CONFIG;
+
+/* The time the daemon started. */
+time_t start_time;
+
+/* The number of watched directories. */
+int num_watched_dirs;
 
 /* Read in config values from /etc/inotispy.conf.
  *

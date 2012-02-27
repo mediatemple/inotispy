@@ -90,6 +90,8 @@ int main(int argc, char **argv)
     int silent, help;
     char *config_file;
 
+    start_time = time(NULL);  /* start_time is in config.h */
+
     zmq_pollitem_t items[2];
 
     /* Make sure we're on linux. */

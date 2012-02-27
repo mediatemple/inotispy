@@ -190,4 +190,7 @@ Event **inotify_get_events(const char *path, int count);
  */
 void inotify_dump_roots(void);
 
+/* Get the total number of current inotify watches. */
+int inotify_num_watched_dirs(void);
+
 #endif /*_INOTISPY_INOTIFY_H_*/

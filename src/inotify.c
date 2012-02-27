@@ -170,6 +170,11 @@ int inotify_setup(void)
     return inotify_fd;
 }
 
+int inotify_num_watched_dirs(void)
+{
+    return (int) g_hash_table_size(inotify_wd_to_watch);
+}
+
 void inotify_handle_event(void)
 {
     int i = 0, rv, num_in_events;

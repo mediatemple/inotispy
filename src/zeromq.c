@@ -35,6 +35,7 @@
 
 #include <zmq.h>
 #include <glib.h>
+#include <time.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -402,6 +403,33 @@ static void EVENT_get_queue_size(const Request * req)
     pthread_mutex_unlock(&zmq_mutex);
 }
 
+static void EVENT_status(void)
+{
+    int rv, num_watches;
+    int secs, mins, hours, days;
+    char *reply;
+
+    secs = time(NULL) - start_time;
+    mins = secs / 60;
+    hours = mins / 60;
+    days = hours / 24;
+
+    num_watches = inotify_num_watched_dirs();
+
+    rv = mk_string(&reply, "{\"watches\":%d,\"uptime\":\"%dd %dh %dm %ds\"}",
+                   num_watches, days, (hours-(days*24)),
+                   (mins-(hours*60)), (secs-(mins*60)));
+    if (rv == -1) {
+        log_error("Failed to allocate memory for reply JSON: %s",
+                  "zmq.c:EVENT_status");
+        reply_send_error(ERROR_MEMORY_ALLOCATION);
+        return;
+    }
+
+    reply_send_message(reply);
+    free(reply);
+}
+
 static void EVENT_pause(const Request * req)
 {
     int rv;
@@ -573,6 +601,8 @@ static void zmq_dispatch_event(Request * req)
 
     if (strcmp(call, "ping") == 0) {
         reply_send_message("pong");
+    } else if (strcmp(call, "status") == 0) {
+        EVENT_status();
     } else if (strcmp(call, "watch") == 0) {
         EVENT_watch(req);
     } else if (strcmp(call, "pause") == 0) {

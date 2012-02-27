@@ -262,6 +262,21 @@ char *fmt_event(json_object * event)
     return fmt;
 }
 
+void get_status(void)
+{
+    int rv;
+    char *request = "{\"call\":\"status\"}";
+    json_object *status, *watches, *uptime;
+
+    send_request(request, 0);
+
+    status = parse_json(get_reply());
+    watches = json_object_object_get(status, "watches");
+    uptime = json_object_object_get(status, "uptime");
+
+    printf("watches : %d\nuptime  : %s\n",
+           json_object_get_int(watches), json_object_get_string(uptime)); 
+}
 
 void print_events(json_object * events)
 {
@@ -541,6 +556,8 @@ int main(int argc, char **argv)
     dir_idx = optind + 1;
     if (strcmp(command, "ping") == 0) {
         zmq_ping();
+    } else if (strcmp(command, "status") == 0) {
+        get_status();
     } else if (strcmp(command, "list_roots") == 0) {
         list_roots(0);
     } else if (strcmp(command, "list_queues") == 0) {
@@ -625,6 +642,8 @@ static void print_help(void)
     printf(" -v, --version               Print the version and exit.\n");
     printf("\n");
     printf("Commands:\n");
+    printf(" - ping                      Ping the Inotispy daemon.\n");
+    printf(" - status                    Print some basic status info.\n\n");
     printf
         (" - list_roots                List each currently watched root.\n");
     printf
