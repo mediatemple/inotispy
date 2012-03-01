@@ -408,7 +408,9 @@ static void EVENT_status(void)
     int rv, num_watches;
     int secs, mins, hours, days;
     char *reply;
+    pid_t pid;
 
+    pid = getpid();
     secs = time(NULL) - start_time;
     mins = secs / 60;
     hours = mins / 60;
@@ -416,9 +418,10 @@ static void EVENT_status(void)
 
     num_watches = inotify_num_watched_dirs();
 
-    rv = mk_string(&reply, "{\"watches\":%d,\"uptime\":\"%dd %dh %dm %ds\"}",
-                   num_watches, days, (hours-(days*24)),
-                   (mins-(hours*60)), (secs-(mins*60)));
+    rv = mk_string(&reply,
+                   "{\"pid\":%d,\"watches\":%d,\"uptime\":\"%dd %dh %dm %ds\"}",
+                   pid, num_watches, days, (hours - (days * 24)),
+                   (mins - (hours * 60)), (secs - (mins * 60)));
     if (rv == -1) {
         log_error("Failed to allocate memory for reply JSON: %s",
                   "zmq.c:EVENT_status");

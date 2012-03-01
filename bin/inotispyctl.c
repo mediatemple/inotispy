@@ -265,17 +265,25 @@ char *fmt_event(json_object * event)
 void get_status(void)
 {
     int rv;
+    char *cmd;
     char *request = "{\"call\":\"status\"}";
-    json_object *status, *watches, *uptime;
+    json_object *pid, *status, *watches, *uptime;
 
     send_request(request, 0);
 
     status = parse_json(get_reply());
     watches = json_object_object_get(status, "watches");
     uptime = json_object_object_get(status, "uptime");
+    pid = json_object_object_get(status, "pid");
 
-    printf("watches : %d\nuptime  : %s\n",
-           json_object_get_int(watches), json_object_get_string(uptime)); 
+    printf("pid: %d\nwatches: %d\nuptime: %s\n",
+           json_object_get_int(pid),
+           json_object_get_int(watches), json_object_get_string(uptime));
+
+    mk_string(&cmd, "cat /proc/%d/status | grep VmData",
+              json_object_get_int(pid));
+    system(cmd);
+    free(cmd);
 }
 
 void print_events(json_object * events)
@@ -643,7 +651,8 @@ static void print_help(void)
     printf("\n");
     printf("Commands:\n");
     printf(" - ping                      Ping the Inotispy daemon.\n");
-    printf(" - status                    Print some basic status info.\n\n");
+    printf
+        (" - status                    Print some basic status info.\n\n");
     printf
         (" - list_roots                List each currently watched root.\n");
     printf

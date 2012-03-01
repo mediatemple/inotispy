@@ -248,11 +248,10 @@ void inotify_handle_event(void)
         char *tmp_str = ".~tmp~";
         char *idx = NULL;
 
-        if(idx = strstr(event->name, tmp_str)) {
+        if (idx = strstr(event->name, tmp_str)) {
             idx += strlen(tmp_str);
             if (*idx == '\0') {
-                log_trace("Skipping '.~tmp~' event on wd %d",
-                          event->wd);
+                log_trace("Skipping '.~tmp~' event on wd %d", event->wd);
                 i += INOTIFY_EVENT_SIZE + event->len;
                 continue;
             }
@@ -363,11 +362,12 @@ void inotify_handle_event(void)
                 char *tmp_str = ".~tmp~";
                 char *idx = NULL;
 
-                if(idx = strstr(path, tmp_str)) {
+                if (idx = strstr(path, tmp_str)) {
                     idx += strlen(tmp_str);
                     if (*idx == '\0') {
-                        log_trace("Skipping do_watch_tree() on '.~tmp~' directory: %s",
-                                  path);
+                        log_trace
+                            ("Skipping do_watch_tree() on '.~tmp~' directory: %s",
+                             path);
                         i += INOTIFY_EVENT_SIZE + event->len;
                         free(path);
                         free(abs_path);
@@ -1296,11 +1296,10 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     char *tmp_str = ".~tmp~";
     char *idx = NULL;
 
-    if(idx = strstr(path, tmp_str)) {
+    if (idx = strstr(path, tmp_str)) {
         idx += strlen(tmp_str);
         if (*idx == '\0') {
-            log_trace("Skipping watch on '.~tmp~' directory: %s",
-                      path);
+            log_trace("Skipping watch on '.~tmp~' directory: %s", path);
             return;
         }
     }
