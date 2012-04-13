@@ -265,7 +265,7 @@ char *fmt_event(json_object * event)
 void get_status(void)
 {
     int rv;
-    char *cmd;
+    char *cmd1, *cmd2;
     char *request = "{\"call\":\"status\"}";
     json_object *pid, *status, *watches, *uptime;
 
@@ -280,10 +280,14 @@ void get_status(void)
            json_object_get_int(pid),
            json_object_get_int(watches), json_object_get_string(uptime));
 
-    mk_string(&cmd, "cat /proc/%d/status | grep VmData",
+    mk_string(&cmd1, "cat /proc/%d/status | grep VmRSS",
               json_object_get_int(pid));
-    system(cmd);
-    free(cmd);
+    mk_string(&cmd2, "cat /proc/%d/status | grep VmData",
+              json_object_get_int(pid));
+    system(cmd1);
+    system(cmd2);
+    free(cmd1);
+    free(cmd2);
 }
 
 void print_events(json_object * events)

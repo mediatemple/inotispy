@@ -281,8 +281,8 @@ void inotify_handle_event(void)
          */
         if (watch == NULL) {
             log_warn
-                ("Failed to look up watcher for wd %d in inotify_handle_event",
-                 event->wd);
+                ("Failed to look up watcher for wd %d in inotify_handle_event (%s)",
+                 event->wd, event->name);
             i += INOTIFY_EVENT_SIZE + event->len;
             pthread_mutex_unlock(&inotify_mutex);
             continue;
@@ -1313,8 +1313,24 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
     pthread_mutex_lock(&inotify_mutex);
 
+    /* Check to make sure path is a valid, and open-able, directory. */
+    {
+        DIR *d = opendir(path);
+        if (d == NULL) {
+            log_warn("Failed to open root at dir '%s' in _do_watch_tree_rec(): %s",
+                      path, strerror(errno));
+            pthread_mutex_unlock(&inotify_mutex);
+            return;
+        }
+        closedir(d);
+    }
+
+    /* XXX: Need switch here to do ALL_EVENTS or just the root->mask. */
+    /*
     wd = inotify_add_watch(inotify_fd, path,
                            IN_ALL_EVENTS | IN_DONT_FOLLOW);
+    */
+    wd = inotify_add_watch(inotify_fd, path, root->mask | IN_DONT_FOLLOW);
 
     if (wd < 0) {
         log_error("Failed to set up inotify watch for path '%s': %s",
