@@ -451,6 +451,8 @@ void inotify_handle_event(void)
                             ("Failed to allocate memory for temporary path variable: %s",
                              "inotify.c:inotify_handle_event()");
                         g_list_free(keys);
+                        free(path);
+                        free(abs_path);
                         pthread_mutex_unlock(&inotify_mutex);
                         return;
                     }
