@@ -435,7 +435,7 @@ void inotify_handle_event(void)
 
                 if (event->mask & IN_MOVED_FROM) {
                     int rv;
-                    GList *keys;
+                    GList *key = NULL, *keys = NULL;
                     char *tmp, *sub_path, *ptr;
                     Watch *sub_watch;
 
@@ -457,8 +457,8 @@ void inotify_handle_event(void)
                         return;
                     }
 
-                    for (; keys != NULL; keys = keys->next) {
-                        sub_path = (char *) keys->data;
+                    for (key = keys; key; key = key->next) {
+                        sub_path = (char *) key->data;
 
                         if ((ptr = strstr(sub_path, tmp))
                             && ptr == sub_path) {
@@ -596,32 +596,44 @@ static int inotify_enqueue(const Root * root, const IN_Event * event,
 char **inotify_get_roots(void)
 {
     int i = 0, rv;
+    GList *key = NULL, *keys = NULL;
     char **roots;
-    GList *keys;
 
     pthread_mutex_lock(&inotify_mutex);
 
     keys = g_hash_table_get_keys(inotify_roots);
+    roots = malloc((g_list_length(keys) + 1) * (sizeof * roots));
 
-    roots = malloc((g_list_length(keys) + 1) * (sizeof *roots));
     if (roots == NULL) {
         log_error("Failed to allocate memory for roots list: %s",
                   "inotify.c:inotify_get_roots()");
+        g_list_free(keys);
         pthread_mutex_unlock(&inotify_mutex);
         return NULL;
     }
 
-    for (; keys != NULL; keys = keys->next) {
-        rv = mk_string(&roots[i++], "%s", (char *) keys->data);
+    for (key = keys; key; key = key->next) {
+        rv = mk_string(&roots[i++], "%s", (char *) key->data);
+
         if (rv == -1) {
             log_error
                 ("Failed to allocate memory while adding root to list: %s",
                  "inotify.c:inotify_get_roots()");
+            g_list_free(keys);
+            pthread_mutex_unlock(&inotify_mutex);
             return NULL;
         }
     }
 
-    roots[i] = NULL;
+    rv = mk_string(&roots[i], "EOL");
+    if (rv == -1) {
+        log_error
+            ("Failed to allocate memory while adding EOL to list: %s",
+             "inotify.c:inotify_get_roots()");
+        g_list_free(keys);
+        pthread_mutex_unlock(&inotify_mutex);
+        return NULL;
+    }
 
     g_list_free(keys);
 
@@ -637,16 +649,15 @@ void inotify_free_roots(char **roots)
 {
     int i;
 
-    for (i = 0; roots[i]; free(roots[i++]));
-
-    free(roots);
+    for (i = 0; roots[i]; i++);
+        free(roots[i]);
 }
 
 void inotify_dump_roots(void)
 {
     int i, rv;
     FILE *fp;
-    GList *roots;
+    GList *roots = NULL;
     Root *root;
     char *dump_file;
 
@@ -787,7 +798,7 @@ Root *inotify_is_root(const char *path)
 Root *inotify_path_to_root(const char *path)
 {
     int rv;
-    GList *keys;
+    GList *key = NULL, *keys = NULL;
     char *tmp;
     Root *root;
 
@@ -797,9 +808,9 @@ Root *inotify_path_to_root(const char *path)
 
     keys = g_hash_table_get_keys(inotify_roots);
 
-    for (; keys != NULL; keys = keys->next) {
+    for (key = keys; key; key = key->next) {
 
-        rv = mk_string(&tmp, "%s/", (char *) keys->data);
+        rv = mk_string(&tmp, "%s/", (char *) key->data);
         if (rv == -1) {
             log_error
                 ("Failed to allocate memory while copying data to a temporary variable: %s",
@@ -807,18 +818,18 @@ Root *inotify_path_to_root(const char *path)
             return NULL;
         }
 
-        if ((strcmp(path, keys->data) == 0) || strstr(path, tmp)) {
+        if ((strcmp(path, key->data) == 0) || strstr(path, tmp)) {
             free(tmp);
 
-            root = g_hash_table_lookup(inotify_roots, keys->data);
+            root = g_hash_table_lookup(inotify_roots, key->data);
 
             if (root == NULL) {
-                log_warn("Failed to look up root for '%s'", keys->data);
+                log_warn("Failed to look up root for '%s'", key->data);
                 g_list_free(keys);
                 return NULL;
             }
 
-            log_trace("Found root '%s' for path '%s'", keys->data, path);
+            log_trace("Found root '%s' for path '%s'", key->data, path);
 
             g_list_free(keys);
 
@@ -856,9 +867,7 @@ char *inotify_is_parent(const char *path)
 {
     int rv;
     char *tmp, *parent;
-    GList *keys;
-
-    keys = NULL;
+    GList *key = NULL, *keys = NULL;
 
     rv = mk_string(&tmp, "%s/", path);
     if (rv == -1) {
@@ -869,9 +878,9 @@ char *inotify_is_parent(const char *path)
 
     keys = g_hash_table_get_keys(inotify_roots);
 
-    for (; keys != NULL; keys = keys->next) {
-        if (strstr(keys->data, tmp)) {
-            rv = mk_string(&parent, "%s", keys->data);
+    for (key = keys; key; key = key->next) {
+        if (strstr(key->data, tmp)) {
+            rv = mk_string(&parent, "%s", key->data);
             if (rv == -1) {
                 log_error
                     ("Failed to allocate memory for return value '%s': %s",
@@ -929,10 +938,9 @@ static void *_destroy_root(void *thread_data)
     int rv;
     Watch *watch;
     char *tmp, *path, *ptr;
-    GList *keys;
+    GList *key = NULL, *keys = NULL;
 
     root = thread_data;
-    keys = NULL;
 
     pthread_mutex_lock(&inotify_mutex);
 
@@ -953,9 +961,9 @@ static void *_destroy_root(void *thread_data)
 
     pthread_mutex_unlock(&inotify_mutex);
 
-    for (; keys != NULL; keys = keys->next) {
+    for (key = keys; key; key = key->next) {
 
-        path = (char *) keys->data;
+        path = (char *) key->data;
 
         if ((ptr = strstr(path, tmp)) && ptr == path) {
 

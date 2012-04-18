@@ -573,6 +573,7 @@ static void EVENT_get_roots(void)
         return;
     }
 
+
     roots = inotify_get_roots();
     if (roots == NULL) {
         reply_send_error(ERROR_MEMORY_ALLOCATION);
@@ -582,16 +583,18 @@ static void EVENT_get_roots(void)
     jobj = json_object_new_object();
     jarr = json_object_new_array();
 
-    for (i = 0; roots[i]; i++) {
+    for (i = 0; strcmp(roots[i], "EOL") != 0; i++) {
         JOBJ path = json_object_new_string(roots[i]);
         json_object_array_add(jarr, path);
+        free(roots[i]);
     }
+    free(roots[i]);
+    free(roots);
 
     json_object_object_add(jobj, "data", jarr);
 
     reply_send_message((char *) json_object_to_json_string(jobj));
 
-    inotify_free_roots(roots);
     json_object_put(jobj);
 }
 
