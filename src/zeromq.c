@@ -50,7 +50,6 @@ static void zmq_dispatch_event(Request * req);
 void *zmq_setup(void)
 {
     int rv, bind_rv;
-    void *zmq_context;
 
     zmq_context = zmq_init(ZMQ_THREADS);
     zmq_listener = zmq_socket(zmq_context, ZMQ_REP);
@@ -62,6 +61,12 @@ void *zmq_setup(void)
     }
 
     return zmq_listener;
+}
+
+void zmq_cleanup(void)
+{
+    zmq_close(zmq_listener);
+    zmq_term(zmq_context);
 }
 
 /* This is where we grab a 0MQ request off the socket, try to

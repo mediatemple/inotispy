@@ -653,11 +653,23 @@ void inotify_free_roots(char **roots)
         free(roots[i]);
 }
 
+void inotify_cleanup(void)
+{
+//    GList *roots = NULL;
+//    Root *root;
+ 
+    inotify_dump_roots();
+
+//    roots = g_hash_table_get_values(inotify_roots);
+
+//    for (; roots != NULL; roots = roots->next) {
+}
+
 void inotify_dump_roots(void)
 {
     int i, rv;
     FILE *fp;
-    GList *roots = NULL;
+    GList *roots_ptr = NULL, *roots = NULL;
     Root *root;
     char *dump_file;
 
@@ -674,13 +686,14 @@ void inotify_dump_roots(void)
 
     roots = g_hash_table_get_values(inotify_roots);
 
-    for (; roots != NULL; roots = roots->next) {
+    for (roots_ptr = roots; roots != NULL; roots = roots->next) {
         root = roots->data;
         if (root->rewatch)
             fprintf(fp, "%s,%d,%d\n", root->path, root->mask,
                     root->max_events);
     }
 
+    g_list_free(roots_ptr);
     fclose(fp);
     free(dump_file);
     pthread_mutex_unlock(&inotify_mutex);

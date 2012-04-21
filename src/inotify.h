@@ -193,4 +193,7 @@ void inotify_dump_roots(void);
 /* Get the total number of current inotify watches. */
 int inotify_num_watched_dirs(void);
 
+/* Clean up stuff... */
+void inotify_cleanup(void);
+
 #endif /*_INOTISPY_INOTIFY_H_*/

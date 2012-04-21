@@ -26,13 +26,14 @@
 # SUCH DAMAGE.
 
 
-AC_INIT([inotispy], [1.1.32], [james@jamesconerly.com])
+AC_INIT([inotispy], [1.1.33], [james@jamesconerly.com])
 AC_PREREQ([2.59])
 
-INOTISPY_VERSION=1.1.32
+INOTISPY_VERSION=1.1.33
 AC_SUBST(INOTISPY_VERSION)
 AC_MSG_NOTICE([Configuring inotispy $INOTISPY_VERSION])
 AC_DEFINE_UNQUOTED([INOTISPY_VERSION], ["$INOTISPY_VERSION"], [inotispy release version])
+#AC_DEFINE_UNQUOTED([G_SLICE], ["always-malloc"], [fix for mem leaks])
 
 AC_CONFIG_SRCDIR([src/main.c])
 AM_INIT_AUTOMAKE([1.9 tar-pax foreign])
@@ -53,7 +54,7 @@ AM_CONDITIONAL(HAS_DATAROOTDIR, [test ! "$datarootdir" = ""])
 AC_PROG_CC
 
 # Checks for packages via pkg-config
-PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.22 json libzmq)
+PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.28 json libzmq)
 
 AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software.]))
 

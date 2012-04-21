@@ -293,6 +293,11 @@ static int clear_config(void)
 {
     int rv;
 
+    g_free(CONFIG->path);
+    g_free(CONFIG->log_file);
+    g_free(CONFIG->zmq_uri);
+    g_slice_free(struct inotispy_config, CONFIG);
+
     rv = unlink(CONF_DUMP_FILE);
     if (rv == -1) {
         if (daemon_mode)
@@ -343,7 +348,9 @@ static void sig_handler(int sig)
 
         log_notice("Inotispy receieved an interrupt. %s",
                    "Dumping roots and exiting");
-        inotify_dump_roots();
+
+        inotify_cleanup();
+        zmq_cleanup();
         clear_pid();
         clear_config();
         exit(sig);

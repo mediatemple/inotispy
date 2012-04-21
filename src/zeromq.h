@@ -40,11 +40,9 @@
 #define ZMQ_THREADS     16
 #define ZMQ_MAX_MSG_LEN 1024
 
-/* 0MQ socket for client connections. */
+/* 0MQ context and socket for client connections. */
+void *zmq_context;
 void *zmq_listener;
-
-/* 0MQ socket for INPROC requests to set up a new inotify watch. */
-void *zmq_inproc;
 
 #endif /*_INOTISPY_ZMQ_H_META_*/
 
@@ -71,5 +69,8 @@ void *zmq_setup(void);
  *    create a Request struct/blob and send that off to the dispatcher.
  */
 void zmq_handle_event(void);
+
+/* Clean up stuff */
+void zmq_cleanup(void);
 
 #endif /*_INOTISPY_ZMQ_H_*/

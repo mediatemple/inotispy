@@ -176,6 +176,11 @@ int init_config(int silent, char *config_file)
     return 0;
 }
 
+void config_cleanup(void)
+{
+
+}
+
 static void _set_log_syslog(GKeyFile * keyfile)
 {
     gboolean bool_rv;
