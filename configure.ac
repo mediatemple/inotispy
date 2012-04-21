@@ -54,7 +54,7 @@ AM_CONDITIONAL(HAS_DATAROOTDIR, [test ! "$datarootdir" = ""])
 AC_PROG_CC
 
 # Checks for packages via pkg-config
-PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.28 json libzmq)
+PKG_CHECK_MODULES(DEPS, glib-2.0 >= 2.22 json libzmq)
 
 AC_CHECK_HEADER([sys/inotify.h],,AC_MSG_ERROR([Cannot find header sys/inotify.h. Please make sure you are on a Linux operating system to use this software.]))
 
