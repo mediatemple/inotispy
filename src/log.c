@@ -194,7 +194,7 @@ void set_log_level(int level)
     }
 }
 
-int init_logger()
+int init_logger(void)
 {
     log_level = CONFIG->log_level;
 
@@ -215,4 +215,10 @@ int init_logger()
     }
 
     return 0;
+}
+
+void close_logger(void)
+{
+    sync();
+    fclose(logger);
 }

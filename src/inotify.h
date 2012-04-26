@@ -39,6 +39,7 @@
 #define INOTIFY_EVENT_SIZE     ( sizeof (struct inotify_event) )
 #define INOTIFY_EVENT_BUF_LEN  ( 1024 * ( INOTIFY_EVENT_SIZE + 16 ) )
 #define INOTIFY_MAX_EVENTS     65536    /* This number is arbatrary */
+#define INOTIFY_MEMCLEAN_FREQ  600
 #define INOTIFY_DEFAULT_MASK   ( \
         IN_ATTRIB              | \
         IN_MOVED_FROM          | \
@@ -195,5 +196,6 @@ int inotify_num_watched_dirs(void);
 
 /* Clean up stuff... */
 void inotify_cleanup(void);
+void inotify_memclean(void);
 
 #endif /*_INOTISPY_INOTIFY_H_*/

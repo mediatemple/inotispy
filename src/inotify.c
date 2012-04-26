@@ -170,6 +170,16 @@ int inotify_setup(void)
     return inotify_fd;
 }
 
+int is_dir(char *dir)
+{
+    struct stat st;
+
+    if (stat(dir, &st) == 0)
+        return S_ISDIR(st.st_mode);
+
+    return 0;
+}
+
 int inotify_num_watched_dirs(void)
 {
     return (int) g_hash_table_size(inotify_wd_to_watch);
@@ -184,6 +194,8 @@ void inotify_handle_event(void)
     IN_Event *event;
 
     event = NULL;
+
+    sync();
 
     /* Grab the next buffer of inotoify events. If the
      * length of this buffer is negative then we've
@@ -602,7 +614,7 @@ char **inotify_get_roots(void)
     pthread_mutex_lock(&inotify_mutex);
 
     keys = g_hash_table_get_keys(inotify_roots);
-    roots = malloc((g_list_length(keys) + 1) * (sizeof * roots));
+    roots = malloc((g_list_length(keys) + 1) * (sizeof *roots));
 
     if (roots == NULL) {
         log_error("Failed to allocate memory for roots list: %s",
@@ -650,14 +662,14 @@ void inotify_free_roots(char **roots)
     int i;
 
     for (i = 0; roots[i]; i++);
-        free(roots[i]);
+    free(roots[i]);
 }
 
 void inotify_cleanup(void)
 {
 //    GList *roots = NULL;
 //    Root *root;
- 
+
     inotify_dump_roots();
 
 //    roots = g_hash_table_get_values(inotify_roots);
@@ -1340,8 +1352,9 @@ static void _do_watch_tree_rec(const char *path, Root * root)
     {
         DIR *d = opendir(path);
         if (d == NULL) {
-            log_warn("Failed to open root at dir '%s' in _do_watch_tree_rec(): %s",
-                      path, strerror(errno));
+            log_warn
+                ("Failed to open root at dir '%s' in _do_watch_tree_rec(): %s",
+                 path, strerror(errno));
             pthread_mutex_unlock(&inotify_mutex);
             return;
         }
@@ -1350,9 +1363,9 @@ static void _do_watch_tree_rec(const char *path, Root * root)
 
     /* XXX: Need switch here to do ALL_EVENTS or just the root->mask. */
     /*
-    wd = inotify_add_watch(inotify_fd, path,
-                           IN_ALL_EVENTS | IN_DONT_FOLLOW);
-    */
+       wd = inotify_add_watch(inotify_fd, path,
+       IN_ALL_EVENTS | IN_DONT_FOLLOW);
+     */
     wd = inotify_add_watch(inotify_fd, path, root->mask | IN_DONT_FOLLOW);
 
     if (wd < 0) {
@@ -1528,4 +1541,66 @@ static void free_node_mem(Event * node, gpointer user_data)
     free(node->path);
     free(node->name);
     free(node);
+}
+
+/* This function will periodically get called to go through
+ * the full list of watched directories and see if they still
+ * exist on disk. If they exist in Inotispy's watch list but
+ * do not exist on disk then something goofy happend (which
+ * can occur under heavy disk load with quick file system
+ * operations, i.e. creates immediately followed by deletes)
+ * and we just need to clean up the memory that's been allocated
+ * for the non-existant directories.
+ */
+void inotify_memclean(void)
+{
+    GList *key = NULL, *keys = NULL;
+    char *tmp, *sub_path, *ptr;
+    Watch *delete;
+
+    log_trace("Performing the inotify metadata memory cleanup");
+
+    pthread_mutex_lock(&inotify_mutex);
+
+    keys = g_hash_table_get_keys(inotify_path_to_watch);
+
+    for (key = keys; key; key = key->next) {
+
+        /* If the directory does not exist on disk, but is in
+         * this list then we have a rogue watch that needs it's
+         * meta data blown away.
+         */
+        if (!is_dir(key->data)) {
+
+            delete = g_hash_table_lookup(inotify_path_to_watch, key->data);
+
+            if (delete == NULL) {
+                log_warn
+                    ("Failed to look up watcher for path %s in memclean routine",
+                     key->data);
+                continue;
+            }
+
+            log_warn
+                ("Found rogue directory '%s' in memory. Wiping out it's metadata",
+                 key->data);
+
+            /* Clean up meta data mappings and tell inotify
+             * to stop watching the deleted dir.
+             */
+            inotify_rm_watch(inotify_fd, delete->wd);
+
+            g_hash_table_remove(inotify_wd_to_watch,
+                                GINT_TO_POINTER(delete->wd));
+            g_hash_table_remove(inotify_path_to_watch, key->data);
+
+            free(delete->path);
+            free(delete);
+            delete = NULL;
+        }
+    }
+
+    g_list_free(keys);
+
+    pthread_mutex_unlock(&inotify_mutex);
 }

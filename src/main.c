@@ -68,6 +68,11 @@ static char *pid_file;
 #define ALARM_TIMEOUT 10
 static time_t alarm_timer;
 
+/* This timer is for triggering a memory clean of the directories
+ * that Inotispy thinks it's watching.
+ */
+static time_t memclean_timer;
+
 /* Are we a daemon? */
 static int daemon_mode;
 
@@ -203,6 +208,7 @@ int main(int argc, char **argv)
 
     log_debug("Entering event loop...");
 
+    memclean_timer = time(NULL);
     alarm_timer = time(NULL);
     alarm_handler();
 
@@ -215,11 +221,19 @@ int main(int argc, char **argv)
             continue;
         }
 
-        if (time(NULL) - alarm_timer > ALARM_TIMEOUT) {
+        /* Periodic timers */
+        if ((time(NULL) - alarm_timer) > ALARM_TIMEOUT) {
             alarm_handler();
             alarm_timer = time(NULL);
         }
 
+        if ((CONFIG->memclean_freq > 0)
+            && ((time(NULL) - memclean_timer) > CONFIG->memclean_freq)) {
+            inotify_memclean();
+            memclean_timer = time(NULL);
+        }
+
+        /* ZeroMQ poll handlers */
         if (items[0].revents & ZMQ_POLLIN) {
             inotify_handle_event();
         }
@@ -353,6 +367,7 @@ static void sig_handler(int sig)
         zmq_cleanup();
         clear_pid();
         clear_config();
+        close_logger();
         exit(sig);
         break;
     case SIGSEGV:

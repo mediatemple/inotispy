@@ -42,6 +42,7 @@ enum log_levels {
 
 /* Initialize and setup our logger */
 int init_logger(void);
+void close_logger(void);
 
 /* Get and set the current log level.
  *

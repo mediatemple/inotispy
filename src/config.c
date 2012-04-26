@@ -64,6 +64,7 @@ int init_config(int silent, char *config_file)
     CONFIG->log_level = LOG_LEVEL_NOTICE;
     CONFIG->log_syslog = FALSE;
     CONFIG->max_inotify_events = INOTIFY_MAX_EVENTS;
+    CONFIG->memclean_freq = INOTIFY_MEMCLEAN_FREQ;
     CONFIG->silent = FALSE;
     CONFIG->logging_enabled = TRUE;
 
@@ -99,6 +100,7 @@ int init_config(int silent, char *config_file)
                 conf_file, error->message);
         CONFIG->path = NULL;
         print_config(NULL);
+        g_error_free(error);
 
         /* As stated above Inotify is designed to run with or without
          * this config file present or correct. So we don't bail out
@@ -116,6 +118,7 @@ int init_config(int silent, char *config_file)
     if (error != NULL) {
         fprintf(stderr, "Failed to read config value for 'zmq_uri': %s\n",
                 error->message);
+        g_error_free(error);
         error = NULL;
     } else {
         int_rv = mk_string(&CONFIG->zmq_uri, "%s", str_rv);
@@ -142,9 +145,27 @@ int init_config(int silent, char *config_file)
         fprintf(stderr,
                 "Failed to read config value for 'max_inotify_events': %s\n",
                 error->message);
+        g_error_free(error);
         error = NULL;
     } else {
         CONFIG->max_inotify_events = int_rv;
+    }
+
+    /* memclean_freq */
+    int_rv =
+        g_key_file_get_integer(keyfile, CONF_GROUP,
+                               "memclean_freq", &error);
+    if (error == NULL) {
+        if (int_rv >= 0) {
+            CONFIG->memclean_freq = int_rv;
+        } else {
+            fprintf(stderr,
+                    "memclean_freq value '%d' is invalid. Using default value '%d'.\n",
+                    int_rv, CONFIG->memclean_freq);
+        }
+    } else {
+        g_error_free(error);
+        error = NULL;
     }
 
     /* Silent mode.
@@ -162,6 +183,7 @@ int init_config(int silent, char *config_file)
             fprintf(stderr,
                     "Failed to read config value for 'silent': %s\n",
                     error->message);
+            g_error_free(error);
             error = NULL;
         } else {
             CONFIG->silent = bool_rv;
@@ -174,11 +196,6 @@ int init_config(int silent, char *config_file)
     g_key_file_free(keyfile);
 
     return 0;
-}
-
-void config_cleanup(void)
-{
-
 }
 
 static void _set_log_syslog(GKeyFile * keyfile)
@@ -346,6 +363,12 @@ void print_config(char *file)
             (CONFIG->log_syslog ? "true" : "false"));
     fprintf(fp, " - max_inotify_events : %d\n",
             CONFIG->max_inotify_events);
+    if (CONFIG->memclean_freq > 0) {
+        fprintf(fp, " - memclean_freq      : %d seconds\n",
+                CONFIG->memclean_freq);
+    } else {
+        fprintf(fp, " - memclean_freq      : never\n");
+    }
     fprintf(fp, " - silent mode        : %s\n",
             (CONFIG->silent ? "true" : "false"));
 

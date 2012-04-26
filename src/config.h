@@ -58,6 +58,7 @@ struct inotispy_config {
 
     /* inotify.h */
     int max_inotify_events;
+    int memclean_freq;
 
     /* Toggle printing information to stderr */
     gboolean silent;
