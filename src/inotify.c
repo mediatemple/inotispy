@@ -47,6 +47,7 @@
 #include <glib/ghash.h>
 
 static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int in_memclean = 0;
 
 /* When you create a new thread using pthreads you give it
  * a reference to a subroutine and it envokes that subroutine.
@@ -79,6 +80,7 @@ static int do_watch_tree(const char *path, Root * root);
 static void *_do_watch_tree(void *thread_data);
 static void _do_watch_tree_rec(const char *path, Root * root);
 static void *_destroy_root(void *thread_data);
+static void *_inotify_memclean(void *thread_data);
 
 /* Initialize inotify file descriptor and set up meta data hashes.
  *
@@ -1554,15 +1556,42 @@ static void free_node_mem(Event * node, gpointer user_data)
  */
 void inotify_memclean(void)
 {
+    int rv;
+    pthread_t t;
+    pthread_attr_t attr;
+
+    if (in_memclean) {
+        log_debug("Already performing a memclean. Skipping operation");
+        return;
+    }
+
+    /* Initialize thread attribute to automatically detach */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    rv = pthread_create(&t, &attr, _inotify_memclean, NULL);
+    if (rv) {
+        log_error("Failed to create new thread for memclean operation");
+        return;
+    }
+
+    pthread_attr_destroy(&attr);
+}
+
+static void *_inotify_memclean(void *thread_data)
+{
     GList *key = NULL, *keys = NULL;
     char *tmp, *sub_path, *ptr;
     Watch *delete;
 
+    thread_data = NULL;
+    in_memclean = 1;
+
     log_trace("Performing the inotify metadata memory cleanup");
 
     pthread_mutex_lock(&inotify_mutex);
-
     keys = g_hash_table_get_keys(inotify_path_to_watch);
+    pthread_mutex_unlock(&inotify_mutex);
 
     for (key = keys; key; key = key->next) {
 
@@ -1572,12 +1601,15 @@ void inotify_memclean(void)
          */
         if (!is_dir(key->data)) {
 
+            pthread_mutex_lock(&inotify_mutex);
+
             delete = g_hash_table_lookup(inotify_path_to_watch, key->data);
 
             if (delete == NULL) {
                 log_warn
                     ("Failed to look up watcher for path %s in memclean routine",
                      key->data);
+                pthread_mutex_unlock(&inotify_mutex);
                 continue;
             }
 
@@ -1597,10 +1629,16 @@ void inotify_memclean(void)
             free(delete->path);
             free(delete);
             delete = NULL;
+
+            pthread_mutex_unlock(&inotify_mutex);
         }
     }
 
+    pthread_mutex_lock(&inotify_mutex);
+
     g_list_free(keys);
+    in_memclean = 0;
 
     pthread_mutex_unlock(&inotify_mutex);
+    pthread_exit(NULL);
 }
