@@ -78,7 +78,7 @@ static void free_node_mem(Event * node, gpointer user_data);
 
 static int do_watch_tree(const char *path, Root * root);
 static void *_do_watch_tree(void *thread_data);
-static void _do_watch_tree_rec(const char *path, Root * root);
+static void _do_watch_tree_rec(char *path, Root * root);
 static void *_destroy_root(void *thread_data);
 static void *_inotify_memclean(void *thread_data);
 
@@ -101,7 +101,8 @@ int inotify_setup(void)
     }
 
     inotify_wd_to_watch =
-        g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
+        g_hash_table_new_full(g_direct_hash, g_direct_equal, g_free, NULL);
+        //g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
 
     if (inotify_wd_to_watch == NULL) {
         log_error("Failed to init GHashTable inotify_wd_to_watch");
@@ -184,7 +185,7 @@ int is_dir(char *dir)
 
 int inotify_num_watched_dirs(void)
 {
-    return (int) g_hash_table_size(inotify_wd_to_watch);
+    return (int) g_hash_table_size(inotify_path_to_watch);
 }
 
 void inotify_handle_event(void)
@@ -669,14 +670,7 @@ void inotify_free_roots(char **roots)
 
 void inotify_cleanup(void)
 {
-//    GList *roots = NULL;
-//    Root *root;
-
     inotify_dump_roots();
-
-//    roots = g_hash_table_get_values(inotify_roots);
-
-//    for (; roots != NULL; roots = roots->next) {
 }
 
 void inotify_dump_roots(void)
@@ -1320,7 +1314,7 @@ static void *_do_watch_tree(void *thread_data)
     return (void *) 0;
 }
 
-static void _do_watch_tree_rec(const char *path, Root * root)
+static void _do_watch_tree_rec(char *path, Root * root)
 {
     int wd, rv;
     DIR *d;
@@ -1395,11 +1389,11 @@ static void _do_watch_tree_rec(const char *path, Root * root)
         free(watch);
         pthread_mutex_unlock(&inotify_mutex);
         return;
-    } else {
-        g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
-                             watch);
-        g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
     }
+
+    g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
+                         watch);
+    g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
 
     pthread_mutex_unlock(&inotify_mutex);
 
@@ -1582,12 +1576,12 @@ static void *_inotify_memclean(void *thread_data)
 {
     GList *key = NULL, *keys = NULL;
     char *tmp, *sub_path, *ptr;
-    Watch *delete;
+    Watch *watch;
 
     thread_data = NULL;
     in_memclean = 1;
 
-    log_trace("Performing the inotify metadata memory cleanup");
+    log_notice("Performing the inotify metadata memory cleanup");
 
     pthread_mutex_lock(&inotify_mutex);
     keys = g_hash_table_get_keys(inotify_path_to_watch);
@@ -1603,9 +1597,9 @@ static void *_inotify_memclean(void *thread_data)
 
             pthread_mutex_lock(&inotify_mutex);
 
-            delete = g_hash_table_lookup(inotify_path_to_watch, key->data);
+            watch = g_hash_table_lookup(inotify_path_to_watch, key->data);
 
-            if (delete == NULL) {
+            if (watch == NULL) {
                 log_warn
                     ("Failed to look up watcher for path %s in memclean routine",
                      key->data);
@@ -1620,15 +1614,16 @@ static void *_inotify_memclean(void *thread_data)
             /* Clean up meta data mappings and tell inotify
              * to stop watching the deleted dir.
              */
-            inotify_rm_watch(inotify_fd, delete->wd);
+            inotify_rm_watch(inotify_fd, watch->wd);
 
             g_hash_table_remove(inotify_wd_to_watch,
-                                GINT_TO_POINTER(delete->wd));
+                                GINT_TO_POINTER(watch->wd));
             g_hash_table_remove(inotify_path_to_watch, key->data);
 
-            free(delete->path);
-            free(delete);
-            delete = NULL;
+            g_free(key->data);
+            free(watch->path);
+            free(watch);
+            watch = NULL;
 
             pthread_mutex_unlock(&inotify_mutex);
         }
