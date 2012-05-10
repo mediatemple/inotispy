@@ -101,8 +101,7 @@ int inotify_setup(void)
     }
 
     inotify_wd_to_watch =
-        g_hash_table_new_full(g_direct_hash, g_direct_equal, g_free, NULL);
-        //g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
+        g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, NULL);
 
     if (inotify_wd_to_watch == NULL) {
         log_error("Failed to init GHashTable inotify_wd_to_watch");
@@ -442,9 +441,18 @@ void inotify_handle_event(void)
                  */
                 int wd = delete->wd;
 
-                g_hash_table_remove(inotify_wd_to_watch,
-                                    GINT_TO_POINTER(wd));
-                g_hash_table_remove(inotify_path_to_watch, abs_path);
+                if (g_hash_table_lookup_extended
+                    (inotify_wd_to_watch, GINT_TO_POINTER(wd), NULL, NULL))
+                {
+                    g_hash_table_remove(inotify_wd_to_watch,
+                                        GINT_TO_POINTER(wd));
+                }
+
+                if (g_hash_table_lookup_extended
+                    (inotify_path_to_watch, abs_path, NULL, NULL)) {
+                    g_hash_table_remove(inotify_path_to_watch, abs_path);
+                }
+
                 free(delete->path);
                 free(delete);
 
@@ -1391,8 +1399,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
         return;
     }
 
-    g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd),
-                         watch);
+    g_hash_table_replace(inotify_wd_to_watch, GINT_TO_POINTER(wd), watch);
     g_hash_table_replace(inotify_path_to_watch, g_strdup(path), watch);
 
     pthread_mutex_unlock(&inotify_mutex);
@@ -1616,11 +1623,19 @@ static void *_inotify_memclean(void *thread_data)
              */
             inotify_rm_watch(inotify_fd, watch->wd);
 
-            g_hash_table_remove(inotify_wd_to_watch,
-                                GINT_TO_POINTER(watch->wd));
-            g_hash_table_remove(inotify_path_to_watch, key->data);
+            if (g_hash_table_lookup_extended
+                (inotify_wd_to_watch, GINT_TO_POINTER(watch->wd), NULL,
+                 NULL)) {
+                g_hash_table_remove(inotify_wd_to_watch,
+                                    GINT_TO_POINTER(watch->wd));
+            }
 
-            g_free(key->data);
+            if (g_hash_table_lookup_extended
+                (inotify_path_to_watch, key->data, NULL, NULL)) {
+                g_hash_table_remove(inotify_path_to_watch, key->data);
+            }
+            //XXX: Remove line when stable
+            //g_free(key->data);
             free(watch->path);
             free(watch);
             watch = NULL;
