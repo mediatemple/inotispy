@@ -1581,6 +1581,7 @@ void inotify_memclean(void)
 
 static void *_inotify_memclean(void *thread_data)
 {
+    double count = 0, total = 0;
     GList *key = NULL, *keys = NULL;
     char *tmp, *sub_path, *ptr;
     Watch *watch;
@@ -1594,7 +1595,7 @@ static void *_inotify_memclean(void *thread_data)
     keys = g_hash_table_get_keys(inotify_path_to_watch);
     pthread_mutex_unlock(&inotify_mutex);
 
-    for (key = keys; key; key = key->next) {
+    for (key = keys; key; key = key->next, ++total) {
 
         /* If the directory does not exist on disk, but is in
          * this list then we have a rogue watch that needs it's
@@ -1618,6 +1619,8 @@ static void *_inotify_memclean(void *thread_data)
                 ("Found rogue directory '%s' in memory. Wiping out it's metadata",
                  key->data);
 
+            ++count;
+
             /* Clean up meta data mappings and tell inotify
              * to stop watching the deleted dir.
              */
@@ -1634,14 +1637,22 @@ static void *_inotify_memclean(void *thread_data)
                 (inotify_path_to_watch, key->data, NULL, NULL)) {
                 g_hash_table_remove(inotify_path_to_watch, key->data);
             }
-            //XXX: Remove line when stable
-            //g_free(key->data);
+
             free(watch->path);
             free(watch);
             watch = NULL;
 
             pthread_mutex_unlock(&inotify_mutex);
         }
+    }
+
+    if (count > 0) {
+        log_notice
+            ("Memory cleanup results: %d/%d rogue watches found -- %7.4f%% cleanup rate",
+             (int) count, (int) total, ((count / total) * 100));
+    } else {
+        log_notice("Memory cleanup found 0/%d rogue watches.",
+                   (int) total);
     }
 
     pthread_mutex_lock(&inotify_mutex);
