@@ -197,5 +197,6 @@ int inotify_num_watched_dirs(void);
 /* Clean up stuff... */
 void inotify_cleanup(void);
 void inotify_memclean(void);
+void inotify_rewatch_roots(void);
 
 #endif /*_INOTISPY_INOTIFY_H_*/

@@ -230,6 +230,7 @@ int main(int argc, char **argv)
         if ((CONFIG->memclean_freq > 0)
             && ((time(NULL) - memclean_timer) > CONFIG->memclean_freq)) {
             inotify_memclean();
+            inotify_rewatch_roots();
             memclean_timer = time(NULL);
         }
 

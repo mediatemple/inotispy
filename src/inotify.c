@@ -26,7 +26,6 @@
   * SUCH DAMAGE.
   */
 
-#include "log.h"
 #include "reply.h"
 #include "inotify.h"
 #include "utils.h"
@@ -47,7 +46,9 @@
 #include <glib/ghash.h>
 
 static pthread_mutex_t inotify_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int in_memclean = 0;
+static int IN_MEMCLEAN = 0;
+static int IN_ROOT_REWATCH = 0;
+static int NUM_ROOT_REWATCH = 0;
 
 /* When you create a new thread using pthreads you give it
  * a reference to a subroutine and it envokes that subroutine.
@@ -64,6 +65,7 @@ static int in_memclean = 0;
 typedef struct thread_data {
     char *path;
     Root *root;
+    int cleanup;
 } T_Data;
 
 /* Prototypes for private functions. */
@@ -76,9 +78,9 @@ static int inotify_enqueue(const Root * root, const IN_Event * event,
                            const char *path);
 static void free_node_mem(Event * node, gpointer user_data);
 
-static int do_watch_tree(const char *path, Root * root);
+static int do_watch_tree(const char *path, Root * root, int cleanup);
 static void *_do_watch_tree(void *thread_data);
-static void _do_watch_tree_rec(char *path, Root * root);
+static void _do_watch_tree_rec(char *path, Root * root, int cleanup);
 static void *_destroy_root(void *thread_data);
 static void *_inotify_memclean(void *thread_data);
 
@@ -172,7 +174,7 @@ int inotify_setup(void)
     return inotify_fd;
 }
 
-int is_dir(char *dir)
+int is_a_dir(char *dir)
 {
     struct stat st;
 
@@ -288,14 +290,20 @@ void inotify_handle_event(void)
 
         /* Move onto the next event if we can't find its watcher.
          *
-         * XXX: This should only happen if something goes
-         *      *seriously* wrong. What this means is that
-         *      Inotispy is getting inotify event notifications
-         *      for directories it doesn't know it's watching.
+         * This really ony happens when there is a rapid creation and
+         * immediate deletion of directorie trees. The only time I've
+         * seen it happen are during stress/load tests where large trees,
+         * (i.e. the linux kernel tarball, or Erlang OTP tarball) are un-
+         * tar-ed and rm -rf-ed in rapid succession. This is not behavior
+         * I really wanted to see, but because of the reactive nature of
+         * inotify, and the fact that file system events are not instan-
+         * taious this situation might occur. There is eventual consistency
+         * so for now I'm labling this less of a bug and more of an
+         * unfortunate feature.
          */
         if (watch == NULL) {
-            log_warn
-                ("Failed to look up watcher for wd %d in inotify_handle_event (%s)",
+            log_trace
+                ("Failed to look up watcher for wd '%d' in inotify_handle_event (%s)",
                  event->wd, event->name);
             i += INOTIFY_EVENT_SIZE + event->len;
             pthread_mutex_unlock(&inotify_mutex);
@@ -389,10 +397,10 @@ void inotify_handle_event(void)
                     }
                 }
 
-                log_debug("New directory '%s' found", abs_path);
+                log_trace("New directory '%s' found", abs_path);
                 usleep(1000);
 
-                rv = do_watch_tree(abs_path, root);
+                rv = do_watch_tree(abs_path, root, 0);
                 if (rv != 0) {
                     log_error("Failed to watch root at dir '%s': %s",
                               abs_path, error_to_string(rv));
@@ -410,7 +418,7 @@ void inotify_handle_event(void)
              */
             else if ((event->mask & IN_DELETE)
                      || (event->mask & IN_MOVED_FROM)) {
-                log_debug
+                log_trace
                     ("Existing directory '%s' has been moved or removed",
                      abs_path);
 
@@ -425,8 +433,9 @@ void inotify_handle_event(void)
                                                     abs_path);
 
                 if (delete == NULL) {
-                    log_warn("Failed to look up watcher for path %s",
-                             abs_path);
+                    log_trace
+                        ("Failed to look up watcher for path '%s' while attempting to delete it",
+                         abs_path);
                     i += INOTIFY_EVENT_SIZE + event->len;
                     free(path);
                     free(abs_path);
@@ -439,17 +448,18 @@ void inotify_handle_event(void)
                 /* Clean up meta data mappings and tell inotify
                  * to stop watching the deleted dir.
                  */
+                void *t1, *t2;
                 int wd = delete->wd;
 
                 if (g_hash_table_lookup_extended
-                    (inotify_wd_to_watch, GINT_TO_POINTER(wd), NULL, NULL))
-                {
+                    (inotify_wd_to_watch, GINT_TO_POINTER(wd), &t1, &t2)) {
                     g_hash_table_remove(inotify_wd_to_watch,
                                         GINT_TO_POINTER(wd));
                 }
 
                 if (g_hash_table_lookup_extended
-                    (inotify_path_to_watch, abs_path, NULL, NULL)) {
+                    (inotify_path_to_watch, abs_path, &t1, &t2)
+                    && abs_path[0] == '/') {
                     g_hash_table_remove(inotify_path_to_watch, abs_path);
                 }
 
@@ -462,7 +472,7 @@ void inotify_handle_event(void)
                     char *tmp, *sub_path, *ptr;
                     Watch *sub_watch;
 
-                    log_debug
+                    log_trace
                         ("Existing directory '%s' has been moved. Unwatching it's sub dirs",
                          abs_path);
 
@@ -575,7 +585,7 @@ static int inotify_enqueue(const Root * root, const IN_Event * event,
         return ERROR_INOTIFY_ROOT_QUEUE_FULL;
     }
 
-    log_debug("Queuing event root:%s path:%s name:%s",
+    log_trace("Queuing event root:%s path:%s name:%s",
               root->path, path, event->name);
 
     /* Create our new queue node and copy over all
@@ -672,8 +682,11 @@ void inotify_free_roots(char **roots)
 {
     int i;
 
-    for (i = 0; roots[i]; i++);
+    for (i = 0; strcmp(roots[i], "EOL") != 0; i++)
+        free(roots[i]);
+
     free(roots[i]);
+    free(roots);
 }
 
 void inotify_cleanup(void)
@@ -844,6 +857,7 @@ Root *inotify_path_to_root(const char *path)
             log_error
                 ("Failed to allocate memory while copying data to a temporary variable: %s",
                  "inotify.c:inotify_path_to_root()");
+            g_list_free(keys);
             return NULL;
         }
 
@@ -1232,7 +1246,7 @@ int inotify_watch_tree(char *path, int mask, int max_events, int rewatch)
     /* Finally we need to recursively setup inotify
      * watches for our new root.
      */
-    rv = do_watch_tree(new_root->path, new_root);
+    rv = do_watch_tree(new_root->path, new_root, 0);
     if (rv != 0) {
         log_error("Failed to watch root at dir '%s': %s", path,
                   error_to_string(rv));
@@ -1242,7 +1256,7 @@ int inotify_watch_tree(char *path, int mask, int max_events, int rewatch)
 }
 
 /* Recursive, threaded portion of inotify_watch_tree(). */
-static int do_watch_tree(const char *path, Root * root)
+static int do_watch_tree(const char *path, Root * root, int cleanup)
 {
     int rv;
     pthread_t t;
@@ -1256,6 +1270,7 @@ static int do_watch_tree(const char *path, Root * root)
     }
 
     data = (T_Data *) malloc(sizeof(T_Data));
+
     if (data == NULL) {
         log_error("Failed to allocate memory for thread data: %s",
                   "inotify.c:do_watch_tree()");
@@ -1270,6 +1285,7 @@ static int do_watch_tree(const char *path, Root * root)
     }
 
     data->root = root;
+    data->cleanup = cleanup;
 
     /* Initialize thread attribute to automatically detach */
     pthread_attr_init(&attr);
@@ -1291,8 +1307,10 @@ static int do_watch_tree(const char *path, Root * root)
 
 static void *_do_watch_tree(void *thread_data)
 {
+    int cleanup;
     T_Data *data;
     data = thread_data;
+    cleanup = data->cleanup;
 
     if ((data->root == NULL) || (data->root->destroy != 0)) {
         log_error
@@ -1312,7 +1330,20 @@ static void *_do_watch_tree(void *thread_data)
         return (void *) 1;
     }
 
-    _do_watch_tree_rec(data->path, data->root);
+    if (data->cleanup) {
+        IN_ROOT_REWATCH = 1;
+        NUM_ROOT_REWATCH = 0;
+    }
+
+    _do_watch_tree_rec(data->path, data->root, data->cleanup);
+
+    if (data->cleanup) {
+        log_notice
+            ("Completed full rewatch of root '%s' finding %d orphaned directories",
+             data->path, NUM_ROOT_REWATCH);
+        IN_ROOT_REWATCH = 0;
+        NUM_ROOT_REWATCH = 0;
+    }
 
     free(data->path);
     free(data);
@@ -1322,7 +1353,7 @@ static void *_do_watch_tree(void *thread_data)
     return (void *) 0;
 }
 
-static void _do_watch_tree_rec(char *path, Root * root)
+static void _do_watch_tree_rec(char *path, Root * root, int cleanup)
 {
     int wd, rv;
     DIR *d;
@@ -1343,6 +1374,8 @@ static void _do_watch_tree_rec(char *path, Root * root)
         }
     }
 
+    pthread_mutex_lock(&inotify_mutex);
+
     if ((root == NULL) || (root->destroy != 0)) {
         log_trace("Skipping watch tree on path %s. %s", path,
                   "because root has been unwatched or is being destroyed");
@@ -1350,14 +1383,31 @@ static void _do_watch_tree_rec(char *path, Root * root)
         return;
     }
 
-    pthread_mutex_lock(&inotify_mutex);
+    /* If we're in cleanup mode just check to see if the path we've currently
+     * recursed to is being watched. If not it has been missed or deleted at
+     * some point and we need to rewatch it. If it's already in the watch list
+     * skip it and move on down the tree.
+     */
+    if (cleanup) {
+        watch = g_hash_table_lookup(inotify_path_to_watch, path);
+
+        if (watch != NULL) {
+            pthread_mutex_unlock(&inotify_mutex);
+            return;
+        }
+
+        ++NUM_ROOT_REWATCH;
+        log_debug
+            ("In memclean routine found orphan path '%s' that needs to be rewatched",
+             path);
+    }
 
     /* Check to make sure path is a valid, and open-able, directory. */
     {
         DIR *d = opendir(path);
         if (d == NULL) {
-            log_warn
-                ("Failed to open root at dir '%s' in _do_watch_tree_rec(): %s",
+            log_debug
+                ("While doing recursive watch failed to open root at dir '%s' in _do_watch_tree_rec(): %s",
                  path, strerror(errno));
             pthread_mutex_unlock(&inotify_mutex);
             return;
@@ -1390,7 +1440,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
     }
 
     if (g_hash_table_lookup(inotify_wd_to_watch, GINT_TO_POINTER(wd))) {
-        log_warn
+        log_debug
             ("Found a tree that's already being watched: wd:%d path:%s",
              wd, path);
         free(watch->path);
@@ -1406,7 +1456,8 @@ static void _do_watch_tree_rec(char *path, Root * root)
 
     d = opendir(path);
     if (d == NULL) {
-        log_error("Failed to open dir: %s", strerror(errno));
+        log_error("Failed to open dir '%s' in _do_watch_tree_rec(): %s",
+                  path, strerror(errno));
         closedir(d);
         return;
     }
@@ -1462,7 +1513,7 @@ static void _do_watch_tree_rec(char *path, Root * root)
         }
 
         /* Recurse! */
-        _do_watch_tree_rec(tmp, root);
+        _do_watch_tree_rec(tmp, root, cleanup);
 
         free(tmp);
     }
@@ -1561,7 +1612,7 @@ void inotify_memclean(void)
     pthread_t t;
     pthread_attr_t attr;
 
-    if (in_memclean) {
+    if (IN_MEMCLEAN) {
         log_debug("Already performing a memclean. Skipping operation");
         return;
     }
@@ -1579,17 +1630,59 @@ void inotify_memclean(void)
     pthread_attr_destroy(&attr);
 }
 
+void inotify_rewatch_roots(void)
+{
+    int rv;
+    Root *root;
+    GList *roots_ptr = NULL, *roots = NULL;
+
+    if (IN_ROOT_REWATCH != 0) {
+        log_debug
+            ("Already performing complete root rewatch on all roots. Skipping...");
+        return;
+    }
+
+    log_notice("Performing complete root rewatch on all roots");
+
+    /* Now let's rewatch all our roots for directories
+     * that somehow got lost in the madness.
+     */
+    pthread_mutex_lock(&inotify_mutex);
+    roots = g_hash_table_get_values(inotify_roots);
+    pthread_mutex_unlock(&inotify_mutex);
+
+    for (roots_ptr = roots; roots != NULL; roots = roots->next) {
+        root = roots->data;
+
+        log_debug("Rewatching root '%s'", root->path);
+        rv = do_watch_tree(root->path, root, 1);
+
+        if (rv != 0) {
+            log_error("Failed to watch root at dir '%s': %s", root->path,
+                      error_to_string(rv));
+        }
+    }
+
+    g_list_free(roots_ptr);
+}
+
 static void *_inotify_memclean(void *thread_data)
 {
+    int i, rv;
     double count = 0, total = 0;
     GList *key = NULL, *keys = NULL;
     char *tmp, *sub_path, *ptr;
     Watch *watch;
 
     thread_data = NULL;
-    in_memclean = 1;
+    IN_MEMCLEAN = 1;
 
-    log_notice("Performing the inotify metadata memory cleanup");
+    /* Sleep for a couple seconds to let potential
+     * file system operations to catch up.
+     */
+    sleep(2);
+
+    log_notice("Performing the inotify metadata memory cleanup.");
 
     pthread_mutex_lock(&inotify_mutex);
     keys = g_hash_table_get_keys(inotify_path_to_watch);
@@ -1597,27 +1690,43 @@ static void *_inotify_memclean(void *thread_data)
 
     for (key = keys; key; key = key->next, ++total) {
 
-        /* If the directory does not exist on disk, but is in
-         * this list then we have a rogue watch that needs it's
-         * meta data blown away.
+        char *path = key->data;
+        path[strlen(path)] = 0;
+        /* If the path does not start with at '/' then we've found a garbage
+         * path key. This is most likey because the inotify_path_to_watch hash
+         * was modified while the memcleanup routine was running. This is a
+         * little sloppy, but I'm just going to continue letting the cleanup
+         * run. This is bound to happen and the next time around will clean
+         * things up.
          */
-        if (!is_dir(key->data)) {
+        if (path[0] != '/')
+            continue;
 
+        /* If the directory does not exist on disk or has become a garbage
+         * path that does not start with at slash (/), and is still in this
+         * list then we have a rogue watch that needs it's meta data blown
+         * away.
+         */
+        if (!is_a_dir(path)) {
+
+            watch = NULL;
+            void *t1, *t2;
             pthread_mutex_lock(&inotify_mutex);
 
-            watch = g_hash_table_lookup(inotify_path_to_watch, key->data);
+            if (g_hash_table_lookup_extended
+                (inotify_path_to_watch, path, &t1, &t2)) {
+                watch = g_hash_table_lookup(inotify_path_to_watch, path);
+            }
 
             if (watch == NULL) {
-                log_warn
-                    ("Failed to look up watcher for path %s in memclean routine",
-                     key->data);
+                log_trace
+                    ("In memclean routine, watcher for path '%s' is already freed",
+                     path);
                 pthread_mutex_unlock(&inotify_mutex);
                 continue;
             }
 
-            log_warn
-                ("Found rogue directory '%s' in memory. Wiping out it's metadata",
-                 key->data);
+            log_debug("Found rogue directory '%s'.", path);
 
             ++count;
 
@@ -1634,8 +1743,8 @@ static void *_inotify_memclean(void *thread_data)
             }
 
             if (g_hash_table_lookup_extended
-                (inotify_path_to_watch, key->data, NULL, NULL)) {
-                g_hash_table_remove(inotify_path_to_watch, key->data);
+                (inotify_path_to_watch, path, NULL, NULL)) {
+                g_hash_table_remove(inotify_path_to_watch, path);
             }
 
             free(watch->path);
@@ -1646,6 +1755,7 @@ static void *_inotify_memclean(void *thread_data)
         }
     }
 
+    /* Log our results. */
     if (count > 0) {
         log_notice
             ("Memory cleanup results: %d/%d rogue watches found -- %7.4f%% cleanup rate",
@@ -1658,7 +1768,7 @@ static void *_inotify_memclean(void *thread_data)
     pthread_mutex_lock(&inotify_mutex);
 
     g_list_free(keys);
-    in_memclean = 0;
+    IN_MEMCLEAN = 0;
 
     pthread_mutex_unlock(&inotify_mutex);
     pthread_exit(NULL);
