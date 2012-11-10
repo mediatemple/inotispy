@@ -1,0 +1,3 @@
+build-platforms:
+ - centos-6-x86_64
+has-tests: 0
