@@ -416,6 +416,11 @@ static void print_version_and_exit(void)
     exit(0);
 }
 
+static void print_truism(void)
+{
+    printf("\"Art is never finished, only abandoned.\" --Leonardo da Vinci\n\n");
+}
+
 static void print_help_and_exit(void)
 {
     printf("\nUsage: inotispy [options]\n");
@@ -442,6 +447,7 @@ static void print_help_and_exit(void)
         ("please refer to the manpage documentation included with this distribution.\n\n");
     print_version();
     printf("\n");
+    print_truism();
 
     exit(EXIT_SUCCESS);
 }
