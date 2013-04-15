@@ -25,7 +25,7 @@ BuildRequires:          perl-Net-Inotispy
 %description
 Inotispy is an efficient, network-based inotify daemon.
 
-Comments and questions should be sent to <james@jamesconerly.com>.
+Comments and questions should be sent to <james.conerly@gmail.com>
 
 %prep
 %setup -q
