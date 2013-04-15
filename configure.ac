@@ -26,7 +26,7 @@
 # SUCH DAMAGE.
 
 
-AC_INIT([inotispy], [1.1.39], [james@jamesconerly.com])
+AC_INIT([inotispy], [1.1.39], [james.conerly@gmail.com])
 AC_PREREQ([2.59])
 
 INOTISPY_VERSION=1.1.39
